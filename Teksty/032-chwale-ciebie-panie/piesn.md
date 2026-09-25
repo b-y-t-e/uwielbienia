@@ -4,7 +4,7 @@ tytul: "Chwalę Ciebie, Panie"
 kategoria: "Uwielbienie"
 numer_zrodlowy: 234
 tonacja: "G"
-kolejnosc: [V1, V2]
+kolejnosc: [V1]
 zrodlo: "20260925-073507-spiewnik_17_08_10.pdf"
 ---
 
@@ -17,7 +17,5 @@ Wznoszę w górę swoje ręce `C`
 uwielbiając imię Twe. `C D`
 Bo wielkiś Ty `G`
 wielkie dzieła czynisz dziś `e`
-
-## [V2] Zwrotka 2
 nie dorówna Tobie nikt `C`
 nie dorówna Tobie nikt. `D`

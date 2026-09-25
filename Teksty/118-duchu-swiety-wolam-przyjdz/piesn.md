@@ -13,5 +13,4 @@ zrodlo: "20260925-073507-spiewnik_17_08_10.pdf"
 ## [V1] Zwrotka 1
 Duchu Święty wołam przyjdź, `D G D`
 w sercach rozpal ogień swój. `D G D`
-Jedno uczyń z naszych serc, miłość, radość pokój wlej
-`fis h e C A`
+Jedno uczyń z naszych serc, miłość, radość pokój wlej `fis h e C A`

@@ -4,17 +4,19 @@ tytul: "Przyjdź Duchu Święty"
 kategoria: "Pieśni do Ducha Świętego"
 numer_zrodlowy: null
 tonacja: "e"
-kolejnosc: [V1]
+kolejnosc: [C, V1, C]
 zrodlo: "20260925-073507-spiewnik_17_08_10.pdf"
 ---
 
 # Przyjdź Duchu Święty
 
-## [V1] Zwrotka 1
+## [C] Refren
 Przyjdź Duchu Święty `e`
 Przyjdź Duchu Kościoła `D`
 Przyjdź do Oblubienicy `a C`
 Przyjdź wołamy Cię! `G D`
+
+## [V1] Zwrotka 1
 Duchu Święty, Panie nasz i Boże – wołamy przyjdź! `G D e`
 Przyjdź Duchu Święty!
 Duchu Święty, który pochodzisz od Ojca i Syna Przyjdź...

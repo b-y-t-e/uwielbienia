@@ -4,7 +4,7 @@ tytul: "Zjednoczeni w Duchu, zjednoczeni w Nim"
 kategoria: "Uwielbienie"
 numer_zrodlowy: 1060
 tonacja: "e"
-kolejnosc: [V1, V2, V4, V5]
+kolejnosc: [V1, V2, V3, V4]
 zrodlo: "20260925-073507-spiewnik_17_08_10.pdf"
 ---
 
@@ -18,17 +18,22 @@ Aby świat cały poznał uczniów Chrystusa w nas, `C e a`
 Aby świat cały ujrzał miłość w nas. `e a e`
 
 ## [V2] Zwrotka 2
-Wraz z innymi pójdziemy, podaj mi swoja dłoń,
+Wraz z innymi pójdziemy, podaj mi swoją dłoń,
 Wraz z innymi pójdziemy, podaj mi swoją dłoń.
-Wszystkim głosić będziemy tę radosna dla nas wieść,
+Wszystkim głosić będziemy tę radosną dla nas wieść,
 Że nasz Pan kroczy z nami, że nasz Pan z nami jest,
 Że nasz Pan zawsze z nami wszędzie jest.
+
+## [V3] Zwrotka 3
+Chcemy razem pracować, chcemy złączyć swój trud,
+Chcemy razem pracować, chcemy złączyć swój trud.
+By nie stracić godności, którą Pan obdarzył nas.
+Aby strzec ludzką dumę, aby strzec dumę swą,
+Żeby człowiek zachował godność swą.
 
 ## [V4] Zwrotka 4
 Niechaj chwała brzmi Ojcu, który stworzył ten świat,
 Niechaj chwała brzmi Ojcu, który stworzył ten świat,
-Chwała tez Chrystusowi, który Synem Jego jest.
-
-## [V5] Zwrotka 5
-I Duchowi tez chwała, który jednoczy nas
+Chwała też Chrystusowi, który Synem Jego jest.
+I Duchowi też chwała, który jednoczy nas
 I Duchowi też, który łączy nas.

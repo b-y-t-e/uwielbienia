@@ -4,7 +4,7 @@ tytul: "Panie pobłogosław mnie dziś"
 kategoria: "Uwielbienie"
 numer_zrodlowy: null
 tonacja: "C"
-kolejnosc: [V1]
+kolejnosc: [V1, C]
 zrodlo: "20260925-073507-spiewnik_17_08_10.pdf"
 ---
 
@@ -16,8 +16,10 @@ Panie rozszerz me granice `C G`
 Niech Twa ręka wiedzie mnie `F C`
 I serce me wybaw od złego. `F G C`
 Amen.
+
+## [C] Refren
 Błogosław mnie `F C F a`
 Błogosław mnie
-Chcę się stać błogosławieńśtwem
+Chcę się stać błogosławieństwem
 Ziemi tej `F C G`
 Amen `C`

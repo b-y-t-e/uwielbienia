@@ -11,5 +11,5 @@ zrodlo: "20260925-073507-spiewnik_17_08_10.pdf"
 # Otwieraj niebo swe nad nami Panie
 
 ## [V1] Zwrotka 1
-Otwieraj niebo swe nad nami Panie :| {x2} `D C G D`
+|: Otwieraj niebo swe nad nami Panie :| {x2} `D C G D`
 Niech Twój Święty Duch uwalnia nasze serca `C G D`

@@ -4,7 +4,7 @@ tytul: "Niechaj zstąpi Duch Twój i odnowi ziemię"
 kategoria: "Pieśni do Ducha Świętego"
 numer_zrodlowy: 219
 tonacja: "e"
-kolejnosc: [V1]
+kolejnosc: [V1, C, V1, C]
 zrodlo: "20260925-073507-spiewnik_17_08_10.pdf"
 ---
 
@@ -15,6 +15,8 @@ Niechaj zstąpi Duch Twój i odnowi ziemię `e`
 Życiodajny spłynie deszcz, na spragnione serce `C`
 Obmyj mnie i uświęć mnie, `a D`
 uwielbienia niech popłynie pieśń. `e`
-Chwała Jezusowi, kory za mnie życie dał, `C e`
+
+## [C] Refren
+Chwała Jezusowi, który za mnie życie dał, `C e`
 Chwała temu który pierwszy umiłował mnie `C e`
 Jezus, tylko Jezus Panem jest. `C D e`

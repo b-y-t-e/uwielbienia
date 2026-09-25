@@ -18,11 +18,12 @@ przyjąć wdzięczność, siłę i moc, `C G C G`
 Błogosławieństwo i cześć. `F C D`
 
 ## [C] Refren
-On Panem jest od wieków na wieki. :| {x3} `G D C D`
+On Panem jest od wieków na wieki. {x3} `G D C D`
 Amen.
 
 ## [V2] Zwrotka 2
 Będziemy niezmiennie wciąż trwać
-w miłości i prawdzie, Oddając Mu hołd,
+w miłości i prawdzie,
+Oddając Mu hołd,
 miłość i wdzięczność, siłę i moc,
 Błogosławieństwo i cześć.

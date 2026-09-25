@@ -12,10 +12,10 @@ zrodlo: "20260925-073507-spiewnik_17_08_10.pdf"
 
 ## [V1] Zwrotka 1
 Pokorna służebnico Pana, `e G`
-łamiaca strzaly nieprzyjaciela `e G`
-miażdżaca głowę węża {x2} `e`
+łamiąca strzały nieprzyjaciela `e G`
+miażdżąca głowę węża {x2} `e`
 
 ## [V2] Zwrotka 2
-Badź zawsze przy mnie `C`
-abym stawał się  pokornym sługą `a G`
+Bądź zawsze przy mnie `C`
+abym stawał się pokornym sługą `a G`
 na wzór mego Mistrza i Pana. `e`

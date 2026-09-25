@@ -4,7 +4,7 @@ tytul: "Maryjo, wskazująca drogę"
 kategoria: "Pieśni Maryjne"
 numer_zrodlowy: null
 tonacja: "D"
-kolejnosc: [V1]
+kolejnosc: [V1, C]
 zrodlo: "20260925-073507-spiewnik_17_08_10.pdf"
 ---
 
@@ -17,6 +17,8 @@ Wstawiaj się za nami u Ducha Świętego `G A G A`
 Abyśmy dochowali wierności `G A`
 Abyśmy objawili w naszym życiu `D G`
 Tego, który Jest `G A`
+
+## [C] Refren
 Tego, który jest Drogą `D`
 Tego, który jest Prawdą `fis`
 Tego, który jest Życiem `G`

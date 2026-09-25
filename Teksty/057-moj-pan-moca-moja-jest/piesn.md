@@ -10,12 +10,13 @@ zrodlo: "20260925-073507-spiewnik_17_08_10.pdf"
 
 # Mój Pan mocą moją jest
 
-## [V1] Zwrotka 1
+## [V1] Zwrotka 1 {x2}
 Mój Pan mocą moją jest `C Ais`
-Skałą i zbawieniem, On Bogiem mym. `F C`
+Pieśnią i zbawieniem, On Bogiem mym. `F C`
 
 ## [C] Refren
-Dla Ciebie otwieram serce swe. :| {x3} `Ais F C`
+Dla Ciebie otwieram serce swe. {x3} `Ais F C`
 
-## [V2] Zwrotka 2
-Mój Pan Królem był i jest, Na zawsze i na wieki. Amen.
+## [V2] Zwrotka 2 {x2}
+Mój Pan Królem był i jest, `C Ais`
+Na zawsze i na wieki. Amen. `F C`

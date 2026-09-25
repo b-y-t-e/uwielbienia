@@ -4,7 +4,7 @@ tytul: "Jest jedno Ciało, jest jeden Pan"
 kategoria: "Uwielbienie"
 numer_zrodlowy: 233
 tonacja: "D"
-kolejnosc: [V1]
+kolejnosc: [V1, C]
 zrodlo: "20260925-073507-spiewnik_17_08_10.pdf"
 ---
 
@@ -17,6 +17,8 @@ Usta głoszą chwałę Mu `G A`
 W ręku Słowa Jego miecz, `fis h`
 W moc odziani tak idziemy, `G e`
 Zdobywając ziemię tę `C A`
+
+## [C] Refren
 Jesteśmy ludem Króla Chwał `D`
 Jego świętym narodem `A`
 Wybranym pokoleniem, `G`

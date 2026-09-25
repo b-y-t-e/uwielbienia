@@ -4,12 +4,12 @@ tytul: "Nie bójcie się żyć dla miłości"
 kategoria: "Uwielbienie"
 numer_zrodlowy: null
 tonacja: "fis"
-kolejnosc: [V1]
+kolejnosc: [C]
 zrodlo: "20260925-073507-spiewnik_17_08_10.pdf"
 ---
 
 # Nie bójcie się żyć dla miłości
 
-## [V1] Zwrotka 1
+## [C] Refren
 Nie bójcie się żyć dla miłości `fis h E`
 Dla tej miłości warto żyć `fis E fis h fis`

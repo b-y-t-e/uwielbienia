@@ -14,4 +14,4 @@ zrodlo: "20260925-073507-spiewnik_17_08_10.pdf"
 Mój Zbawiciel, on bardzo kocha mnie `F C g d`
 Ja, nie wiem czemu Miłością darzy mnie.
 On mi nowe życie dzisiaj, ofiarować chce
-Będę,będę mieszkał razem z panem mym! :| {x2} `F a d`
+Będę, będę mieszkał razem z Panem mym! {x2} `F a d`
