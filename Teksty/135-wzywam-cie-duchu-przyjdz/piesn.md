@@ -17,7 +17,7 @@ Wołam Cię Panie przyjdź
 Jezu Zbawco do dzieci Twych
 
 ## [C] Refren
-Jak spragniona ziemia rosy
-dusza ma
-Tylko Ty możesz wypełnić
-Serca głód, serca głód
+Jak spragniona ziemia rosy `G A h`
+dusza ma `G A h`
+Tylko Ty możesz wypełnić `G A h`
+Serca głód, serca głód `G A h G A D`

@@ -15,5 +15,5 @@ Oddaję Ci Całą chwałę i cześć `D e C a`
 Oddaję Ci Całe serce swe.
 
 ## [C] Refren
-Święty, święty, święty
-Wszechmogący Jezus!
+Święty, święty, święty `D e`
+Wszechmogący Jezus! `C a`

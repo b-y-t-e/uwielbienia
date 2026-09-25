@@ -27,4 +27,4 @@ niech mądrość zagości w nas. :| {x2}
 niech radość zagości w nas. :| {x2}
 
 ## [E] Zakończenie
-Wołamy przyjdź. {x3}
+Wołamy przyjdź. {x3} `G D`

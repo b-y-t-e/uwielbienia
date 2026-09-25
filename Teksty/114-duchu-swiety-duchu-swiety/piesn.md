@@ -26,4 +26,4 @@ O przyjdź i utul nas, rozkochaj nas, miłość nam daj!
 O przyjdź i przemień nas, poprowadź nas i poślij nas!
 
 ## [E] Zakończenie
-O przyjdź!
+O przyjdź! `a`

@@ -93,6 +93,11 @@ ostatnia linia fragmentu :| {x2} `D`
      Notacja polska: dur wielką literą (`C`, `Fis`), moll małą (`a`, `fis`), `H` = B, `B` = B♭,
      dodatki: `7`, `7+`, `9`, `/` (bas lub separator taktu), `|`, `( )` = akord opcjonalny.
      Wiersz zawierający wyłącznie `` `akordy` `` = linia instrumentalna (bez tekstu).
+     **Dziedziczenie akordów:** sekcja, w której żaden wers nie ma akordów, przejmuje je
+     z pierwszej sekcji tego samego typu, która je ma (`V2`, `V3`… od `V1`; `C2` od `C`),
+     wers po wersie według pozycji — tak jak w śpiewniku, gdzie kolejne zwrotki śpiewa się
+     na tę samą melodię. Nie kopiujemy akordów do takich sekcji. Pojedynczy wers bez
+     akordów w sekcji, która akordy ma, niczego nie dziedziczy.
    - `{xN}` — ten wers (lub fragment `|: … :|`) śpiewa się N razy.
    - `|:` … `:|` — początek i koniec fragmentu powtarzanego obejmującego kilka wersów;
      `{xN}` stoi po `:|`.
@@ -106,6 +111,8 @@ ostatnia linia fragmentu :| {x2} `D`
 - Akordy wersu: `` \s*`(?<akordy>[^`]*)`\s*$ ``
 - Powtórzenie wersu: `\s*\{x(?<n>\d+)\}\s*$` (po usunięciu akordów)
 - Repetycja wielowersowa: prefiks `|: `, sufiks ` :|`.
+- Tryb bez akordów: usunąć `` `akordy` `` z wersów i pominąć linie instrumentalne.
+- Tryb z akordami: dla sekcji bez akordów zastosować dziedziczenie (patrz wyżej).
 
 ## Konwencje edycji
 

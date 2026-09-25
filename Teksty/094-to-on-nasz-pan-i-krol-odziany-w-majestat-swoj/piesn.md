@@ -17,9 +17,9 @@ Okrywa światłość Go, ucieka ciemność i zło
 i drży na Jego głos, i drży na Jego głos
 
 ## [C] Refren
-Jak wielki jest Bóg, śpiewaj ze mną,
-wielki jest Bóg, niech wszyscy wiedzą
-wielki jest nasz Bóg
+Jak wielki jest Bóg, śpiewaj ze mną, `G e`
+wielki jest Bóg, niech wszyscy wiedzą `e C`
+wielki jest nasz Bóg `D G`
 
 ## [V2] Zwrotka 2
 On czas w swej dłoni ma, od wieków na
@@ -29,6 +29,6 @@ Jedyny w Trójcy Bóg, Ojciec, Syn i Duch,
 Barankiem jest i lwem, Barankiem jest i lwem
 
 ## [B] Mostek
-Na wieki godzien jest
-przyjąć chwałę, moc i cześć, ogłaszać chcę
-jak wielki jest Bóg.
+Na wieki godzien jest `G`
+przyjąć chwałę, moc i cześć, ogłaszać chcę `e C`
+jak wielki jest Bóg. `D`

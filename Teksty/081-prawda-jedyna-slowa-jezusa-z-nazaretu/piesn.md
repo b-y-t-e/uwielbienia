@@ -17,8 +17,8 @@ Aby niewinnie cierpiąc zmarł za nasze grzechy
 i w pohańbieniu przyjął winy wszystkich nas.
 
 ## [C] Refren
-Dzięki Ci Boże mój za ten krzyż, który Jezus
-cierpiał za mnie, Jezus cierpiał za mnie.
+Dzięki Ci Boże mój za ten krzyż, który Jezus `F C a e F`
+cierpiał za mnie, Jezus cierpiał za mnie. `C a e`
 
 ## [V2] Zwrotka 2
 Uwierz w Jezusa przecież On za ciebie umarł
