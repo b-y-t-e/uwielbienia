@@ -26,4 +26,4 @@ __pycache__/
 
 # Wydania i dane logowania
 release/
-deploy.env
+.env

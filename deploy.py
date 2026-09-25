@@ -9,7 +9,7 @@ Wydanie nowej wersji:
      buduje aplikacje Windows i Linux i wystawia je jako GitHub Release.
 
 Dane FTP ze zmiennych środowiskowych FTP_HOST, FTP_USER, FTP_PASS (opcjonalnie FTP_DIR)
-albo z pliku deploy.env w głównym folderze (KLUCZ=wartość w wierszu; plik jest w .gitignore).
+albo z pliku .env w głównym folderze (KLUCZ=wartość w wierszu; plik jest w .gitignore).
 
 Użycie:
   python deploy.py              pełne wydanie
@@ -44,7 +44,7 @@ def git_output(*args: str) -> str:
 
 
 def load_env_file() -> None:
-    env_file = ROOT / "deploy.env"
+    env_file = ROOT / ".env"
     if not env_file.exists():
         return
     for line in env_file.read_text(encoding="utf-8").splitlines():
@@ -66,7 +66,7 @@ def bump_version() -> str:
 def require_ftp_settings() -> None:
     missing = [k for k in ("FTP_HOST", "FTP_USER", "FTP_PASS") if not os.environ.get(k)]
     if missing:
-        sys.exit(f"Brak danych FTP: {', '.join(missing)} — ustaw zmienne środowiskowe albo utwórz deploy.env "
+        sys.exit(f"Brak danych FTP: {', '.join(missing)} — ustaw zmienne środowiskowe albo utwórz .env "
                  "(albo użyj --no-site).")
 
 

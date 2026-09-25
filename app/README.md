@@ -58,7 +58,7 @@ python deploy.py --site-only   # tylko strona pilota
 
 `deploy.py` podbija `version.txt`, a wypchnięty tag uruchamia `.github/workflows/release.yml`,
 który tym samym `build.py` buduje aplikacje i wystawia je na GitHubie. Dane FTP: zmienne
-`FTP_HOST`, `FTP_USER`, `FTP_PASS` albo plik `deploy.env` w głównym folderze (w `.gitignore`).
+`FTP_HOST`, `FTP_USER`, `FTP_PASS` albo plik `.env` w głównym folderze (w `.gitignore`).
 
 ## Strona pilota
 
