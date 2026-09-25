@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Tailcat.Link" Version="0.5.3" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Uwielbienia.Core\Uwielbienia.Core.csproj" />
+  </ItemGroup>
+</Project>

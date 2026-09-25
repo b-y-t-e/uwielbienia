@@ -15,6 +15,9 @@ Teksty/
 tools/
   import_spiewnik.py   # jednorazowy import z PDF (PyMuPDF) — NIE uruchamiać ponownie
   validate.py          # walidator formatu: python tools/validate.py
+app/                   # aplikacja rzutnika (Avalonia, .NET 10) + strona pilota — patrz app/README.md
+docs/
+  projekt-aplikacji.md # scenariusze, architektura i roadmapa aplikacji
 ```
 
 - Każda pieśń = osobny folder `NNN-slug`, gdzie `NNN` to numer w śpiewniku (3 cyfry),
@@ -144,3 +147,15 @@ ostatnia linia fragmentu :| {x2} `D`
 - `tools/import_spiewnik.py` służył do jednorazowego importu — ponowne uruchomienie
   nadpisze wszystkie ręczne poprawki w `Teksty/`.
 - Po każdej zmianie uruchomić `python tools/validate.py` (kod wyjścia 0 = OK).
+
+## Aplikacja (`app/`)
+
+- .NET 10 + Avalonia 12, MVVM (CommunityToolkit.Mvvm), DI w `AppComposition`. Clean Code i SOLID:
+  logika w `Uwielbienia.Core` (bez UI), wszystkie źródła poleceń idą przez `ILiveControl`,
+  wszyscy odbiorcy obrazu słuchają `ILiveStateSource`.
+- Parser pieśni w aplikacji (`MarkdownSongParser`) implementuje reguły z tego pliku — zmiana
+  formatu wymaga zmiany parsera i testów (`dotnet test app`).
+- Pieśni są wbudowane w aplikację przy budowaniu (`Teksty/**/piesn.md`).
+- Po zmianach w UI sprawdzić wygląd: `dotnet run --project app/tools/Uwielbienia.Screenshots`.
+- Strona pilota `app/web/remote` mówi protokołem z `Uwielbienia.Link/RemoteProtocol.cs`;
+  zmiana protokołu = zmiana w obu miejscach.

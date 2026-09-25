@@ -1,0 +1,53 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Uwielbienia.App.ViewModels"
+        xmlns:v="using:Uwielbienia.App.Views"
+        x:Class="Uwielbienia.App.Views.ProjectionWindow"
+        x:DataType="vm:ProjectionViewModel"
+        Title="Uwielbienia — ekran"
+        Background="{Binding Live.Appearance.Background}"
+        WindowDecorations="None"
+        ShowInTaskbar="False">
+  <Panel>
+    <v:SlideView x:Name="Slide"
+                 Slide="{Binding Live.VisibleSlide}"
+                 SlideBackground="{Binding Live.Appearance.Background}"
+                 SlideForeground="{Binding Live.Appearance.Foreground}"
+                 SlideMuted="{Binding Live.Appearance.Muted}" />
+
+    <!-- Tryb jednego urządzenia: dyskretne sterowanie na dole (także dotykiem). -->
+    <StackPanel x:Name="SameScreenBar" IsVisible="False" Orientation="Horizontal" Spacing="8"
+                HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,18" Opacity="0.35">
+      <Button Content="Wstecz" Command="{Binding Live.PreviousCommand}" Focusable="False" />
+      <Button Content="Szukaj pieśni" Click="OnSearchClick" Focusable="False" />
+      <Button Content="Dalej" Command="{Binding Live.NextCommand}" Focusable="False" />
+      <Button Content="Wróć do planu (Esc)" Click="OnExitClick" Focusable="False" />
+    </StackPanel>
+
+    <!-- Szybki wybór pieśni w trakcie śpiewu: tekst zostaje na ekranie, dopóki nie wybierzesz nowej. -->
+    <Border IsVisible="{Binding IsQuickPickOpen}" Background="{DynamicResource ScrimBrush}" Cursor="Arrow">
+      <Border Classes="panel" Width="720" MaxHeight="620" VerticalAlignment="Top" Margin="0,80,0,0">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Classes="caption" Margin="4,0,0,10"
+                     Text="Enter pokazuje od razu, Ctrl+Enter dodaje jako następną, Esc zamyka" />
+          <TextBox x:Name="QuickPickBox" DockPanel.Dock="Top" Classes="search"
+                   Text="{Binding QuickPick.Query}" PlaceholderText="Numer albo słowa pieśni" />
+          <ListBox ItemsSource="{Binding QuickPick.Results}" SelectedItem="{Binding QuickPick.Selected}"
+                   Margin="0,10,0,0" DoubleTapped="OnResultDoubleTapped">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:SongResultViewModel">
+                <Grid ColumnDefinitions="52,*">
+                  <TextBlock Classes="number" Text="{Binding Number}" VerticalAlignment="Center" />
+                  <StackPanel Grid.Column="1">
+                    <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Classes="caption" Text="{Binding FirstLine}" IsVisible="{Binding FirstLine, Converter={x:Static ObjectConverters.IsNotNull}}" TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+    </Border>
+  </Panel>
+</Window>

@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Uwielbienia.App/Uwielbienia.App.csproj" />
+    <Project Path="src/Uwielbienia.Core/Uwielbienia.Core.csproj" />
+    <Project Path="src/Uwielbienia.Desktop/Uwielbienia.Desktop.csproj" />
+    <Project Path="src/Uwielbienia.Link/Uwielbienia.Link.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Uwielbienia.Core.Tests/Uwielbienia.Core.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/Uwielbienia.Screenshots/Uwielbienia.Screenshots.csproj" />
+  </Folder>
+</Solution>

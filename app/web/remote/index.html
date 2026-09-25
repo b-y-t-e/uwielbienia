@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#161B2E">
+  <meta name="color-scheme" content="dark light">
+  <title>Uwielbienia — pilot</title>
+  <link rel="stylesheet" href="app.css">
+  <!-- tweetnacl przed modułami: lib/tailcat/nacl.js bierze go z globalThis.nacl -->
+  <script src="lib/nacl-fast.min.js"></script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <!-- Parowanie: pokazywane, gdy przeglądarka nie zna jeszcze aplikacji -->
+  <main id="pairing" class="screen" hidden>
+    <h1 class="brand">Uwielbienia</h1>
+    <p class="lead">Otwórz w aplikacji na komputerze „Telefon” i zeskanuj kod aparatem. Ta strona połączy się sama.</p>
+    <form id="pairForm" class="pair-form">
+      <label for="codeInput">Albo wklej kod parowania</label>
+      <input id="codeInput" autocomplete="off" spellcheck="false" placeholder="kod z okna „Telefon”">
+      <button type="submit" class="primary">Połącz</button>
+    </form>
+    <p id="pairError" class="error" role="alert"></p>
+  </main>
+
+  <!-- Pilot -->
+  <main id="remote" class="screen" hidden>
+    <header class="topbar">
+      <span id="status" class="status" data-state="connecting">Łączenie…</span>
+      <span id="planName" class="plan-name"></span>
+      <button id="toDisplay" class="quiet">Ekran</button>
+    </header>
+
+    <section class="now" aria-live="polite">
+      <div class="now-title"><span id="nowNumber" class="number"></span><span id="nowTitle">Ekran jest pusty</span></div>
+      <div id="nowLabel" class="now-label"></div>
+      <div id="nowLines" class="now-lines"></div>
+      <div id="blankBadge" class="badge" hidden>Czarny ekran</div>
+    </section>
+
+    <div id="slides" class="slides" role="list"></div>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-tab="plan">Plan</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="search">Szukaj</button>
+    </nav>
+
+    <section id="tab-plan" class="tab-panel">
+      <ol id="planList" class="list"></ol>
+      <p id="planEmpty" class="hint" hidden>Plan jest pusty. Użyj „Szukaj”.</p>
+    </section>
+
+    <section id="tab-search" class="tab-panel" hidden>
+      <input id="searchInput" type="search" inputmode="search" autocomplete="off" placeholder="Numer albo słowa pieśni">
+      <ol id="searchList" class="list"></ol>
+    </section>
+
+    <footer class="controls">
+      <button id="prev" class="big">Wstecz</button>
+      <button id="blank" class="big">Czarny</button>
+      <button id="next" class="big primary">Dalej</button>
+    </footer>
+  </main>
+
+  <!-- Ekran: przeglądarka jako drugi ekran (np. drugi komputer podłączony do rzutnika) -->
+  <main id="display" class="display" hidden>
+    <div id="displayLines" class="display-lines"></div>
+    <button id="leaveDisplay" class="display-exit">Wróć do pilota</button>
+  </main>
+</body>
+</html>

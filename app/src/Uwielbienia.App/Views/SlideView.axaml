@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:p="using:Uwielbienia.Core.Presentation"
+             xmlns:v="using:Uwielbienia.App.Views"
+             x:Class="Uwielbienia.App.Views.SlideView"
+             x:Name="Root">
+  <!-- Slajd renderowany na wirtualnym płótnie 1920×1080 i skalowany w całości:
+       podgląd u operatora wygląda dokładnie jak ekran projekcji, tylko mniejszy. -->
+  <Viewbox Stretch="Uniform">
+    <Border Width="1920" Height="1080" Background="{Binding #Root.SlideBackground}">
+      <TransitioningContentControl Content="{Binding #Root.Slide}">
+        <TransitioningContentControl.PageTransition>
+          <CrossFade Duration="0:0:0.15" />
+        </TransitioningContentControl.PageTransition>
+        <TransitioningContentControl.ContentTemplate>
+          <DataTemplate x:DataType="p:Slide">
+            <Viewbox StretchDirection="DownOnly" Margin="140,90" VerticalAlignment="Center">
+              <ItemsControl ItemsSource="{Binding Lines}" Width="1640">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="p:SlideLine">
+                    <TextBlock TextAlignment="Center" TextWrapping="Wrap" FontSize="84" FontWeight="Medium"
+                               LineHeight="104" Margin="0,4"
+                               Foreground="{Binding #Root.SlideForeground}">
+                      <Run Text="{Binding Text}" /><Run Text="{Binding Repeat, Converter={x:Static v:SlideConverters.RepeatSuffix}}"
+                           FontSize="54" Foreground="{Binding #Root.SlideMuted}" />
+                    </TextBlock>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </Viewbox>
+          </DataTemplate>
+        </TransitioningContentControl.ContentTemplate>
+      </TransitioningContentControl>
+    </Border>
+  </Viewbox>
+</UserControl>

@@ -1,0 +1,293 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Uwielbienia.App.ViewModels"
+        xmlns:v="using:Uwielbienia.App.Views"
+        xmlns:p="using:Uwielbienia.Core.Presentation"
+        x:Class="Uwielbienia.App.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="Uwielbienia"
+        Width="1440" Height="900" MinWidth="1000" MinHeight="640"
+        WindowStartupLocation="CenterScreen">
+  <Panel>
+    <DockPanel Margin="16">
+
+      <!-- Pasek górny: plan, stan projekcji, telefon, wygląd -->
+      <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="4,0,4,14">
+        <Button Classes="quiet" Command="{Binding Plans.ShowCommand}" ToolTip.Tip="Plany: otwórz, utwórz, użyj ponownie">
+          <StackPanel Orientation="Horizontal" Spacing="12">
+            <TextBlock Classes="songTitle" Text="{Binding Plan.Name}" />
+            <TextBlock Classes="caption" Text="{Binding Plan.DateText}" VerticalAlignment="Center" IsVisible="{Binding Plan.DateText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+            <TextBlock Classes="caption" Text="▾" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+          <Button Command="{Binding ToggleProjectionCommand}" ToolTip.Tip="F5">
+            <TextBlock Text="{Binding ProjectionStatus}" />
+          </Button>
+          <Button Command="{Binding Remote.ShowCommand}" ToolTip.Tip="Sparuj telefon jako pilota albo przeglądarkę jako ekran">
+            <TextBlock Text="{Binding Remote.BadgeText}" />
+          </Button>
+          <Button Command="{Binding ToggleThemeCommand}">
+            <Panel>
+              <TextBlock Text="Jasny wygląd" IsVisible="{Binding IsDarkTheme}" />
+              <TextBlock Text="Ciemny wygląd" IsVisible="{Binding !IsDarkTheme}" />
+            </Panel>
+          </Button>
+          <Button Command="{Binding ToggleLivePanelCommand}">
+            <Panel>
+              <TextBlock Text="Ukryj podgląd ekranu" IsVisible="{Binding IsLivePanelVisible}" />
+              <TextBlock Text="Pokaż podgląd ekranu" IsVisible="{Binding !IsLivePanelVisible}" />
+            </Panel>
+          </Button>
+        </StackPanel>
+      </Grid>
+
+      <Grid x:Name="Columns" ColumnDefinitions="340,16,*,16,460">
+
+        <!-- PLAN -->
+        <Border Classes="panel" Padding="10,14">
+          <DockPanel>
+            <TextBlock DockPanel.Dock="Top" Classes="heading" Text="Plan" Margin="8,0,0,10" />
+            <TextBlock DockPanel.Dock="Top" Classes="caption" TextWrapping="Wrap" Margin="8,0"
+                       IsVisible="{Binding Plan.IsEmpty}"
+                       Text="Plan jest pusty. Wpisz numer lub tytuł pieśni i wybierz „Na koniec planu”." />
+            <ListBox ItemsSource="{Binding Plan.Items}" SelectedItem="{Binding Plan.Selected}">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:PlanItemViewModel">
+                  <Grid ColumnDefinitions="4,40,*,Auto">
+                    <Border Background="{DynamicResource CandleBrush}" CornerRadius="2" IsVisible="{Binding IsLive}" Margin="0,2" />
+                    <TextBlock Grid.Column="1" Classes="number" Text="{Binding Number}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,12,0" />
+                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Classes="caption" Text="{Binding Arrangement}" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="3" Orientation="Horizontal" Classes="rowActions">
+                      <Button Classes="quiet" Content="▶" ToolTip.Tip="Pokaż na ekranie"
+                              Command="{Binding $parent[ListBox].((vm:MainViewModel)DataContext).Plan.ShowLiveCommand}" CommandParameter="{Binding}" />
+                      <Button Classes="quiet" Content="↑" ToolTip.Tip="Wyżej"
+                              Command="{Binding $parent[ListBox].((vm:MainViewModel)DataContext).Plan.MoveUpCommand}" CommandParameter="{Binding}" />
+                      <Button Classes="quiet" Content="↓" ToolTip.Tip="Niżej"
+                              Command="{Binding $parent[ListBox].((vm:MainViewModel)DataContext).Plan.MoveDownCommand}" CommandParameter="{Binding}" />
+                      <Button Classes="quiet" Content="✕" ToolTip.Tip="Usuń z planu"
+                              Command="{Binding $parent[ListBox].((vm:MainViewModel)DataContext).Plan.RemoveCommand}" CommandParameter="{Binding}" />
+                    </StackPanel>
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </DockPanel>
+        </Border>
+
+        <!-- ZARZĄDZANIE: wyszukiwarka + podgląd -->
+        <Grid Grid.Column="2" RowDefinitions="Auto,Auto,*">
+          <TextBox x:Name="SearchBox" Classes="search" Text="{Binding Search.Query}"
+                   PlaceholderText="Szukaj pieśni: numer albo słowa (po prostu zacznij pisać)" />
+
+          <Border Grid.Row="1" Classes="panel" Padding="8" Margin="0,10,0,0" MaxHeight="300"
+                  IsVisible="{Binding Search.HasQuery}">
+            <DockPanel>
+              <TextBlock DockPanel.Dock="Top" Classes="caption" Margin="8,2,0,6"
+                         Text="Enter pokazuje od razu i wstawia za bieżącą, Ctrl+Enter dodaje jako następną, Esc czyści" />
+              <ListBox ItemsSource="{Binding Search.Results}" SelectedItem="{Binding Search.Selected}">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:SongResultViewModel">
+                    <Grid ColumnDefinitions="48,*,Auto">
+                      <TextBlock Classes="number" Text="{Binding Number}" VerticalAlignment="Center" />
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Classes="caption" Text="{Binding FirstLine}" TextTrimming="CharacterEllipsis"
+                                   IsVisible="{Binding FirstLine, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                      </StackPanel>
+                      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+                        <Button Classes="quiet" Content="Pokaż teraz"
+                                Command="{Binding $parent[ListBox].((vm:MainViewModel)DataContext).Search.ShowNowCommand}" CommandParameter="{Binding}" />
+                        <Button Classes="quiet" Content="Jako następna"
+                                Command="{Binding $parent[ListBox].((vm:MainViewModel)DataContext).Search.AddAsNextCommand}" CommandParameter="{Binding}" />
+                        <Button Classes="quiet" Content="Na koniec planu"
+                                Command="{Binding $parent[ListBox].((vm:MainViewModel)DataContext).Search.AddToEndCommand}" CommandParameter="{Binding}" />
+                      </StackPanel>
+                    </Grid>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </DockPanel>
+          </Border>
+
+          <Border Grid.Row="2" Classes="panel" Margin="0,10,0,0" Padding="20,18">
+            <Panel>
+              <TextBlock Classes="caption" FontSize="16" TextWrapping="Wrap" HorizontalAlignment="Center" VerticalAlignment="Center"
+                         IsVisible="{Binding !Preview.HasSong}" TextAlignment="Center"
+                         Text="Wybierz pieśń z planu albo wpisz jej numer lub tytuł.&#10;Podgląd nie zmienia tego, co widzi sala." />
+              <DockPanel IsVisible="{Binding Preview.HasSong}">
+                <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*">
+                  <TextBlock FontSize="24" FontWeight="Bold" Foreground="{DynamicResource MutedBrush}" Text="{Binding Preview.Number}" Margin="0,2,14,0" VerticalAlignment="Top" />
+                  <StackPanel Grid.Column="1">
+                    <TextBlock Classes="songTitle" Text="{Binding Preview.Title}" TextWrapping="Wrap" TextTrimming="None" />
+                    <TextBlock Classes="caption" Text="{Binding Preview.Category}" />
+                  </StackPanel>
+                </Grid>
+                <WrapPanel DockPanel.Dock="Top" Margin="0,14,0,0">
+                  <Button Classes="primary" Content="Pokaż na ekranie" ToolTip.Tip="Enter" Margin="0,0,8,0" Command="{Binding Preview.ShowLiveCommand}" />
+                  <Button Content="Jako następna" Margin="0,0,8,0" Command="{Binding Preview.AddAsNextCommand}" IsVisible="{Binding !Preview.IsFromPlan}" />
+                  <Button Content="Na koniec planu" Command="{Binding Preview.AddToEndCommand}" IsVisible="{Binding !Preview.IsFromPlan}" />
+                </WrapPanel>
+
+                <DockPanel DockPanel.Dock="Top" Margin="0,14,0,6">
+                  <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="4" VerticalAlignment="Top">
+                    <Button Classes="quiet" Content="Wszystkie części" Command="{Binding Preview.ResetArrangementCommand}" />
+                    <ToggleButton Classes="chip" IsChecked="{Binding ShowChords, Mode=OneWay}" Command="{Binding ToggleChordsCommand}" Content="Akordy" />
+                  </StackPanel>
+                  <ItemsControl ItemsSource="{Binding Preview.Chips}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:ArrangementChipViewModel">
+                        <ToggleButton Classes="chip" IsChecked="{Binding IsIncluded}" Content="{Binding ShortName}" ToolTip.Tip="{Binding Name}" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </DockPanel>
+
+                <ScrollViewer>
+                  <ItemsControl ItemsSource="{Binding Preview.Slides}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate><UniformGrid Columns="2" /></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:SlideTabViewModel">
+                        <Button Classes="slideTile" HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="0,0,12,12" Padding="14,12"
+                                HorizontalContentAlignment="Stretch" VerticalContentAlignment="Top"
+                                Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).Preview.ShowSlideLiveCommand}"
+                                CommandParameter="{Binding}" ToolTip.Tip="Pokaż ten slajd na ekranie">
+                          <StackPanel Spacing="6">
+                            <TextBlock Classes="caption" FontWeight="SemiBold" Text="{Binding Label}" />
+                            <ItemsControl ItemsSource="{Binding Slide.Lines}">
+                              <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="p:SlideLine">
+                                  <StackPanel>
+                                    <TextBlock Classes="chords" Text="{Binding Chords}"
+                                               IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).ShowChords}" />
+                                    <TextBlock Text="{Binding Text}" TextWrapping="Wrap" FontSize="15" />
+                                  </StackPanel>
+                                </DataTemplate>
+                              </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                          </StackPanel>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </DockPanel>
+            </Panel>
+          </Border>
+        </Grid>
+
+        <!-- NA EKRANIE: zawsze dokładnie to, co widzi sala -->
+        <Border x:Name="LiveColumn" Grid.Column="4" Classes="panel" IsVisible="{Binding IsLivePanelVisible}">
+          <DockPanel>
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+              <TextBlock Classes="heading" Text="Na ekranie" />
+              <Border Grid.Column="1" Background="{DynamicResource CandleSoftBrush}" CornerRadius="999" Padding="10,3"
+                      IsVisible="{Binding Live.IsBlank}">
+                <TextBlock Text="Czarny ekran" FontWeight="SemiBold" FontSize="13" />
+              </Border>
+            </Grid>
+
+            <Border DockPanel.Dock="Top" CornerRadius="8" ClipToBounds="True" BorderThickness="2"
+                    BorderBrush="{DynamicResource CandleBrush}">
+              <v:SlideView Slide="{Binding Live.VisibleSlide}"
+                           SlideBackground="{Binding Live.Appearance.Background}"
+                           SlideForeground="{Binding Live.Appearance.Foreground}"
+                           SlideMuted="{Binding Live.Appearance.Muted}" />
+            </Border>
+
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" Margin="0,12,0,0">
+              <TextBlock Classes="number" Text="{Binding Live.Number}" Margin="0,0,10,0" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" FontSize="17" FontWeight="SemiBold" Text="{Binding Live.Title}" TextTrimming="CharacterEllipsis" />
+            </Grid>
+            <TextBlock DockPanel.Dock="Top" Classes="caption" Text="{Binding Live.NextText}" Margin="0,2,0,0" />
+
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,8,*,8,*" Margin="0,12,0,0">
+              <Button Classes="big" Content="Wstecz" Command="{Binding Live.PreviousCommand}" ToolTip.Tip="Backspace, ←, PageUp" />
+              <Button Grid.Column="2" Classes="big" Content="Czarny ekran" Command="{Binding Live.ToggleBlankCommand}" ToolTip.Tip="B" />
+              <Button Grid.Column="4" Classes="big primary" Content="Dalej" Command="{Binding Live.NextCommand}" ToolTip.Tip="Spacja, →, PageDown" />
+            </Grid>
+
+            <ScrollViewer Margin="0,12,0,0">
+              <StackPanel Spacing="12">
+                <ItemsControl ItemsSource="{Binding Live.Slides}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:SlideTabViewModel">
+                      <Button Classes="liveTab" Classes.current="{Binding IsCurrent}" HorizontalAlignment="Stretch"
+                              HorizontalContentAlignment="Left" Margin="0,0,0,4"
+                              Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).Live.GoToCommand}"
+                              CommandParameter="{Binding}">
+                        <StackPanel>
+                          <TextBlock Classes="caption" FontWeight="SemiBold" Text="{Binding Label}" />
+                          <TextBlock Text="{Binding FirstLine}" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Border Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="10" Padding="14,10"
+                        IsVisible="{Binding ShowChords}">
+                  <StackPanel>
+                    <TextBlock Classes="caption" Text="Akordy bieżącego slajdu" Margin="0,0,0,6" />
+                    <ItemsControl ItemsSource="{Binding Live.ChordLines}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="p:SlideLine">
+                          <StackPanel Margin="0,0,0,4">
+                            <TextBlock Classes="chords" Text="{Binding Chords}" />
+                            <TextBlock Text="{Binding Text}" TextWrapping="Wrap" FontSize="15" />
+                          </StackPanel>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Border>
+
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Button Classes="quiet" Content="Zdejmij pieśń z ekranu" Command="{Binding Live.ClearCommand}" />
+                  <Button Classes="quiet" Command="{Binding ToggleProjectionThemeCommand}">
+                    <Panel>
+                      <TextBlock Text="Ekran: jasne tło" IsVisible="{Binding IsProjectionDark}" />
+                      <TextBlock Text="Ekran: czarne tło" IsVisible="{Binding !IsProjectionDark}" />
+                    </Panel>
+                  </Button>
+                </StackPanel>
+              </StackPanel>
+            </ScrollViewer>
+          </DockPanel>
+        </Border>
+      </Grid>
+    </DockPanel>
+
+    <v:PlansOverlay DataContext="{Binding Plans}" IsVisible="{Binding IsOpen}" />
+    <v:RemoteOverlay DataContext="{Binding Remote}" IsVisible="{Binding IsOpen}" />
+  </Panel>
+
+  <Window.Styles>
+    <Style Selector="Button.slideTile">
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+      <Setter Property="CornerRadius" Value="12" />
+    </Style>
+    <Style Selector="Button.liveTab">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Padding" Value="12,8" />
+    </Style>
+    <Style Selector="Button.liveTab.current">
+      <Setter Property="Background" Value="{DynamicResource CandleSoftBrush}" />
+    </Style>
+    <Style Selector="StackPanel.rowActions">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="ListBoxItem:pointerover StackPanel.rowActions">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+  </Window.Styles>
+</Window>

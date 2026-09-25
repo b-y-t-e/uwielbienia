@@ -1,0 +1,41 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Nocny granat + światło świecy. „Candle” to jedyny akcent: oznacza to, co jest na ekranie. -->
+  <ResourceDictionary.ThemeDictionaries>
+    <ResourceDictionary x:Key="Dark">
+      <Color x:Key="InkColor">#161B2E</Color>
+      <SolidColorBrush x:Key="InkBrush" Color="#161B2E" />
+      <SolidColorBrush x:Key="SurfaceBrush" Color="#1F2640" />
+      <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#283052" />
+      <SolidColorBrush x:Key="HairlineBrush" Color="#323B60" />
+      <SolidColorBrush x:Key="TextBrush" Color="#E9ECF5" />
+      <SolidColorBrush x:Key="MutedBrush" Color="#8E97B3" />
+      <SolidColorBrush x:Key="CandleBrush" Color="#F2B84B" />
+      <SolidColorBrush x:Key="CandleSoftBrush" Color="#33F2B84B" />
+      <SolidColorBrush x:Key="OnCandleBrush" Color="#1B1608" />
+      <SolidColorBrush x:Key="ChordBrush" Color="#7FB6E8" />
+      <SolidColorBrush x:Key="SelectionBrush" Color="#2E3861" />
+      <SolidColorBrush x:Key="ScrimBrush" Color="#B30B0E1A" />
+      <Color x:Key="SystemAccentColor">#F2B84B</Color>
+    </ResourceDictionary>
+    <ResourceDictionary x:Key="Light">
+      <Color x:Key="InkColor">#F6F7FB</Color>
+      <SolidColorBrush x:Key="InkBrush" Color="#F6F7FB" />
+      <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="#EEF0F7" />
+      <SolidColorBrush x:Key="HairlineBrush" Color="#DCE0EC" />
+      <SolidColorBrush x:Key="TextBrush" Color="#1B2138" />
+      <SolidColorBrush x:Key="MutedBrush" Color="#5E6784" />
+      <SolidColorBrush x:Key="CandleBrush" Color="#B7791F" />
+      <SolidColorBrush x:Key="CandleSoftBrush" Color="#26B7791F" />
+      <SolidColorBrush x:Key="OnCandleBrush" Color="#FFFFFF" />
+      <SolidColorBrush x:Key="ChordBrush" Color="#2F6DB5" />
+      <SolidColorBrush x:Key="SelectionBrush" Color="#E3E7F4" />
+      <SolidColorBrush x:Key="ScrimBrush" Color="#991B2138" />
+      <Color x:Key="SystemAccentColor">#B7791F</Color>
+    </ResourceDictionary>
+  </ResourceDictionary.ThemeDictionaries>
+
+  <FontFamily x:Key="UiFont">avares://Uwielbienia.App/Assets/Fonts#Atkinson Hyperlegible Next</FontFamily>
+  <FontFamily x:Key="TitleFont">avares://Uwielbienia.App/Assets/Fonts#Literata</FontFamily>
+</ResourceDictionary>

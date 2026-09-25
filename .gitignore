@@ -1,2 +1,25 @@
 # mTiles workspace state
 .mtiles/
+
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.idea/
+.vscode/
+TestResults/
+publish/
+artifacts/
+
+# Node / web
+node_modules/
+app/web/remote/derpmap.json
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Python
+__pycache__/
