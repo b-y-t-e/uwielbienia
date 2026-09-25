@@ -13,11 +13,17 @@ Teksty/
     piesn.md
   ...
 tools/
-  import_spiewnik.py   # jednorazowy import z PDF (PyMuPDF)
+  import_spiewnik.py   # jednorazowy import z PDF (PyMuPDF) — NIE uruchamiać ponownie
+  validate.py          # walidator formatu: python tools/validate.py
 ```
 
 - Każda pieśń = osobny folder `NNN-slug`, gdzie `NNN` to numer w śpiewniku (3 cyfry),
   a `slug` to tytuł bez polskich znaków, małymi literami, słowa rozdzielone `-`.
+  Po zmianie `tytul` zmieniamy też `slug` (`git mv`).
+- Numery 001–136 odpowiadają numeracji PDF. PDF ma dwie pieśni o numerze 116 — obie
+  zachowują `numer: 116` (walidator zgłasza to tylko jako uwagę).
+- Pieśni spoza numeracji PDF (np. wydzielone z błędnie sklejonej pozycji) dostają kolejny
+  wolny numer (137, 138…); w pliku nie zmieniamy numerów istniejących pieśni.
 - Plik z tekstem ma zawsze nazwę `piesn.md`. W folderze mogą w przyszłości pojawić się
   inne pliki (nuty, audio), aplikacja czyta tylko `piesn.md`.
 
@@ -37,7 +43,8 @@ tools/
 | `E`    | Koda / Zakończenie      | Ending / Outro         | Zamknięcie pieśni |
 | `O`    | Inne                    | Other                  | Część, której nie da się sklasyfikować |
 
-Kody numerowane (`V`, `C`, `B`) przyjmują sufiks liczbowy od 1 (`C` ≡ `C1`, `B` ≡ `B1`).
+`V` zawsze ma numer (`V1`, `V2`…). `C`, `B`, `PC`, `INT`, `O` mogą mieć sufiks liczbowy,
+gdy w pieśni jest kilka różnych takich części (`C` ≡ `C1`, `C2`…). `I`, `FC`, `T`, `E` — bez numeru.
 
 ## Format pliku `piesn.md`
 
@@ -49,7 +56,7 @@ kategoria: "Pieśni Maryjne"
 numer_zrodlowy: 1069
 tonacja: "G"
 kolejnosc: [V1, C, V2, C]
-zrodlo: "spiewnik_17_08_10.pdf"
+zrodlo: "20260925-073507-spiewnik_17_08_10.pdf"
 ---
 
 # Maryjo, śliczna Pani
@@ -76,7 +83,7 @@ ostatnia linia fragmentu :| {x2} `D`
 | `numer_zrodlowy` | int \| `null`   | Numer pomocniczy z PDF (np. `1069`) — numer w innym śpiewniku/bazie |
 | `tonacja`        | string \| `null`| Pierwszy akord pieśni (przybliżenie tonacji) |
 | `kolejnosc`      | lista kodów     | Kolejność wykonania (arrangement); kody muszą istnieć jako sekcje |
-| `zrodlo`         | string          | Plik źródłowy |
+| `zrodlo`         | string          | Plik źródłowy (PDF, z którego pochodzi pieśń) |
 
 ### Treść
 
@@ -90,19 +97,23 @@ ostatnia linia fragmentu :| {x2} `D`
    [|: ]tekst[ :|][ {xN}][ `akordy`]
    ```
    - `` `akordy` `` — akordy dla wersu, na końcu linii w backtickach, rozdzielone spacjami.
-     Notacja polska: dur wielką literą (`C`, `Fis`), moll małą (`a`, `fis`), `H` = B, `B` = B♭,
-     dodatki: `7`, `7+`, `9`, `/` (bas lub separator taktu), `|`, `( )` = akord opcjonalny.
+     Notacja polska: dur wielką literą (`C`, `Fis`), moll małą (`a`, `fis`), `H` = B, `B` = B♭
+     (piszemy `B`/`b`, nie `Ais`/`ais`), `Es` = E♭, krzyżyki przez `-is` (`Fis`, `Cis`, `Dis`).
+     Dodatki: `7`, `7+`, `9`, `/` (bas, np. `H/Dis`, lub separator taktu), `|`,
+     `( )` = akord opcjonalny. Nie używamy notacji angielskiej (`Am`, `Bb`, `F#`).
      Wiersz zawierający wyłącznie `` `akordy` `` = linia instrumentalna (bez tekstu).
      **Dziedziczenie akordów:** sekcja, w której żaden wers nie ma akordów, przejmuje je
      z pierwszej sekcji tego samego typu, która je ma (`V2`, `V3`… od `V1`; `C2` od `C`),
      wers po wersie według pozycji — tak jak w śpiewniku, gdzie kolejne zwrotki śpiewa się
      na tę samą melodię. Nie kopiujemy akordów do takich sekcji. Pojedynczy wers bez
-     akordów w sekcji, która akordy ma, niczego nie dziedziczy.
+     akordów w sekcji, która akordy ma, niczego nie dziedziczy i jest wyświetlany bez
+     akordów — w źródle PDF akordy przy wersie często obejmują też kolejne wersy (ciąg
+     harmoniczny), więc w trybie z akordami taki wers pokazujemy po prostu bez akordów.
    - `{xN}` — ten wers (lub fragment `|: … :|`) śpiewa się N razy.
    - `|:` … `:|` — początek i koniec fragmentu powtarzanego obejmującego kilka wersów;
      `{xN}` stoi po `:|`.
 4. `> uwaga` — linia z uwagą wykonawczą (nie jest śpiewana, nie wyświetlać na rzutniku).
-5. Sekcje rozdziela jedna pusta linia.
+5. Sekcje rozdziela jedna pusta linia. Kodowanie UTF-8, końce linii LF (`.gitattributes`).
 
 ### Reguły parsowania (dla aplikacji)
 
@@ -116,7 +127,20 @@ ostatnia linia fragmentu :| {x2} `D`
 
 ## Konwencje edycji
 
-- Tekst zachowuje pisownię ze źródła; poprawiamy tylko oczywiste literówki.
-- Nie usuwać sekcji ani wersów przy edycji — zmieniać kolejność przez `kolejnosc`.
-- Po imporcie z PDF struktura (podział na zwrotki/refreny, `kolejnosc`) jest heurystyczna
-  i wymaga ręcznej weryfikacji — szczególnie sekcje `B`, `FC`, `T`, których PDF nie oznacza.
+- Bazą jest tekst z PDF, zweryfikowany ze źródłami internetowymi (np. giszowiec.org,
+  budowniczy.net, otworzcieserca.pl, spiewnik.wywrota.pl, strony zespołów, oryginał
+  angielski dla tłumaczeń). Przy weryfikacji korzystamy z min. 2 zgodnych źródeł.
+- Gdy słowa w PDF różnią się od zgodnych źródeł — poprawiamy wg źródeł. Literówki i
+  interpunkcję poprawiamy zawsze.
+- Brakujące części (zwrotki, refren, mostek), które PDF pominął, dopisujemy wg źródeł.
+  Akordy dopisujemy tylko ze źródła, przetransponowane do tonacji pliku; bez pewnego
+  źródła zostawiamy sekcję bez akordów (dziedziczenie).
+- Części występujące tylko w jednym źródle (np. lokalne dopiski) nie są dopisywane.
+- Nie usuwamy wersów. Usuwamy tylko: dosłowne duplikaty sekcji (powtórzenie wyraża
+  `kolejnosc`) oraz artefakty importu (dopiski typu „refren”, akordy sklejone z tekstem).
+  Błędnie wydzielone sekcje można scalić, zachowując wszystkie wersy.
+- Struktura (`kolejnosc`, podział na sekcje) ma odzwierciedlać źródła; gdy źródła jej nie
+  podają, przyjmujemy typowy układ (np. `[V1, C, V2, C]`).
+- `tools/import_spiewnik.py` służył do jednorazowego importu — ponowne uruchomienie
+  nadpisze wszystkie ręczne poprawki w `Teksty/`.
+- Po każdej zmianie uruchomić `python tools/validate.py` (kod wyjścia 0 = OK).

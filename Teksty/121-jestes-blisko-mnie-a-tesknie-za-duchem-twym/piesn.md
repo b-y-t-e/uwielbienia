@@ -17,7 +17,7 @@ Przychodzisz jak ciepły wiatr, `G C F D`
 otwieram się i czuję znów, że. `g C D`
 
 ## [C] Refren
-Twoja miłość jak ciepły deszcz. `g Dis F Ais`
-Twoja miłość jak morze gwiazd za dnia, `Ais C`
+Twoja miłość jak ciepły deszcz. `g Es F B`
+Twoja miłość jak morze gwiazd za dnia, `B C`
 Twoja miłość sprawia, że nieskończenie dobry `g D g C F g`
 Święty Duch, ogarnia mnie. {x2} `D A7 D`

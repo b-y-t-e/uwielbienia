@@ -25,6 +25,6 @@ Nasz Bóg jest wielki i tak potężny `cis A`
 Króluje wysoko ponad ziemią `E H`
 chce nas uzdrawiać swoją miłością
 Nasz Bóg nasz Bóg {x2}
-I jeśli Bóg jest z nami `cis A E H/D#`
+I jeśli Bóg jest z nami `cis A E H/Dis`
 to nic nas nie zatrzyma `cis A E H`
 Bo kiedy Bóg jest z nami to kto przeciwko nam {x2}

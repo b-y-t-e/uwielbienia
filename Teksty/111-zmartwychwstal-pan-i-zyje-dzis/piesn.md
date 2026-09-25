@@ -11,9 +11,9 @@ zrodlo: "20260925-073507-spiewnik_17_08_10.pdf"
 # Zmartwychwstał Pan i żyje dziś
 
 ## [C] Refren
-Zmartwychwstał Pan i żyje dziś, `d Ais F`
+Zmartwychwstał Pan i żyje dziś, `d B F`
 blaskiem jaśnieje noc `C`
-Nie umrę, nie lecz będę żył, `d Ais F`
+Nie umrę, nie lecz będę żył, `d B F`
 Pan okazał swą moc `C`
 Krzyż to jest brama Pana, `g d F`
 jeśli chcesz przez nią wejdź `C`

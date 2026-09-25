@@ -11,9 +11,9 @@ zrodlo: "20260925-073507-spiewnik_17_08_10.pdf"
 # Jak ożywczy deszcz Duchu Święty przyjdź
 
 ## [V1] Zwrotka 1
-|: Jak ożywczy deszcz Duchu Święty przyjdź. `F Ais d C`
+|: Jak ożywczy deszcz Duchu Święty przyjdź. `F B d C`
 Dotknij naszych serc, rozpal ognia żar. :| {x2}
 
 ## [V2] Zwrotka 2
-|: Dziś przenikaj nas tchnieniem mocy swej, `g a Ais a (A)`
+|: Dziś przenikaj nas tchnieniem mocy swej, `g a B a (A)`
 bądź nam światłem dnia i nadzieją serc. :| {x2}
