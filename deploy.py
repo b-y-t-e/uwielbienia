@@ -63,10 +63,14 @@ def bump_version() -> str:
     return new_version
 
 
-def upload_site() -> None:
+def require_ftp_settings() -> None:
     missing = [k for k in ("FTP_HOST", "FTP_USER", "FTP_PASS") if not os.environ.get(k)]
     if missing:
-        sys.exit(f"Brak danych FTP: {', '.join(missing)} (zmienne środowiskowe albo deploy.env).")
+        sys.exit(f"Brak danych FTP: {', '.join(missing)} — ustaw zmienne środowiskowe albo utwórz deploy.env "
+                 "(albo użyj --no-site).")
+
+
+def upload_site() -> None:
     target = os.environ.get("FTP_DIR", DEFAULT_FTP_DIR).rstrip("/")
 
     with ftplib.FTP(os.environ["FTP_HOST"], timeout=60) as ftp:
@@ -110,6 +114,9 @@ def main() -> None:
     args = parser.parse_args()
     load_env_file()
 
+    if not args.no_site:
+        require_ftp_settings()
+
     if args.site_only:
         run([sys.executable, str(ROOT / "build.py"), "--no-tests", "--no-apps"])
         upload_site()
@@ -121,12 +128,11 @@ def main() -> None:
     new_version = bump_version()
     try:
         run([sys.executable, str(ROOT / "build.py")])
-    except subprocess.CalledProcessError:
+        if not args.no_site:
+            upload_site()
+    except (subprocess.CalledProcessError, OSError, ftplib.Error) as error:
         run(["git", "checkout", "--", "version.txt"])
-        sys.exit("Budowanie nie powiodło się — wersja nie została zmieniona.")
-
-    if not args.no_site:
-        upload_site()
+        sys.exit(f"Wydanie przerwane ({error}) — wersja nie została zmieniona.")
     release(new_version)
 
 
