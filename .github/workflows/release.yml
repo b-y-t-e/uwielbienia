@@ -1,0 +1,40 @@
+name: Release
+
+# Uruchamiany przez deploy.py: wypchnięty tag vX.Y.Z → budowanie Windows + Linux → GitHub Release.
+# Budowanie robi ten sam build.py co lokalnie, więc wydanie nie różni się od tego, co sprawdzono na komputerze.
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build (testy, Windows, Linux)
+        run: python build.py --no-web
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Uwielbienia ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            release/Uwielbienia-*-win-x64.exe
+            release/Uwielbienia-*-linux-x64.tar.gz

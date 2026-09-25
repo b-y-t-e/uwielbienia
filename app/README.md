@@ -46,21 +46,22 @@ dotnet test app
 dotnet run --project app/tools/Uwielbienia.Screenshots -- <katalog> [light]
 ```
 
-## Publikacja
+## Budowanie i wydanie
+
+Skrypty w głównym folderze repozytorium:
 
 ```
-dotnet publish app/src/Uwielbienia.Desktop -c Release -r win-x64 --self-contained
-dotnet publish app/src/Uwielbienia.Desktop -c Release -r linux-x64 --self-contained
+python build.py        # testy + Windows (.exe) + Linux (.tar.gz) + strona → release/
+python deploy.py       # nowa wersja: build, strona na FTP, tag vX.Y.Z → GitHub Release
+python deploy.py --site-only   # tylko strona pilota
 ```
+
+`deploy.py` podbija `version.txt`, a wypchnięty tag uruchamia `.github/workflows/release.yml`,
+który tym samym `build.py` buduje aplikacje i wystawia je na GitHubie. Dane FTP: zmienne
+`FTP_HOST`, `FTP_USER`, `FTP_PASS` albo plik `deploy.env` w głównym folderze (w `.gitignore`).
 
 ## Strona pilota
 
 Pliki statyczne w `web/remote` (klient tailcat-link i tweetnacl skopiowane do `lib/`, bez kroku
-budowania). Wdrożenie przez FTP — dane logowania tylko ze zmiennych środowiskowych:
-
-```
-FTP_HOST=… FTP_USER=… FTP_PASS=… app/web/deploy.sh
-```
-
-Skrypt pobiera aktualną mapę serwerów pośredniczących (`derpmap.json`), która musi leżeć w tej
-samej domenie co strona.
+budowania). `build.py` dokłada aktualną mapę serwerów pośredniczących (`derpmap.json`), która
+musi leżeć w tej samej domenie co strona.

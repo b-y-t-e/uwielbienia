@@ -15,6 +15,8 @@ Teksty/
 tools/
   import_spiewnik.py   # jednorazowy import z PDF (PyMuPDF) — NIE uruchamiać ponownie
   validate.py          # walidator formatu: python tools/validate.py
+build.py               # buduje aplikacje i stronę do release/
+deploy.py              # wydanie: strona na FTP + tag → GitHub Release (.github/workflows/release.yml)
 app/                   # aplikacja rzutnika (Avalonia, .NET 10) + strona pilota — patrz app/README.md
 docs/
   projekt-aplikacji.md # scenariusze, architektura i roadmapa aplikacji
