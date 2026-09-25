@@ -4,6 +4,8 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>Uwielbienia</AssemblyName>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
+    <Version>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\..\..\version.txt').Trim())</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />

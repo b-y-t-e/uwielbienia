@@ -6,7 +6,7 @@
         x:Class="Uwielbienia.App.Views.MainWindow"
         x:DataType="vm:MainViewModel"
         Title="Uwielbienia"
-        Width="1440" Height="900" MinWidth="1000" MinHeight="640"
+        Width="1280" Height="800" MinWidth="860" MinHeight="540"
         WindowStartupLocation="CenterScreen"
         WindowState="FullScreen">
   <Panel>
@@ -21,6 +21,17 @@
             <TextBlock Classes="caption" Text="▾" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
+
+        <!-- Aktualizacja w kolumnie *, żeby w wąskim oknie zwężała się zamiast wypychać pozostałe przyciski -->
+        <DockPanel Grid.Column="1" Margin="8,0" HorizontalAlignment="Right" IsVisible="{Binding IsUpdateAvailable}">
+          <Button DockPanel.Dock="Right" Classes="primary" Command="{Binding ApplyUpdateCommand}"
+                  ToolTip.Tip="Pobrano nowszą wersję z GitHub — zainstaluj i uruchom ponownie">
+            <TextBlock Text="{Binding UpdateVersion, StringFormat='Aktualizuj do {0}'}" TextTrimming="CharacterEllipsis" />
+          </Button>
+          <TextBlock Classes="caption" VerticalAlignment="Center" Margin="0,0,8,0" Text="{Binding UpdateError}"
+                     MaxWidth="240" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding UpdateError}"
+                     IsVisible="{Binding UpdateError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        </DockPanel>
 
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
           <Button Command="{Binding ToggleProjectionCommand}" ToolTip.Tip="F5">
@@ -44,7 +55,7 @@
         </StackPanel>
       </Grid>
 
-      <Grid x:Name="Columns" ColumnDefinitions="340,16,*,16,460">
+      <Grid x:Name="Columns" ColumnDefinitions="Auto,16,*,16,Auto">
 
         <!-- PLAN -->
         <Border Classes="panel" Padding="10,14">
@@ -211,7 +222,7 @@
             </Grid>
             <TextBlock DockPanel.Dock="Top" Classes="caption" Text="{Binding Live.NextText}" Margin="0,2,0,0" />
 
-            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,8,*,8,*" Margin="0,12,0,0">
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,8,1.5*,8,*" Margin="0,12,0,0">
               <Button Classes="big" Content="Wstecz" Command="{Binding Live.PreviousCommand}" ToolTip.Tip="Backspace, ←, PageUp" />
               <Button Grid.Column="2" Classes="big" Content="Czarny ekran" Command="{Binding Live.ToggleBlankCommand}" ToolTip.Tip="B" />
               <Button Grid.Column="4" Classes="big primary" Content="Dalej" Command="{Binding Live.NextCommand}" ToolTip.Tip="Spacja, →, PageDown" />

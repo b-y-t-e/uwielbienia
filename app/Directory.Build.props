@@ -6,5 +6,7 @@
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AvaloniaVersion>12.1.3</AvaloniaVersion>
+    <!-- vpk w .github/workflows/release.yml czyta tę wersję — musi się zgadzać z biblioteką -->
+    <VelopackVersion>1.2.158</VelopackVersion>
   </PropertyGroup>
 </Project>

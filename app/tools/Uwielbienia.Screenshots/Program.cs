@@ -50,6 +50,12 @@ window.Height = 960;
 window.Show();
 Save(window, "operator");
 
+window.Width = 1180;
+window.Height = 720;
+Save(window, "operator-waskie");
+window.Width = 1600;
+window.Height = 960;
+
 main.Search.Query = "duch";
 Save(window, "operator-szukaj");
 main.Search.Clear();

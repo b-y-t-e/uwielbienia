@@ -60,6 +60,11 @@ python deploy.py --site-only   # tylko strona pilota
 który tym samym `build.py` buduje aplikacje i wystawia je na GitHubie. Dane FTP: zmienne
 `FTP_HOST`, `FTP_USER`, `FTP_PASS` albo plik `.env` w głównym folderze (w `.gitignore`).
 
+## Aktualizacje (Windows)
+
+Instaluj wydanie przez `Uwielbienia-win-Setup.exe` z GitHub Releases. Tylko ta instalacja
+automatycznie sprawdza, pobiera i proponuje nowsze wersje z GitHub.
+
 ## Strona pilota
 
 Pliki statyczne w `web/remote` (klient tailcat-link i tweetnacl skopiowane do `lib/`, bez kroku

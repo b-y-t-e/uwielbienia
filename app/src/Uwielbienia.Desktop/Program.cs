@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Media;
+using Velopack;
 
 namespace Uwielbienia.Desktop;
 
@@ -7,8 +8,11 @@ internal static class Program
 {
     // Nie używać Avalonii ani kodu zależnego od SynchronizationContext przed wywołaniem AppMain.
     [STAThread]
-    public static void Main(string[] args) =>
+    public static void Main(string[] args)
+    {
+        VelopackApp.Build().Run();
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+    }
 
     // Używane także przez podgląd XAML w IDE.
     public static AppBuilder BuildAvaloniaApp() =>

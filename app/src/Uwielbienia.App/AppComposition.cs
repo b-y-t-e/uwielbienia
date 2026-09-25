@@ -6,6 +6,7 @@ using Uwielbienia.Core;
 using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Presentation;
 using Uwielbienia.Core.Songs;
+using Uwielbienia.Core.Updates;
 using Uwielbienia.Link;
 
 namespace Uwielbienia.App;
@@ -20,6 +21,10 @@ public static class AppComposition
         // ustawienia i ścieżki
         services.AddSingleton(paths);
         services.AddSingleton<ISettingsStore, JsonSettingsStore>();
+        services.AddSingleton<IApplicationShutdown, DesktopApplicationShutdown>();
+        services.AddSingleton<IReleaseFeed, VelopackReleaseFeed>();
+        services.AddSingleton<IUpdateLog, FileUpdateLog>();
+        services.AddSingleton<IUpdateService, UpdateService>();
 
         // pieśni
         services.AddSingleton<ISongParser, MarkdownSongParser>();

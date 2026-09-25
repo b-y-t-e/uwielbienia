@@ -34,6 +34,8 @@ public sealed class AppPaths
     public string LinkState => Path.Combine(Root, "polaczenia");
 
     public string SettingsFile => Path.Combine(Root, "ustawienia.json");
+
+    public string UpdateLogFile => Path.Combine(Root, "aktualizacje.log");
 }
 
 public interface ISettingsStore

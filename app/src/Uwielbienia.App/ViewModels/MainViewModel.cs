@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Uwielbienia.App.Services;
 using Uwielbienia.Core.Presentation;
 using Uwielbienia.Core.Songs;
+using Uwielbienia.Core.Updates;
 
 namespace Uwielbienia.App.ViewModels;
 
@@ -12,6 +13,7 @@ namespace Uwielbienia.App.ViewModels;
 public sealed partial class MainViewModel : ObservableObject
 {
     private readonly ISettingsStore _settings;
+    private readonly IUpdateService _updates;
 
     public MainViewModel(
         LiveViewModel live,
@@ -21,6 +23,7 @@ public sealed partial class MainViewModel : ObservableObject
         PlansViewModel plans,
         RemoteViewModel remote,
         ISettingsStore settings,
+        IUpdateService updates,
         IProjectionController projection,
         ILiveControl control,
         ISongLibrary library)
@@ -34,12 +37,14 @@ public sealed partial class MainViewModel : ObservableObject
         Projection = projection;
         Control = control;
         _settings = settings;
+        _updates = updates;
         LibraryWarning = library.Errors.Count > 0 ? $"Nie udało się odczytać pieśni: {library.Errors.Count}" : null;
 
         plan.ItemSelected += (_, item) => preview.ShowPlanItem(item);
         search.SongSelected += (_, song) => preview.ShowSong(song);
         projection.Changed += (_, _) => OnPropertyChanged(nameof(ProjectionStatus));
         settings.Changed += (_, _) => OnSettingsChanged();
+        _updates.UpdateAvailable += OnUpdateAvailable;
         ApplyTheme();
     }
 
@@ -71,6 +76,10 @@ public sealed partial class MainViewModel : ObservableObject
 
     public bool IsProjectionDark => _settings.Current.ProjectionTheme == AppTheme.Dark;
 
+    public bool IsUpdateAvailable => _updates.HasUpdate;
+
+    public string? UpdateVersion => _updates.NewVersion;
+
     [RelayCommand]
     private void ToggleProjection() => Projection.Toggle();
 
@@ -90,6 +99,18 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void ToggleProjectionTheme() =>
         _settings.Update(s => s with { ProjectionTheme = s.ProjectionTheme == AppTheme.Dark ? AppTheme.Light : AppTheme.Dark });
+
+    [ObservableProperty]
+    private string? _updateError;
+
+    [RelayCommand]
+    private void ApplyUpdate() => UpdateError = _updates.ApplyUpdate();
+
+    private void OnUpdateAvailable()
+    {
+        OnPropertyChanged(nameof(IsUpdateAvailable));
+        OnPropertyChanged(nameof(UpdateVersion));
+    }
 
     private void OnSettingsChanged()
     {

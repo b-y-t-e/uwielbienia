@@ -17,6 +17,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # version.txt is the single version source (also for build.py and the csproj), so manual runs work too.
+      - name: Read version
+        shell: bash
+        run: echo "VERSION=$(tr -d '[:space:]' < version.txt)" >> $GITHUB_ENV
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -30,6 +35,19 @@ jobs:
       - name: Build (testy, Windows, Linux)
         run: python build.py --no-web
 
+      # vpk must match the Velopack library version (VelopackVersion in app/Directory.Build.props).
+      - name: Install Velopack
+        run: |
+          $velopackVersion = dotnet msbuild app/src/Uwielbienia.App/Uwielbienia.App.csproj -getProperty:VelopackVersion
+          dotnet tool install --global vpk --version $velopackVersion.Trim()
+
+      # The Setup installer creates the installation layout managed by Velopack. The release metadata
+      # and full package uploaded below are the feed queried by UpdateService at application startup.
+      - name: Create Windows update package
+        run: |
+          dotnet publish app/src/Uwielbienia.Desktop/Uwielbienia.Desktop.csproj -c Release -r win-x64 --self-contained -p:Version=$env:VERSION -o ./velopack-publish
+          vpk pack --packId Uwielbienia --packVersion $env:VERSION --packDir ./velopack-publish --mainExe Uwielbienia.exe
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -38,3 +56,9 @@ jobs:
           files: |
             release/Uwielbienia-*-win-x64.exe
             release/Uwielbienia-*-linux-x64.tar.gz
+            Releases/Uwielbienia-win-Setup.exe
+            Releases/Uwielbienia-win-Portable.zip
+            Releases/Uwielbienia-*-full.nupkg
+            Releases/releases.win.json
+            Releases/assets.win.json
+            Releases/RELEASES

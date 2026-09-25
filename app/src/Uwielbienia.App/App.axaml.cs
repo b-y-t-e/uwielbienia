@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Uwielbienia.App.Services;
 using Uwielbienia.App.ViewModels;
 using Uwielbienia.App.Views;
+using Uwielbienia.Core.Updates;
 using Uwielbienia.Link;
 
 namespace Uwielbienia.App;
@@ -29,10 +30,21 @@ public partial class App : Application
             var projection = _services.GetRequiredService<ProjectionController>();
             window.Opened += (_, _) => projection.Attach(window);
             desktop.MainWindow = window;
-            desktop.ShutdownRequested += (_, _) => _services.GetRequiredService<IRemoteServer>().DisposeAsync().AsTask().Wait(2000);
+            desktop.Exit += (_, _) => DisposeServices();
 
             _ = _services.GetRequiredService<RemoteViewModel>().StartAsync();
+            _services.GetRequiredService<IUpdateService>().StartPeriodicCheck();
         }
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private void DisposeServices()
+    {
+        var services = _services;
+        _services = null;
+        if (services is null)
+            return;
+
+        services.DisposeAsync().AsTask().Wait(2000);
     }
 }
