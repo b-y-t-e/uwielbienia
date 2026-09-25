@@ -40,7 +40,7 @@ def run(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
 
 
 def git_output(*args: str) -> str:
-    return subprocess.run(["git", *args], check=True, capture_output=True, text=True, cwd=ROOT).stdout.strip()
+    return subprocess.run(["git", *args], check=True, capture_output=True, text=True, cwd=ROOT).stdout.rstrip()
 
 
 def load_env_file() -> None:
@@ -54,11 +54,13 @@ def load_env_file() -> None:
             os.environ.setdefault(key.strip(), value.strip())
 
 
+VERSION_FILE = ROOT / "version.txt"
+
+
 def bump_version() -> str:
-    version_file = ROOT / "version.txt"
-    major, minor, patch = version_file.read_text().strip().split(".")
+    major, minor, patch = VERSION_FILE.read_text().strip().split(".")
     new_version = f"{major}.{minor}.{int(patch) + 1}"
-    version_file.write_text(new_version + "\n")
+    VERSION_FILE.write_text(new_version + "\n")
     print(f"Wersja → {new_version}")
     return new_version
 
@@ -100,11 +102,22 @@ def release(new_version: str) -> None:
     tag = f"v{new_version}"
     branch = git_output("rev-parse", "--abbrev-ref", "HEAD")
     run(["git", "add", "version.txt"])
-    run(["git", "commit", "-m", f"chore: wersja {new_version}"])
+    run(["git", "commit", "--only", "version.txt", "-m", f"chore: wersja {new_version}"])
     run(["git", "push", "-u", "origin", branch])
     run(["git", "tag", tag])
     run(["git", "push", "origin", tag])
     print(f"\nTag {tag} wypchnięty — GitHub Actions zbuduje Windows + Linux i utworzy release.")
+
+
+def warn_about_uncommitted_changes() -> None:
+    """Commitujemy tylko version.txt, więc niezacommitowane zmiany ostrzegają, a nie przerywają wydania."""
+    pending = [line[3:] for line in git_output("status", "--porcelain").splitlines() if line[3:] != "version.txt"]
+    if not pending:
+        return
+    print("Uwaga: niezacommitowane zmiany. GitHub Actions buduje aplikacje z commita tagu, więc NIE wejdą")
+    print("do aplikacji w GitHub Release — ale lokalne testy i strona pilota wysyłana na FTP je zawierają:")
+    for path in pending:
+        print(f"  {path}")
 
 
 def main() -> None:
@@ -122,16 +135,16 @@ def main() -> None:
         upload_site()
         return
 
-    if git_output("status", "--porcelain"):
-        sys.exit("Najpierw zacommituj zmiany — wydanie budujemy z czystego drzewa.")
+    warn_about_uncommitted_changes()
 
+    previous_version_text = VERSION_FILE.read_text()
     new_version = bump_version()
     try:
         run([sys.executable, str(ROOT / "build.py")])
         if not args.no_site:
             upload_site()
     except (subprocess.CalledProcessError, OSError, ftplib.Error) as error:
-        run(["git", "checkout", "--", "version.txt"])
+        VERSION_FILE.write_text(previous_version_text)  # także niezacommitowana wartość użytkownika
         sys.exit(f"Wydanie przerwane ({error}) — wersja nie została zmieniona.")
     release(new_version)
 
