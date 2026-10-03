@@ -70,9 +70,6 @@ public sealed partial class LiveViewModel : ObservableObject
     private void Previous() => _control.Previous();
 
     [RelayCommand]
-    private void ToggleBlank() => _control.ToggleBlank();
-
-    [RelayCommand]
     private void Clear() => _control.Clear();
 
     [RelayCommand]

@@ -158,6 +158,12 @@ ostatnia linia fragmentu :| {x2} `D`
 - Parser pieśni w aplikacji (`MarkdownSongParser`) implementuje reguły z tego pliku — zmiana
   formatu wymaga zmiany parsera i testów (`dotnet test app`).
 - Pieśni są wbudowane w aplikację przy budowaniu (`Teksty/**/piesn.md`).
+- Okno operatora ma trzy kolumny i tak je nazywamy wszędzie (UI, komentarze, dokumentacja):
+  **Plan** (`PlanViewModel`) · **Pieśń** (wyszukiwarka + wybrana pieśń, `SearchViewModel`,
+  `PreviewViewModel`; tu będzie edycja) · **Na ekranie** (to, co widzi sala, `LiveViewModel`).
+  Nie używamy nazw „Podgląd”, „Prowadzenie”, „Zarządzanie”. Kolumna „Pieśń” nigdy nie zmienia
+  projekcji bez jawnego „Pokaż na ekranie”.
+- Nazwa planu nie zawiera daty — data to osobne pole (domyślna nazwa wydarzenia: „Uwielbienie”).
 - Po zmianach w UI sprawdzić wygląd: `dotnet run --project app/tools/Uwielbienia.Screenshots`.
 - Strona pilota `app/web/remote` mówi protokołem z `Uwielbienia.Link/RemoteProtocol.cs`;
   zmiana protokołu = zmiana w obu miejscach.

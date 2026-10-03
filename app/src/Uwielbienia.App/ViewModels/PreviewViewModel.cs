@@ -8,7 +8,7 @@ using Uwielbienia.Core.Songs;
 namespace Uwielbienia.App.ViewModels;
 
 /// <summary>
-/// Środkowa kolumna: podgląd wybranej pieśni. Tu wybiera się części do zaśpiewania (chipy)
+/// Kolumna „Pieśń”: wybrana pieśń. Tu wybiera się części do zaśpiewania (chipy)
 /// i zapisuje ich układ w planie. Tylko jawne „Pokaż na ekranie” zmienia stan prezentacji.
 /// </summary>
 public sealed partial class PreviewViewModel : ObservableObject

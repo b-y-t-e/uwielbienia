@@ -14,13 +14,25 @@ folder `Teksty/`, więc poprawki tekstów widać bez przebudowy.
 Dane użytkownika (plany, ustawienia, sparowane urządzenia): `%APPDATA%\Uwielbienia`
 (Linux: `~/.config/Uwielbienia`).
 
+## Okno operatora
+
+Trzy kolumny (szerokość regulowana przeciąganiem, zapamiętywana):
+
+| Kolumna | Zawartość | Kod |
+|---|---|---|
+| **Plan** | kolejność pieśni: klik wybiera, dwuklik pokazuje, przeciąganie zmienia kolejność | `PlanViewModel` |
+| **Pieśń** | wyszukiwarka i tekst wybranej pieśni; nie zmienia ekranu bez „Pokaż na ekranie” | `SearchViewModel`, `PreviewViewModel` |
+| **Na ekranie** | to, co widzi sala: postęp, bieżąca i następna część z akordami, Wstecz / Dalej | `LiveViewModel` |
+
+Plany (wydarzenia i szablony) zarządza się w oknie „Plany” po kliknięciu nazwy planu.
+
 ## Obsługa w skrócie
 
 | Klawisz | Działanie |
 |---|---|
 | Spacja, →, PageDown | następny slajd / następna pieśń planu |
 | Backspace, ←, PageUp | poprzedni slajd |
-| Enter | pokaż na ekranie pieśń z podglądu |
+| Enter | pokaż na ekranie pieśń wybraną w kolumnie „Pieśń” |
 | B lub . | czarny ekran |
 | F5 | włącz/wyłącz projekcję (drugi ekran albo ten sam) |
 | pisanie cyfr/liter | szybkie wyszukiwanie; Enter pokazuje, Ctrl+Enter dodaje jako następną |

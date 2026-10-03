@@ -4,7 +4,7 @@ Status: etap 1 i strona pilota zrobione (2026-09-25); dalsze etapy w p. 7.
 
 ## 1. Idea w jednym zdaniu
 
-Operator ma przed sobą **plan** (listę pieśni) i **podgląd**, a publiczność widzi tylko
+Operator ma przed sobą **plan** (listę pieśni) i wybraną **pieśń**, a publiczność widzi tylko
 **ekran** — duży, czysty tekst bieżącej części pieśni. Przeglądanie i układanie pieśni
 nigdy nie zmienia tego, co jest na ekranie. Ekran zmienia się tylko po świadomym
 „Pokaż” albo spacji / Backspace.
@@ -27,17 +27,17 @@ wyświetla. Dzięki temu nowe odbiorniki nie wymagają zmian w logice.
 
 - **Pieśń** — plik `Teksty/NNN-*/piesn.md`.
 - **Plan** — uporządkowana lista pozycji na wydarzenie. Ma nazwę, opcjonalną datę i
-  rodzaj: *wydarzenie* („Uwielbienie 25 września 2026”, „Msza 27 września 2026”) albo
-  *szablon* („Próba z dziećmi”). Plany można przeglądać (historia wg daty), klonować
-  („Użyj ponownie” → nowa data) i zapisywać jako szablon.
+  rodzaj: *wydarzenie* („Uwielbienie”, „Msza” — data jest osobnym polem, nie częścią
+  nazwy) albo *szablon* („Próba z dziećmi”). Plany można przeglądać (historia wg daty),
+  kopiować na dziś, tworzyć wydarzenie z szablonu i zapisywać wydarzenie jako szablon.
 - **Pozycja planu** — pieśń + wybrane części i ich kolejność. Domyślnie wszystkie
   części wg `kolejnosc`; operator odznacza części albo zmienia kolejność.
   W przyszłości ten sam typ pozycji obejmie „stałe elementy” (ogłoszenie, modlitwa,
   obraz) — dlatego pozycja jest abstrakcją (`IPlanItem`), a pieśń jednym z typów.
 - **Slajd** — to, co jest naraz na ekranie: jedna część pieśni albo jej fragment, jeśli
   część jest zbyt długa (np. >6 wersów → dzielimy równo).
-- **Podgląd** vs **Na ekranie** — dwa niezależne wskaźniki. Podgląd = to, co operator
-  ogląda. Na ekranie = to, co widzi sala.
+- **Pieśń** vs **Na ekranie** — dwa niezależne wskaźniki. Pieśń = to, co operator
+  ogląda (i edytuje). Na ekranie = to, co widzi sala.
 
 ## 4. Obsługa (sterowanie)
 
@@ -45,7 +45,7 @@ wyświetla. Dzięki temu nowe odbiorniki nie wymagają zmian w logice.
 |---|---|
 | `Spacja`, `→`, `PageDown`, `↓` | następny slajd; po ostatnim slajdzie → pierwszy slajd następnej pozycji planu |
 | `Backspace`, `←`, `PageUp`, `↑` | poprzedni slajd |
-| `Enter` | pokaż na ekranie to, co jest w podglądzie |
+| `Enter` | pokaż na ekranie pieśń wybraną w kolumnie „Pieśń” |
 | `B` lub `.` | czarny ekran (włącz/wyłącz), jak w PowerPoint |
 | `Shift`+`1`–`9` | skok do n-tego slajdu bieżącej pieśni (same cyfry zaczynają wyszukiwanie numeru) |
 | Pisanie cyfr lub liter | **szybki wybór**: `47` albo `jezus mój` → lista wyników, `Enter` = pokaż od razu (pieśń trafia do planu zaraz za bieżącą, więc „Dalej” wraca do planu), `Ctrl+Enter` = dodaj jako następną w planie |
@@ -64,26 +64,31 @@ Szybki wybór to odpowiedź na sytuację „alarmową” i uwielbienie bez planu
 
 ### Okno operatora
 
+Trzy kolumny o regulowanej szerokości (zapamiętywanej): **Plan · Pieśń · Na ekranie**.
+
 ```
-┌───────────────┬─────────────────────────────────┬─────────────────────┐
-│ Plan          │ Podgląd                         │ Na ekranie          │
-│ Uwielbienie   │ 47  Jezus mój Pan               │ ┌─────────────────┐ │
-│ 25 wrz 2026 ▾ │ [V1] [C] [V1] [C]  ← kolejność  │ │ Jezus mój Pan   │ │
-│               │                                 │ │ Jezus mój Król  │ │
-│ 1  Chwała ... │ ┌ Zwrotka 1 ─────┐ ┌ Refren ──┐ │ └─────────────────┘ │
-│ 2▶ Jezus mój  │ │ tekst…         │ │ tekst…   │ │ Następny slajd:     │
-│ 3  Duchu Św.  │ └────────────────┘ └──────────┘ │ Refren              │
-│ + Dodaj       │  (klik = pokaż ten slajd)       │ [ Czarny ekran  B ] │
-├───────────────┴─────────────────────────────────┴─────────────────────┤
-│ Szukaj: numer lub tytuł…                          Akordy ☐  ☾/☀       │
-└───────────────────────────────────────────────────────────────────────┘
+┌──────────────┬──────────────────────────────────┬─────────────────────────┐
+│ Plan         │ [Szukaj pieśni: numer albo słowa]│ Na ekranie              │
+│              │ Pieśń                            │ 94 To On, nasz Pan  33% │
+│ 47 Jezus mój │ 30  Chcę wywyższać Imię Twe      │ ▬▬▬▬▬▬▬───────────────  │
+│▌94 To On...  │ [Pokaż na ekranie]               │ [ Wstecz ] [  Dalej  ]  │
+│ 30 Chcę ... ✕│ [V1] [C] [V1] [C]       Akordy   │ ┌ TERAZ · Refren ─────┐ │
+│ 36 Godzien   │ ┌ Zwrotka 1 ───────────────────┐ │ │ G e                 │ │
+│              │ │ G C D                        │ │ │ Jak wielki jest Bóg │ │
+│              │ │ Chcę wywyższać Imię Twe      │ │ └─────────────────────┘ │
+│              │ └──────────────────────────────┘ │ NASTĘPNA · Zwrotka 2    │
+└──────────────┴──────────────────────────────────┴─────────────────────────┘
 ```
 
-- Lewo: plan. Bieżąca pozycja „na ekranie” ma znacznik świecy (bursztynowy pasek).
-- Środek: podgląd wybranej pieśni jako slajdy. Stuknięcie w slajd = pokaż go na ekranie.
-  Części do pominięcia przełącza się chipami `[V1] [C] …`.
-- Prawo: miniatura ekranu na żywo (dokładnie ten sam widok, pomniejszony) i następny slajd.
-- Dół: wyszukiwarka zawsze pod ręką; przełącznik akordów w podglądzie (dla muzyków).
+- **Plan** (lewo): kolejność pieśni. Klik wybiera pieśń do kolumny „Pieśń”, dwuklik pokazuje
+  ją na ekranie, przeciąganie zmienia kolejność, ✕ usuwa (z potwierdzeniem). Pozycja na
+  ekranie ma znacznik świecy (bursztynowy pasek).
+- **Pieśń** (środek): wyszukiwarka (wyniki w liście rozwijanej) i tekst wybranej pieśni z
+  akordami, części jedna pod drugą. Chipy `[V1] [C] …` wybierają części do zaśpiewania.
+  Nic tu nie zmienia tego, co widzi sala, poza jawnym „Pokaż na ekranie”. Docelowo tu
+  będzie też edycja pieśni.
+- **Na ekranie** (prawo, min. ~33% szerokości): to, co widzi sala, czytelne dla muzyków —
+  postęp w pieśni, bieżąca część z akordami, zapowiedź następnej, przyciski Wstecz / Dalej.
 - Na wąskim ekranie (telefon, tablet pionowo) kolumny zamieniają się w zakładki.
 
 ### Kierunek wizualny
@@ -169,8 +174,8 @@ Najważniejsze decyzje:
 ## 7. Etapy (roadmapa)
 
 1. **Zrobione — rdzeń i S1/S2 (desktop Windows/Linux):** parser, biblioteka (138 pieśni wbudowanych),
-   wyszukiwanie, plany (wydarzenia, szablony, historia, klonowanie), okno operatora z podglądem
-   „Na ekranie” i akordami, okno projekcji na drugim ekranie z automatycznym wykrywaniem monitora,
+   wyszukiwanie, plany (wydarzenia, szablony, historia, klonowanie), okno operatora (Plan · Pieśń ·
+   Na ekranie) z akordami, okno projekcji na drugim ekranie z automatycznym wykrywaniem monitora,
    tryb jednego ekranu z szybkim wyborem, motywy jasny/ciemny.
 2. **Zrobione — S4 i S3 przez przeglądarkę:** tailcat-link w aplikacji (host), strona
    `greysource.eu/uwielbienie` — pilot (dalej, wstecz, czarny ekran, plan, wyszukiwarka)
@@ -185,7 +190,7 @@ Najważniejsze decyzje:
    zatwierdza wynik przed zapisem.
 5. **Android:** ta sama aplikacja (`Uwielbienia.Android`), układ zakładek, gesty, tryb jednego urządzenia.
 6. **Później:** stałe elementy w planie (ogłoszenie, modlitwa, obraz — nowy typ `PlanItem`),
-   telefon jako ekran (S5), ekran dla muzyków z akordami, przeciąganie pozycji planu myszą.
+   telefon jako ekran (S5), edycja pieśni w kolumnie „Pieśń”.
 
 ## 8. Wymagania środowiska
 

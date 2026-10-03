@@ -111,7 +111,7 @@ public sealed class SongResultViewModel(Song song)
         SongSearch.Normalize(Song.FirstLine) == SongSearch.Normalize(Song.Title) ? null : Song.FirstLine;
 }
 
-/// <summary>Operacje na planie wspólne dla wyszukiwarki, podglądu i pilota.</summary>
+/// <summary>Operacje na planie wspólne dla wyszukiwarki, kolumny „Pieśń” i pilota.</summary>
 public sealed class PlanActions(ActivePlan plan, ILiveStateSource live)
 {
     public LiveItem? LiveItemFor(SongPlanItem item) => plan.FindLiveItem(item.Id);

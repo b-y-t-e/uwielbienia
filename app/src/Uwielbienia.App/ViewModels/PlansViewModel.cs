@@ -16,6 +16,8 @@ public sealed partial class PlansViewModel : ObservableObject
 {
     private static readonly CultureInfo Polish = CultureInfo.GetCultureInfo("pl-PL");
 
+    private const string DefaultEventName = "Uwielbienie";
+
     private readonly IPlanStore _store;
     private readonly ActivePlan _active;
     private readonly ISettingsStore _settings;
@@ -98,37 +100,32 @@ public sealed partial class PlansViewModel : ObservableObject
     public partial string EditName { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CanSave), nameof(CanCreate), nameof(IsDirty), nameof(NamePlaceholder))]
+    [NotifyPropertyChangedFor(nameof(CanSave), nameof(CanCreate), nameof(IsDirty))]
     public partial DateTime? EditDate { get; set; }
 
-    public string NamePlaceholder => ShowingTemplates
-        ? "Np. Próba z dziećmi"
-        : EditDate is { } d ? DefaultName(DateOnly.FromDateTime(d)) : "Nazwa wydarzenia";
+    public string NamePlaceholder => ShowingTemplates ? "Np. Próba z dziećmi" : "Np. Uwielbienie";
 
-    public string NameHint => ShowingTemplates
-        ? "Nazwa jest wymagana."
-        : "Puste pole = nazwa z datą.";
-
-    public bool IsDirty => Selected is { } s && (ResolveName() != s.Plan.Name || EditDateOnly != s.Plan.Date);
+    public bool IsDirty => Selected is { } s && (EditName.Trim() != s.Plan.Name || EditDateOnly != s.Plan.Date);
 
     public bool CanSave => HasSelection && IsDirty && IsFormValid;
 
     public bool CanCreate => IsCreating && IsFormValid;
 
-    private bool IsFormValid => ShowingTemplates ? !string.IsNullOrWhiteSpace(EditName) : EditDate is not null;
+    /// <summary>Nazwa zawsze wymagana; data tylko dla wydarzenia i tylko w osobnym polu, nie w nazwie.</summary>
+    private bool IsFormValid => !string.IsNullOrWhiteSpace(EditName) && (ShowingTemplates || EditDate is not null);
 
     private DateOnly? EditDateOnly => ShowingTemplates || EditDate is not { } d ? null : DateOnly.FromDateTime(d);
 
     [ObservableProperty]
     public partial bool IsDeleteConfirmationOpen { get; set; }
 
-    /// <summary>Przy starcie: ostatnio otwarty plan albo nowy „Uwielbienie {dzisiaj}”.</summary>
+    /// <summary>Przy starcie: ostatnio otwarty plan albo nowe „Uwielbienie” z dzisiejszą datą.</summary>
     public void OpenInitial()
     {
         var plans = _store.LoadAll();
         var last = plans.FirstOrDefault(p => p.Id == _settings.Current.LastPlanId);
         var today = DateOnly.FromDateTime(DateTime.Today);
-        Open(last ?? CreateAndSave(DefaultName(today), today, PlanKind.Event));
+        Open(last ?? CreateAndSave(DefaultEventName, today, PlanKind.Event));
     }
 
     partial void OnSelectedChanged(PlanSummaryViewModel? value)
@@ -167,7 +164,7 @@ public sealed partial class PlansViewModel : ObservableObject
         Selected = null;
         IsDeleteConfirmationOpen = false;
         IsCreating = true;
-        EditName = "";
+        EditName = ShowingTemplates ? "" : DefaultEventName;
         EditDate = ShowingTemplates ? null : DateTime.Today;
         RefreshFormState();
     }
@@ -185,7 +182,7 @@ public sealed partial class PlansViewModel : ObservableObject
         if (!CanCreate)
             return;
         var kind = ShowingTemplates ? PlanKind.Template : PlanKind.Event;
-        Open(CreateAndSave(ResolveName(), EditDateOnly, kind));
+        Open(CreateAndSave(EditName.Trim(), EditDateOnly, kind));
     }
 
     [RelayCommand]
@@ -193,7 +190,7 @@ public sealed partial class PlansViewModel : ObservableObject
     {
         if (!CanSave || Selected is not { } selected)
             return;
-        var name = ResolveName();
+        var name = EditName.Trim();
         var date = EditDateOnly;
         if (selected.Plan.Id == _active.Plan?.Id)
             _active.Update(p => p with { Name = name, Date = date, UpdatedAt = DateTimeOffset.Now });
@@ -216,10 +213,7 @@ public sealed partial class PlansViewModel : ObservableObject
         if (Selected is not { } selected)
             return;
         var today = DateOnly.FromDateTime(DateTime.Today);
-        var name = selected.Plan.Kind == PlanKind.Template
-            ? $"{selected.Plan.Name} — {today.ToString("d MMMM yyyy", Polish)}"
-            : DefaultName(today);
-        var copy = selected.Plan.CloneAs(name, today, PlanKind.Event);
+        var copy = selected.Plan.CloneAs(NameWithoutDate(selected.Plan), today, PlanKind.Event);
         _store.Save(copy);
         Open(copy);
     }
@@ -264,13 +258,6 @@ public sealed partial class PlansViewModel : ObservableObject
         Reload(_active.Plan?.Id);
     }
 
-    private string ResolveName()
-    {
-        if (!string.IsNullOrWhiteSpace(EditName))
-            return EditName.Trim();
-        return EditDateOnly is { } date ? DefaultName(date) : "";
-    }
-
     private Plan CreateAndSave(string name, DateOnly? date, PlanKind kind)
     {
         var plan = Plan.Create(name, date, kind);
@@ -308,13 +295,19 @@ public sealed partial class PlansViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(FormTitle));
         OnPropertyChanged(nameof(NamePlaceholder));
-        OnPropertyChanged(nameof(NameHint));
         OnPropertyChanged(nameof(IsDirty));
         OnPropertyChanged(nameof(CanSave));
         OnPropertyChanged(nameof(CanCreate));
     }
 
-    private static string DefaultName(DateOnly date) => $"Uwielbienie {date.ToString("d MMMM yyyy", Polish)}";
+    /// <summary>Starsze plany miały datę w nazwie — kopia na inny dzień nie powinna jej powielać.</summary>
+    private static string NameWithoutDate(Plan plan)
+    {
+        if (plan.Date is not { } date)
+            return plan.Name;
+        var name = plan.Name.Replace(date.ToString("d MMMM yyyy", Polish), "", StringComparison.CurrentCultureIgnoreCase).Trim(' ', '—', '-');
+        return name.Length > 0 ? name : DefaultEventName;
+    }
 }
 
 public sealed class PlanSummaryViewModel(Plan plan, bool isOpen)

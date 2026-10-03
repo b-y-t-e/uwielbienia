@@ -66,7 +66,6 @@
                   <StackPanel Spacing="6">
                     <TextBlock Classes="bodyStrong" Text="Nazwa" />
                     <TextBox Text="{Binding EditName}" PlaceholderText="{Binding NamePlaceholder}" />
-                    <TextBlock Classes="caption" Text="{Binding NameHint}" />
                   </StackPanel>
                   <StackPanel Grid.Column="2" Spacing="6" IsVisible="{Binding ShowingEvents}">
                     <TextBlock Classes="bodyStrong" Text="Data" />
@@ -118,7 +117,7 @@
                   </Border>
                 </StackPanel>
 
-                <!-- Podgląd zawartości -->
+                <!-- Zawartość planu -->
                 <DockPanel IsVisible="{Binding HasSelection}" Margin="0,0,0,16">
                   <TextBlock DockPanel.Dock="Top" Classes="overline" Foreground="{DynamicResource MutedBrush}"
                              Text="{Binding SelectedSongsHeader}" Margin="0,0,0,6" />

@@ -6,7 +6,7 @@ using Uwielbienia.Core.Presentation;
 
 namespace Uwielbienia.App.Views;
 
-/// <summary>Slajd tak, jak widzi go sala. Używany w oknie projekcji i w podglądzie „Na ekranie”.</summary>
+/// <summary>Slajd tak, jak widzi go sala. Używany w oknie projekcji i w kolumnie „Na ekranie”.</summary>
 public partial class SlideView : UserControl
 {
     public static readonly StyledProperty<Slide?> SlideProperty =

@@ -32,7 +32,7 @@ if (light)
 
 var library = services.GetRequiredService<ISongLibrary>();
 var active = services.GetRequiredService<ActivePlan>();
-var plan = Plan.Create("Uwielbienie 25 września 2026", new DateOnly(2026, 9, 25));
+var plan = Plan.Create("Uwielbienie", new DateOnly(2026, 9, 25));
 foreach (var number in new[] { 47, 94, 30, 36, 117, 128 })
     plan = plan.Insert(plan.Items.Count, SongPlanItem.For(library.Songs.First(s => s.Number == number).Id));
 services.GetRequiredService<IPlanStore>().Save(plan);
@@ -61,11 +61,11 @@ Save(window, "operator-szukaj");
 main.Search.Clear();
 
 services.GetRequiredService<IPlanStore>().Save(plan.CloneAs("Próba z dziećmi", null, PlanKind.Template));
-services.GetRequiredService<IPlanStore>().Save(plan.CloneAs("Uwielbienie 18 września 2026", new DateOnly(2026, 9, 18), PlanKind.Event));
+services.GetRequiredService<IPlanStore>().Save(plan.CloneAs("Uwielbienie młodzieżowe", new DateOnly(2026, 9, 18), PlanKind.Event));
 main.Plans.ShowCommand.Execute(null);
 Save(window, "plany");
 main.Plans.Selected = main.Plans.Items[1];
-main.Plans.EditName = "Uwielbienie młodzieżowe";
+main.Plans.EditName = "Wieczór uwielbienia";
 Save(window, "plany-edycja");
 main.Plans.StartNewCommand.Execute(null);
 Save(window, "plany-nowe");

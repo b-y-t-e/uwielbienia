@@ -5,7 +5,7 @@
              x:Class="Uwielbienia.App.Views.SlideView"
              x:Name="Root">
   <!-- Slajd renderowany na wirtualnym płótnie 1920×1080 i skalowany w całości:
-       podgląd u operatora wygląda dokładnie jak ekran projekcji, tylko mniejszy. -->
+       miniatura u operatora wygląda dokładnie jak ekran projekcji, tylko mniejszy. -->
   <Viewbox Stretch="Uniform">
     <Border Width="1920" Height="1080" Background="{Binding #Root.SlideBackground}">
       <TransitioningContentControl Content="{Binding #Root.Slide}">

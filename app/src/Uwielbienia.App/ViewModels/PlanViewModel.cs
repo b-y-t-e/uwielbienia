@@ -50,7 +50,7 @@ public sealed partial class PlanViewModel : ObservableObject
 
     public bool IsRemoveConfirmationOpen => PendingRemoval is not null;
 
-    /// <summary>Wybrana pozycja do podglądu (zmienia się tylko przez zaznaczenie w planie).</summary>
+    /// <summary>Pozycja wybrana do kolumny „Pieśń” (zmienia się tylko przez zaznaczenie w planie).</summary>
     public event EventHandler<PlanItemViewModel>? ItemSelected;
 
     partial void OnSelectedChanged(PlanItemViewModel? value)
@@ -128,4 +128,16 @@ public sealed partial class PlanItemViewModel(SongPlanItem item, Song song, int 
 
     [ObservableProperty]
     public partial bool IsLive { get; set; }
+
+    /// <summary>Wiersz jest właśnie przeciągany.</summary>
+    [ObservableProperty]
+    public partial bool IsDragged { get; set; }
+
+    /// <summary>Znacznik miejsca upuszczenia nad wierszem.</summary>
+    [ObservableProperty]
+    public partial bool IsDropBefore { get; set; }
+
+    /// <summary>Znacznik miejsca upuszczenia pod wierszem (tylko ostatni wiersz).</summary>
+    [ObservableProperty]
+    public partial bool IsDropAfter { get; set; }
 }

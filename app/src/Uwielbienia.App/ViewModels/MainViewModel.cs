@@ -9,7 +9,7 @@ using Uwielbienia.Core.Updates;
 
 namespace Uwielbienia.App.ViewModels;
 
-/// <summary>Okno operatora: po lewej zarządzanie (plan, wyszukiwarka, podgląd), po prawej to, co jest na ekranie.</summary>
+/// <summary>Okno operatora: trzy kolumny — Plan, Pieśń (wyszukiwarka i wybrana pieśń), Na ekranie (to, co widzi sala).</summary>
 public sealed partial class MainViewModel : ObservableObject
 {
     private readonly ISettingsStore _settings;

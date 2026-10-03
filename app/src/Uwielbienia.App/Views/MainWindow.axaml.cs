@@ -1,6 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using Uwielbienia.App.Services;
 using Uwielbienia.App.ViewModels;
 
@@ -8,12 +10,11 @@ namespace Uwielbienia.App.Views;
 
 public partial class MainWindow : Window
 {
-    private static readonly DataFormat<PlanItemViewModel> PlanItemDataFormat =
-        DataFormat.CreateInProcessFormat<PlanItemViewModel>("uwielbienia-plan-item");
+    private const double PlanDragThreshold = 6;
     private PlanItemViewModel? _planDragCandidate;
-    private PointerPressedEventArgs? _planDragPress;
-    private Avalonia.Point _planDragStart;
+    private Point _planDragStart;
     private bool _planDragStarted;
+    private int _planDropIndex = -1;
 
     public MainWindow()
     {
@@ -21,6 +22,11 @@ public partial class MainWindow : Window
         AddHandler(KeyDownEvent, OnKeyDownTunnel, RoutingStrategies.Tunnel);
         AddHandler(KeyUpEvent, OnKeyUpTunnel, RoutingStrategies.Tunnel);
         AddHandler(TextInputEvent, OnTextInputTunnel, RoutingStrategies.Tunnel);
+        // Wiersz planu to Button, który sam oznacza wciśnięcie jako obsłużone — przeciąganie musi słuchać mimo to.
+        PlanList.AddHandler(PointerPressedEvent, OnPlanItemPointerPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
+        PlanList.AddHandler(PointerMovedEvent, OnPlanItemPointerMoved, RoutingStrategies.Tunnel, handledEventsToo: true);
+        PlanList.AddHandler(PointerReleasedEvent, OnPlanItemPointerReleased, RoutingStrategies.Tunnel, handledEventsToo: true);
+        PlanList.AddHandler(PointerCaptureLostEvent, (_, _) => EndPlanDrag(), RoutingStrategies.Bubble, handledEventsToo: true);
         PropertyChanged += (_, e) =>
         {
             if (e.Property == WindowStateProperty && e.OldValue is WindowState.FullScreen && WindowState == WindowState.Normal)
@@ -148,77 +154,101 @@ public partial class MainWindow : Window
         e.Handled = true;
     }
 
+    // Zmiana kolejności w planie: zwykłe przeciąganie myszą wewnątrz listy (bez systemowego drag & drop),
+    // ze znacznikiem miejsca upuszczenia między wierszami.
     private void OnPlanItemPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (sender is not Control { DataContext: PlanItemViewModel item } row ||
-            !e.GetCurrentPoint(row).Properties.IsLeftButtonPressed)
+        if (DraggablePlanItem(e.Source) is not { } item || !e.GetCurrentPoint(PlanList).Properties.IsLeftButtonPressed)
             return;
 
         _planDragCandidate = item;
-        _planDragPress = e;
         _planDragStart = e.GetPosition(PlanList);
         _planDragStarted = false;
     }
 
-    private async void OnPlanItemPointerMoved(object? sender, PointerEventArgs e)
+    private void OnPlanItemPointerMoved(object? sender, PointerEventArgs e)
     {
-        if (_planDragCandidate is not { } item || _planDragPress is not { } press || _planDragStarted ||
-            sender is not Control row || !e.GetCurrentPoint(row).Properties.IsLeftButtonPressed)
+        if (_planDragCandidate is not { } item || !e.GetCurrentPoint(PlanList).Properties.IsLeftButtonPressed)
             return;
 
         var position = e.GetPosition(PlanList);
-        if (Math.Abs(position.X - _planDragStart.X) < 6 && Math.Abs(position.Y - _planDragStart.Y) < 6)
-            return;
+        if (!_planDragStarted)
+        {
+            if (Math.Abs(position.Y - _planDragStart.Y) < PlanDragThreshold &&
+                Math.Abs(position.X - _planDragStart.X) < PlanDragThreshold)
+                return;
+            _planDragStarted = true;
+            item.IsDragged = true;
+            PlanList.Cursor = new Cursor(StandardCursorType.SizeNorthSouth);
+        }
 
-        _planDragStarted = true;
+        ShowPlanDropMarker(PlanInsertionIndex(position.Y));
         e.Handled = true;
-        using var transfer = new DataTransfer();
-        transfer.Add(DataTransferItem.Create(PlanItemDataFormat, item));
-        await DragDrop.DoDragDropAsync(press, transfer, DragDropEffects.Move);
-        _planDragCandidate = null;
-        _planDragPress = null;
-        _planDragStarted = false;
     }
 
     private void OnPlanItemPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
-        if (!_planDragStarted)
+        if (_planDragStarted && _planDragCandidate is { } item)
         {
-            _planDragCandidate = null;
-            _planDragPress = null;
+            var source = ViewModel.Plan.Items.IndexOf(item);
+            var target = _planDropIndex > source ? _planDropIndex - 1 : _planDropIndex;
+            EndPlanDrag();
+            if (source >= 0 && target >= 0 && target != source)
+                ViewModel.Plan.Reorder(item, target);
+            // Upuszczenie nie jest kliknięciem — nie wybieraj wiersza.
+            e.Handled = true;
+            return;
+        }
+        EndPlanDrag();
+    }
+
+    /// <summary>Indeks, przed którym wstawić przeciągany wiersz (liczba wierszy = na koniec).</summary>
+    private int PlanInsertionIndex(double y)
+    {
+        var items = ViewModel.Plan.Items;
+        for (var i = 0; i < items.Count; i++)
+        {
+            if (PlanList.ContainerFromIndex(i) is not Control row || row.TranslatePoint(default, PlanList) is not { } top)
+                continue;
+            if (y < top.Y + row.Bounds.Height / 2)
+                return i;
+        }
+        return items.Count;
+    }
+
+    private void ShowPlanDropMarker(int insertionIndex)
+    {
+        var items = ViewModel.Plan.Items;
+        var source = _planDragCandidate is { } dragged ? items.IndexOf(dragged) : -1;
+        // Upuszczenie tuż nad albo tuż pod sobą niczego nie zmienia — bez znacznika.
+        var noOp = insertionIndex == source || insertionIndex == source + 1;
+        _planDropIndex = insertionIndex;
+        for (var i = 0; i < items.Count; i++)
+        {
+            items[i].IsDropBefore = !noOp && i == insertionIndex;
+            items[i].IsDropAfter = !noOp && i == items.Count - 1 && insertionIndex == items.Count;
         }
     }
 
-    private void OnPlanDragOver(object? sender, DragEventArgs e)
+    private void EndPlanDrag()
     {
-        e.DragEffects = e.DataTransfer.Contains(PlanItemDataFormat)
-            ? DragDropEffects.Move
-            : DragDropEffects.None;
-        e.Handled = true;
+        foreach (var item in ViewModel.Plan.Items)
+        {
+            item.IsDragged = false;
+            item.IsDropBefore = false;
+            item.IsDropAfter = false;
+        }
+        _planDragCandidate = null;
+        _planDragStarted = false;
+        _planDropIndex = -1;
+        PlanList.Cursor = null;
     }
 
-    private void OnPlanDrop(object? sender, DragEventArgs e)
-    {
-        var dragged = e.DataTransfer.TryGetValue(PlanItemDataFormat);
-        if (dragged is null)
-            return;
-
-        var sourceIndex = ViewModel.Plan.Items.IndexOf(dragged);
-        if (sourceIndex < 0)
-            return;
-
-        var target = (e.Source as Control)?.DataContext as PlanItemViewModel;
-        var insertionIndex = target is null ? ViewModel.Plan.Items.Count : ViewModel.Plan.Items.IndexOf(target);
-        if (target is not null && PlanList.ContainerFromItem(target) is Control container &&
-            e.GetPosition(container).Y > container.Bounds.Height / 2)
-            insertionIndex++;
-        if (sourceIndex < insertionIndex)
-            insertionIndex--;
-
-        if (sourceIndex != insertionIndex)
-            ViewModel.Plan.Reorder(dragged, insertionIndex);
-        e.Handled = true;
-    }
+    /// <summary>Pozycja planu pod wskaźnikiem — tylko z obszaru wiersza, nie z przycisku usuwania.</summary>
+    private static PlanItemViewModel? DraggablePlanItem(object? source) =>
+        (source as Visual)?.FindAncestorOfType<Button>(includeSelf: true) is { } button && button.Classes.Contains("planItem")
+            ? button.DataContext as PlanItemViewModel
+            : null;
 
     /// <summary>Pisanie gdziekolwiek w oknie zaczyna wyszukiwanie pieśni.</summary>
     private void OnTextInputTunnel(object? sender, TextInputEventArgs e)
