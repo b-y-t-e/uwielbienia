@@ -8,7 +8,7 @@ using Uwielbienia.Core.Songs;
 
 namespace Uwielbienia.App.ViewModels;
 
-/// <summary>Lewa kolumna: pozycje otwartego planu. Zaznaczenie = podgląd, nie zmienia ekranu.</summary>
+/// <summary>Lewa kolumna: kolejka wykonawcza. Klik pokazuje pozycję, przeciąganie zmienia kolejność.</summary>
 public sealed partial class PlanViewModel : ObservableObject
 {
     private static readonly CultureInfo Polish = CultureInfo.GetCultureInfo("pl-PL");
@@ -34,6 +34,10 @@ public sealed partial class PlanViewModel : ObservableObject
     [ObservableProperty]
     public partial PlanItemViewModel? Selected { get; set; }
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsRemoveConfirmationOpen))]
+    public partial PlanItemViewModel? PendingRemoval { get; set; }
+
     public string Name => _plan.Plan?.Name ?? "Brak planu";
 
     /// <summary>Data planu — pomijana, gdy nazwa już ją zawiera („Uwielbienie 25 września 2026”).</summary>
@@ -43,6 +47,8 @@ public sealed partial class PlanViewModel : ObservableObject
             : null;
 
     public bool IsEmpty => Items.Count == 0;
+
+    public bool IsRemoveConfirmationOpen => PendingRemoval is not null;
 
     /// <summary>Wybrana pozycja do podglądu (zmienia się tylko przez zaznaczenie w planie).</summary>
     public event EventHandler<PlanItemViewModel>? ItemSelected;
@@ -56,18 +62,28 @@ public sealed partial class PlanViewModel : ObservableObject
     [RelayCommand]
     private void ShowLive(PlanItemViewModel item)
     {
+        Selected = item;
         if (_plan.FindLiveItem(item.Id) is { } live)
             _control.Show(live);
     }
 
-    [RelayCommand]
-    private void MoveUp(PlanItemViewModel item) => _plan.Update(p => p.Move(item.Id, p.IndexOf(item.Id) - 1));
+    public void Reorder(PlanItemViewModel item, int newIndex) =>
+        _plan.Update(p => p.Move(item.Id, newIndex));
 
     [RelayCommand]
-    private void MoveDown(PlanItemViewModel item) => _plan.Update(p => p.Move(item.Id, p.IndexOf(item.Id) + 1));
+    private void RequestRemove(PlanItemViewModel item) => PendingRemoval = item;
 
     [RelayCommand]
-    private void Remove(PlanItemViewModel item) => _plan.Update(p => p.Remove(item.Id));
+    private void ConfirmRemove()
+    {
+        if (PendingRemoval is not { } item)
+            return;
+        PendingRemoval = null;
+        _plan.Update(p => p.Remove(item.Id));
+    }
+
+    [RelayCommand]
+    private void CancelRemove() => PendingRemoval = null;
 
     private void Rebuild()
     {

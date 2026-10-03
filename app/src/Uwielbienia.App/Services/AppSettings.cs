@@ -16,8 +16,10 @@ public sealed record AppSettings(
     string? SongsFolder = null,
     int MaxLinesPerSlide = 6,
     Guid? LastPlanId = null,
-    bool ShowLivePanel = true,
-    bool ShowChords = true);
+    bool ShowChords = true,
+    double PlanColumnRatio = 0.16,
+    double PreviewColumnRatio = 0.42,
+    double LiveColumnRatio = 0.42);
 
 public sealed class AppPaths
 {

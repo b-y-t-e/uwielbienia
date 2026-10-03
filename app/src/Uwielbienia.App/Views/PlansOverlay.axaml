@@ -4,92 +4,193 @@
              x:Class="Uwielbienia.App.Views.PlansOverlay"
              x:DataType="vm:PlansViewModel">
   <Border Background="{DynamicResource ScrimBrush}">
-    <Border Classes="panel" Width="880" MaxHeight="760" Padding="24" VerticalAlignment="Center">
+    <Border Classes="panel" MaxWidth="1040" MaxHeight="720" Margin="40,24" Padding="24"
+            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
       <DockPanel>
-        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,18">
           <TextBlock Classes="songTitle" Text="Plany" />
           <Button Grid.Column="1" Classes="quiet" Content="Zamknij  Esc" Command="{Binding CloseCommand}" />
         </Grid>
 
-        <!-- Nowy plan -->
-        <Border DockPanel.Dock="Top" Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="12" Padding="14" Margin="0,0,0,18">
-          <Grid ColumnDefinitions="*,12,Auto,12,Auto,12,Auto">
-            <TextBox Text="{Binding NewName}" PlaceholderText="Nazwa, np. Uwielbienie 25 września 2026" />
-            <CalendarDatePicker Grid.Column="2" SelectedDate="{Binding NewDate}" IsEnabled="{Binding !NewIsTemplate}" />
-            <CheckBox Grid.Column="4" Content="Szablon" IsChecked="{Binding NewIsTemplate}" ToolTip.Tip="Plan bez daty do wielokrotnego użycia, np. Próba z dziećmi" />
-            <Button Grid.Column="6" Classes="primary" Content="Utwórz plan" Command="{Binding CreateCommand}" />
-          </Grid>
-        </Border>
+        <!-- Zakładki + jedna akcja tworzenia, zależna od zakładki. -->
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,16">
+          <Border Classes="segmented">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <Button Classes="tab" Classes.active="{Binding ShowingEvents}" Content="Wydarzenia"
+                      Command="{Binding ShowEventsTabCommand}" />
+              <Button Classes="tab" Classes.active="{Binding ShowingTemplates}" Content="Szablony"
+                      Command="{Binding ShowTemplatesTabCommand}" />
+            </StackPanel>
+          </Border>
+          <Button Grid.Column="2" Classes="primary" Content="{Binding NewButtonText}" Command="{Binding StartNewCommand}" />
+        </Grid>
 
-        <Grid ColumnDefinitions="*,24,*">
-          <DockPanel>
-            <TextBlock DockPanel.Dock="Top" Classes="heading" Text="Wydarzenia" Margin="0,0,0,8" />
-            <ScrollViewer>
-              <ItemsControl ItemsSource="{Binding Events}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="vm:PlanSummaryViewModel">
-                    <Border Classes="planRow" Classes.open="{Binding IsOpen}">
-                      <StackPanel>
-                        <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Text="{Binding Details}" />
-                        <StackPanel Orientation="Horizontal" Spacing="2" Margin="-8,4,0,0">
-                          <Button Classes="quiet" Content="Otwórz"
-                                  Command="{Binding $parent[UserControl].((vm:PlansViewModel)DataContext).OpenPlanCommand}" CommandParameter="{Binding}" />
-                          <Button Classes="quiet" Content="Użyj ponownie" ToolTip.Tip="Kopia z dzisiejszą datą"
-                                  Command="{Binding $parent[UserControl].((vm:PlansViewModel)DataContext).ReuseCommand}" CommandParameter="{Binding}" />
-                          <Button Classes="quiet" Content="Jako szablon"
-                                  Command="{Binding $parent[UserControl].((vm:PlansViewModel)DataContext).SaveAsTemplateCommand}" CommandParameter="{Binding}" />
-                          <Button Classes="quiet" Content="Usuń" IsVisible="{Binding !IsOpen}"
-                                  Command="{Binding $parent[UserControl].((vm:PlansViewModel)DataContext).DeleteCommand}" CommandParameter="{Binding}" />
-                        </StackPanel>
-                      </StackPanel>
+        <Grid ColumnDefinitions="2*,20,3*">
+          <!-- LISTA -->
+          <Panel>
+            <TextBlock Classes="bodyMuted" TextWrapping="Wrap" Margin="4,8" IsVisible="{Binding IsListEmpty}"
+                       Text="{Binding EmptyListText}" />
+            <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:PlanSummaryViewModel">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="2">
+                      <TextBlock Classes="bodyStrong" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Classes="caption" Text="{Binding Details}" />
+                    </StackPanel>
+                    <Border Grid.Column="1" Classes="badge" IsVisible="{Binding IsOpen}" VerticalAlignment="Center">
+                      <TextBlock Text="otwarty" />
                     </Border>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </ScrollViewer>
-          </DockPanel>
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </Panel>
 
-          <DockPanel Grid.Column="2">
-            <TextBlock DockPanel.Dock="Top" Classes="heading" Text="Szablony" Margin="0,0,0,8" />
-            <TextBlock DockPanel.Dock="Top" Classes="caption" TextWrapping="Wrap" Margin="0,0,0,8"
-                       Text="Stałe zestawy, np. Próba z dziećmi. „Użyj ponownie” tworzy z nich plan na dziś." />
-            <ScrollViewer>
-              <ItemsControl ItemsSource="{Binding Templates}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="vm:PlanSummaryViewModel">
-                    <Border Classes="planRow" Classes.open="{Binding IsOpen}">
-                      <StackPanel>
-                        <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Text="{Binding Details}" />
-                        <StackPanel Orientation="Horizontal" Spacing="2" Margin="-8,4,0,0">
-                          <Button Classes="quiet" Content="Użyj ponownie"
-                                  Command="{Binding $parent[UserControl].((vm:PlansViewModel)DataContext).ReuseCommand}" CommandParameter="{Binding}" />
-                          <Button Classes="quiet" Content="Edytuj"
-                                  Command="{Binding $parent[UserControl].((vm:PlansViewModel)DataContext).OpenPlanCommand}" CommandParameter="{Binding}" />
-                          <Button Classes="quiet" Content="Usuń" IsVisible="{Binding !IsOpen}"
-                                  Command="{Binding $parent[UserControl].((vm:PlansViewModel)DataContext).DeleteCommand}" CommandParameter="{Binding}" />
-                        </StackPanel>
+          <!-- FORMULARZ -->
+          <Border Grid.Column="2" Classes="form">
+            <Panel>
+              <TextBlock Classes="bodyMuted" TextWrapping="Wrap" TextAlignment="Center"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding ShowPlaceholder}"
+                         Text="Wybierz plan z listy albo utwórz nowy." />
+
+              <DockPanel IsVisible="{Binding HasForm}">
+                <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+                  <TextBlock Classes="heading" Text="{Binding FormTitle}" />
+                  <Border Grid.Column="1" Classes="badge" IsVisible="{Binding SelectedIsOpen}" VerticalAlignment="Center">
+                    <TextBlock Text="otwarty teraz" />
+                  </Border>
+                </Grid>
+
+                <Grid DockPanel.Dock="Top" ColumnDefinitions="*,16,200" Margin="0,0,0,18">
+                  <StackPanel Spacing="6">
+                    <TextBlock Classes="bodyStrong" Text="Nazwa" />
+                    <TextBox Text="{Binding EditName}" PlaceholderText="{Binding NamePlaceholder}" />
+                    <TextBlock Classes="caption" Text="{Binding NameHint}" />
+                  </StackPanel>
+                  <StackPanel Grid.Column="2" Spacing="6" IsVisible="{Binding ShowingEvents}">
+                    <TextBlock Classes="bodyStrong" Text="Data" />
+                    <CalendarDatePicker SelectedDate="{Binding EditDate}" HorizontalAlignment="Stretch" />
+                  </StackPanel>
+                </Grid>
+
+                <!-- Akcje: tworzenie -->
+                <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto,10,Auto" IsVisible="{Binding IsCreating}">
+                  <Button Grid.Column="1" Content="Anuluj" Command="{Binding CancelNewCommand}" />
+                  <Button Grid.Column="3" Classes="primary" Content="Utwórz i otwórz" Command="{Binding CreateCommand}"
+                          IsEnabled="{Binding CanCreate}" />
+                </Grid>
+
+                <!-- Akcje: istniejący plan -->
+                <StackPanel DockPanel.Dock="Bottom" Spacing="12" IsVisible="{Binding HasSelection}">
+                  <Border Classes="confirm" IsVisible="{Binding IsDeleteConfirmationOpen}">
+                    <Grid ColumnDefinitions="*,Auto,10,Auto">
+                      <TextBlock Classes="bodyStrong" TextWrapping="Wrap" VerticalAlignment="Center"
+                                 Text="Usunąć ten plan? Tej operacji nie można cofnąć." />
+                      <Button Grid.Column="1" Content="Anuluj" Command="{Binding CancelDeleteCommand}" />
+                      <Button Grid.Column="3" Classes="danger" Content="Usuń" Command="{Binding ConfirmDeleteCommand}" />
+                    </Grid>
+                  </Border>
+
+                  <!-- Główne: otwórz / zapisz zmienione pola (przycisk pojawia się dopiero po edycji). -->
+                  <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding !IsDeleteConfirmationOpen}">
+                    <Button Classes="primary" Content="{Binding OpenButtonText}" Command="{Binding OpenSelectedCommand}"
+                            IsVisible="{Binding SelectedIsClosed}" />
+                    <Button Content="Zapisz zmiany" Command="{Binding SaveCommand}"
+                            IsVisible="{Binding IsDirty}" IsEnabled="{Binding CanSave}" />
+                  </StackPanel>
+
+                  <!-- Pozostałe: kopie i usuwanie. -->
+                  <Border BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="0,1,0,0" Padding="0,10,0,0"
+                          IsVisible="{Binding !IsDeleteConfirmationOpen}">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <StackPanel Orientation="Horizontal" Spacing="4" Margin="-8,0,0,0">
+                        <Button Classes="quiet" Content="Kopia na dziś" Command="{Binding CopyToTodayCommand}" IsVisible="{Binding ShowingEvents}"
+                                ToolTip.Tip="Nowe wydarzenie z dzisiejszą datą i tymi samymi pieśniami" />
+                        <Button Classes="quiet" Content="Zapisz jako szablon" Command="{Binding SaveAsTemplateCommand}" IsVisible="{Binding ShowingEvents}"
+                                ToolTip.Tip="Stały zestaw tych pieśni do ponownego użycia" />
+                        <Button Classes="quiet" Content="Nowe wydarzenie z szablonu" Command="{Binding CopyToTodayCommand}" IsVisible="{Binding ShowingTemplates}"
+                                ToolTip.Tip="Tworzy wydarzenie na dziś z pieśniami szablonu; szablon pozostaje bez zmian" />
                       </StackPanel>
-                    </Border>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </ScrollViewer>
-          </DockPanel>
+                      <Button Grid.Column="2" Classes="quiet dangerText" Content="Usuń…" Command="{Binding RequestDeleteCommand}"
+                              IsVisible="{Binding CanDelete}" />
+                    </Grid>
+                  </Border>
+                </StackPanel>
+
+                <!-- Podgląd zawartości -->
+                <DockPanel IsVisible="{Binding HasSelection}" Margin="0,0,0,16">
+                  <TextBlock DockPanel.Dock="Top" Classes="overline" Foreground="{DynamicResource MutedBrush}"
+                             Text="{Binding SelectedSongsHeader}" Margin="0,0,0,6" />
+                  <ScrollViewer>
+                    <ItemsControl ItemsSource="{Binding SelectedSongs}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="x:String">
+                          <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis" Margin="0,3" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </ScrollViewer>
+                </DockPanel>
+              </DockPanel>
+            </Panel>
+          </Border>
         </Grid>
       </DockPanel>
     </Border>
   </Border>
 
   <UserControl.Styles>
-    <Style Selector="Border.planRow">
-      <Setter Property="CornerRadius" Value="10" />
-      <Setter Property="Padding" Value="12,8" />
-      <Setter Property="Margin" Value="0,0,0,4" />
+    <Style Selector="Border.form">
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="20" />
     </Style>
-    <Style Selector="Border.planRow.open">
+    <!-- Na podniesionym tle zwykły przycisk musi się odróżniać. -->
+    <Style Selector="Border.form Button:not(.primary):not(.quiet):not(.danger)">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+    </Style>
+    <Style Selector="Border.segmented">
+      <Setter Property="Background" Value="{DynamicResource InkBrush}" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="Padding" Value="4" />
+    </Style>
+    <Style Selector="Button.tab">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Padding" Value="18,8" />
+      <Setter Property="CornerRadius" Value="9" />
+    </Style>
+    <Style Selector="Button.tab.active">
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    </Style>
+    <Style Selector="Border.badge">
       <Setter Property="Background" Value="{DynamicResource CandleSoftBrush}" />
+      <Setter Property="CornerRadius" Value="999" />
+      <Setter Property="Padding" Value="10,2" />
+      <Setter Property="Margin" Value="8,0,0,0" />
+    </Style>
+    <Style Selector="Border.badge > TextBlock">
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource CandleBrush}" />
+    </Style>
+    <Style Selector="Border.confirm">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource DangerBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="14,10" />
+    </Style>
+    <Style Selector="Button.danger">
+      <Setter Property="Background" Value="{DynamicResource DangerBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource OnCandleBrush}" />
+      <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+    <Style Selector="Button.dangerText">
+      <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
     </Style>
   </UserControl.Styles>
 </UserControl>

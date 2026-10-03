@@ -37,8 +37,31 @@ public sealed partial class LiveViewModel : ObservableObject
 
     public ObservableCollection<SlideTabViewModel> Slides { get; } = [];
 
-    /// <summary>Wersy bieżącego slajdu z akordami — dla operatora i muzyków.</summary>
-    public IReadOnlyList<SlideLine> ChordLines => State.Slide?.Lines ?? [];
+    public SlideTabViewModel? CurrentTab =>
+        State.Item is not null && State.SlideIndex >= 0 && State.SlideIndex < Slides.Count
+            ? Slides[State.SlideIndex]
+            : null;
+
+    public SlideTabViewModel? NextTab =>
+        State.Item is not null && State.SlideIndex >= 0 && State.SlideIndex + 1 < Slides.Count
+            ? Slides[State.SlideIndex + 1]
+            : null;
+
+    public IReadOnlyList<SlideLine> CurrentLines => CurrentTab?.Slide.Lines ?? [];
+
+    public IReadOnlyList<SlideLine> NextLines => NextTab?.Slide.Lines ?? [];
+
+    public string? CurrentLabel => CurrentTab?.Label;
+
+    public string? UpcomingLabel => NextTab?.Label ?? NextText;
+
+    public bool HasUpcoming => UpcomingLabel is not null;
+
+    public double ProgressValue => Slides.Count == 0 ? 0 : (State.SlideIndex + 1d) / Slides.Count * 100;
+
+    public string ProgressText => Slides.Count == 0
+        ? ""
+        : $"{State.SlideIndex + 1} z {Slides.Count} · {ProgressValue:0}%";
 
     [RelayCommand]
     private void Next() => _control.Next();
@@ -74,7 +97,15 @@ public sealed partial class LiveViewModel : ObservableObject
         OnPropertyChanged(nameof(IsBlank));
         OnPropertyChanged(nameof(HasItem));
         OnPropertyChanged(nameof(NextText));
-        OnPropertyChanged(nameof(ChordLines));
+        OnPropertyChanged(nameof(CurrentTab));
+        OnPropertyChanged(nameof(NextTab));
+        OnPropertyChanged(nameof(CurrentLines));
+        OnPropertyChanged(nameof(NextLines));
+        OnPropertyChanged(nameof(CurrentLabel));
+        OnPropertyChanged(nameof(UpcomingLabel));
+        OnPropertyChanged(nameof(HasUpcoming));
+        OnPropertyChanged(nameof(ProgressValue));
+        OnPropertyChanged(nameof(ProgressText));
     }
 }
 

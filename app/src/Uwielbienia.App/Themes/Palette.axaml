@@ -16,6 +16,7 @@
       <SolidColorBrush x:Key="ChordBrush" Color="#7FB6E8" />
       <SolidColorBrush x:Key="SelectionBrush" Color="#2E3861" />
       <SolidColorBrush x:Key="ScrimBrush" Color="#B30B0E1A" />
+      <SolidColorBrush x:Key="DangerBrush" Color="#EE8A8A" />
       <Color x:Key="SystemAccentColor">#F2B84B</Color>
     </ResourceDictionary>
     <ResourceDictionary x:Key="Light">
@@ -32,6 +33,7 @@
       <SolidColorBrush x:Key="ChordBrush" Color="#2F6DB5" />
       <SolidColorBrush x:Key="SelectionBrush" Color="#E3E7F4" />
       <SolidColorBrush x:Key="ScrimBrush" Color="#991B2138" />
+      <SolidColorBrush x:Key="DangerBrush" Color="#B42318" />
       <Color x:Key="SystemAccentColor">#B7791F</Color>
     </ResourceDictionary>
   </ResourceDictionary.ThemeDictionaries>

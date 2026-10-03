@@ -9,34 +9,46 @@ namespace Uwielbienia.App.ViewModels;
 
 /// <summary>
 /// Środkowa kolumna: podgląd wybranej pieśni. Tu wybiera się części do zaśpiewania (chipy)
-/// i świadomie wysyła pieśń lub konkretny slajd na ekran. Sam podgląd nigdy nie zmienia ekranu.
+/// i zapisuje ich układ w planie. Tylko jawne „Pokaż na ekranie” zmienia stan prezentacji.
 /// </summary>
 public sealed partial class PreviewViewModel : ObservableObject
 {
     private readonly ISlideBuilder _slides;
     private readonly ActivePlan _plan;
     private readonly ILiveControl _control;
+    private readonly ILiveStateSource _live;
     private readonly ILiveItemFactory _items;
     private readonly PlanActions _planActions;
     private SongPlanItem? _planItem;
 
-    public PreviewViewModel(ISlideBuilder slides, ActivePlan plan, ILiveControl control, ILiveItemFactory items, PlanActions planActions)
+    public PreviewViewModel(ISlideBuilder slides, ActivePlan plan, ILiveControl control, ILiveStateSource live,
+        ILiveItemFactory items, PlanActions planActions)
     {
         _slides = slides;
         _plan = plan;
         _control = control;
+        _live = live;
         _items = items;
         _planActions = planActions;
+        _live.StateChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(IsLive));
+            OnPropertyChanged(nameof(CanShowLive));
+        };
     }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasSong), nameof(Title), nameof(Number), nameof(Category))]
+    [NotifyPropertyChangedFor(nameof(HasSong), nameof(Title), nameof(Number), nameof(Category), nameof(IsLive), nameof(CanShowLive))]
     public partial Song? Song { get; private set; }
 
     [ObservableProperty]
     public partial bool IsFromPlan { get; private set; }
 
     public bool HasSong => Song is not null;
+
+    public bool IsLive => Song is not null && _live.State.Item?.SongId == Song.Id;
+
+    public bool CanShowLive => HasSong && !IsLive;
 
     public string? Title => Song?.Title;
 
@@ -64,9 +76,6 @@ public sealed partial class PreviewViewModel : ObservableObject
 
     [RelayCommand]
     private void ShowLive() => ShowSlide(0);
-
-    [RelayCommand]
-    private void ShowSlideLive(SlideTabViewModel tab) => ShowSlide(tab.Index);
 
     [RelayCommand]
     private void AddAsNext()

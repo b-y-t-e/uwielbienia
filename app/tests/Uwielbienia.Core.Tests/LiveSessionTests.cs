@@ -53,12 +53,12 @@ public class LiveSessionTests
     }
 
     [Fact]
-    public void Updating_playlist_refreshes_current_item_slides()
+    public void Updating_playlist_does_not_change_current_item_slides()
     {
         _session.Show(_second, 2);
         var shorter = _second with { Slides = _second.Slides.Take(1).ToList() };
         _session.SetPlaylist([_first, shorter]);
-        Assert.Equal((shorter, 0), (_session.State.Item, _session.State.SlideIndex));
+        Assert.Equal((_second, 2), (_session.State.Item, _session.State.SlideIndex));
     }
 
     [Fact]

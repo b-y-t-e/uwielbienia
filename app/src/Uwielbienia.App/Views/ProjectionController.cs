@@ -35,7 +35,13 @@ public sealed class ProjectionController(Func<ProjectionWindow> createWindow) : 
         _operator = operatorWindow;
         operatorWindow.Screens.Changed += (_, _) => Reevaluate();
         operatorWindow.PositionChanged += (_, _) => Reevaluate();
-        operatorWindow.Closed += (_, _) => _window?.Close();
+        operatorWindow.Closed += (_, _) =>
+        {
+            // Zamknięcie projekcji emituje Changed i może ponownie odczytać Status.
+            // Najpierw odłącz okno operatora, którego implementacja jest już zwalniana.
+            _operator = null;
+            _window?.Close();
+        };
         Reevaluate();
     }
 
@@ -121,10 +127,12 @@ public sealed class ProjectionController(Func<ProjectionWindow> createWindow) : 
         }
 
         _window.WindowState = WindowState.Normal;
-        _window.Position = screen.WorkingArea.Position;
+        _window.Position = screen.Bounds.Position;
+        // Przy pierwszym otwarciu Avalonia/Win32 musi dostać ten stan przed Show(),
+        // inaczej okno może pozostać w domyślnym rozmiarze 800×600.
+        _window.WindowState = WindowState.FullScreen;
         if (!_window.IsVisible)
             _window.Show();
-        _window.WindowState = WindowState.FullScreen;
         _window.IsSameScreen = mode == ProjectionMode.SameScreen;
         _screen = screen;
         SetMode(mode);

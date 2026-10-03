@@ -6,7 +6,9 @@
         x:DataType="vm:ProjectionViewModel"
         Title="Uwielbienia — ekran"
         Background="{Binding Live.Appearance.Background}"
+        WindowStartupLocation="Manual"
         WindowDecorations="None"
+        Topmost="True"
         ShowInTaskbar="False">
   <Panel>
     <v:SlideView x:Name="Slide"
@@ -39,7 +41,7 @@
                 <Grid ColumnDefinitions="52,*">
                   <TextBlock Classes="number" Text="{Binding Number}" VerticalAlignment="Center" />
                   <StackPanel Grid.Column="1">
-                    <TextBlock Text="{Binding Title}" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Classes="bodyStrong" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
                     <TextBlock Classes="caption" Text="{Binding FirstLine}" IsVisible="{Binding FirstLine, Converter={x:Static ObjectConverters.IsNotNull}}" TextTrimming="CharacterEllipsis" />
                   </StackPanel>
                 </Grid>

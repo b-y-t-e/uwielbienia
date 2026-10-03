@@ -3,6 +3,7 @@
 
   <Style Selector="Window">
     <Setter Property="FontFamily" Value="{StaticResource UiFont}" />
+    <Setter Property="FontSize" Value="15" />
     <Setter Property="Background" Value="{DynamicResource InkBrush}" />
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
   </Style>
@@ -28,9 +29,29 @@
     <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
   </Style>
   <Style Selector="TextBlock.chords">
-    <Setter Property="FontSize" Value="14" />
+    <Setter Property="FontSize" Value="15" />
     <Setter Property="FontWeight" Value="Bold" />
     <Setter Property="Foreground" Value="{DynamicResource ChordBrush}" />
+  </Style>
+  <Style Selector="TextBlock.bodyStrong">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="TextBlock.bodyMuted">
+    <Setter Property="FontSize" Value="15" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+  </Style>
+  <Style Selector="TextBlock.lead">
+    <Setter Property="FontSize" Value="18" />
+  </Style>
+  <Style Selector="TextBlock.displayNumber">
+    <Setter Property="FontSize" Value="24" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+  </Style>
+  <Style Selector="TextBlock.overline">
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="Bold" />
   </Style>
 
   <!-- Panele: jedna płaszczyzna, bez cieni; hierarchię daje kolor tła. -->
@@ -38,6 +59,28 @@
     <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     <Setter Property="CornerRadius" Value="14" />
     <Setter Property="Padding" Value="16" />
+  </Style>
+
+  <!-- Granica między strefami: przezroczysta szczelina, uchwyt widoczny dopiero przy wskazaniu. -->
+  <Style Selector="GridSplitter.paneDivider">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="Focusable" Value="False" />
+    <Setter Property="Cursor" Value="SizeWestEast" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="{TemplateBinding Background}">
+          <Border Name="PART_Grip" Width="4" Height="36" CornerRadius="2"
+                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                  Background="{DynamicResource HairlineBrush}" Opacity="0.6" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="GridSplitter.paneDivider:pointerover /template/ Border#PART_Grip">
+    <Setter Property="Background" Value="{DynamicResource CandleBrush}" />
+    <Setter Property="Height" Value="72" />
+    <Setter Property="Opacity" Value="1" />
   </Style>
 
   <Style Selector="Button">
@@ -62,10 +105,23 @@
     <Setter Property="Padding" Value="8,6" />
   </Style>
   <Style Selector="Button.big">
-    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontSize" Value="18" />
     <Setter Property="Padding" Value="6,12" />
     <Setter Property="HorizontalAlignment" Value="Stretch" />
     <Setter Property="HorizontalContentAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="TextBox">
+    <Setter Property="FontSize" Value="15" />
+  </Style>
+  <Style Selector="ToggleButton">
+    <Setter Property="FontSize" Value="15" />
+  </Style>
+  <Style Selector="CheckBox">
+    <Setter Property="FontSize" Value="15" />
+  </Style>
+  <Style Selector="RadioButton">
+    <Setter Property="FontSize" Value="15" />
   </Style>
 
   <Style Selector="ToggleButton.chip">
@@ -82,7 +138,7 @@
   </Style>
 
   <Style Selector="TextBox.search">
-    <Setter Property="FontSize" Value="17" />
+    <Setter Property="FontSize" Value="18" />
     <Setter Property="Padding" Value="14,10" />
     <Setter Property="CornerRadius" Value="12" />
   </Style>

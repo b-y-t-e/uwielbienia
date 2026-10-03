@@ -53,18 +53,14 @@ public sealed class LiveSession : ILiveControl, ILiveStateSource
     public event EventHandler<LiveState>? StateChanged;
 
     /// <summary>
-    /// Aktualizuje kolejkę pieśni (plan). Jeśli bieżąca pieśń jest w planie, jej slajdy są odświeżane —
-    /// zmiana wybranych części działa od razu.
+    /// Aktualizuje kolejkę pieśni (plan), nie zmieniając migawki aktualnie wyświetlanej pieśni.
+    /// Zmiany planu zaczną obowiązywać, gdy operator jawnie pokaże pieśń ponownie.
     /// </summary>
     public void SetPlaylist(IReadOnlyList<LiveItem> playlist)
     {
         _playlist = playlist;
         var current = State.Item;
-        var refreshed = current?.PlanItemId is { } id ? playlist.FirstOrDefault(i => i.PlanItemId == id) : null;
-        if (refreshed is not null)
-            Publish(refreshed, Math.Min(State.SlideIndex, Math.Max(0, refreshed.Slides.Count - 1)), State.IsBlank);
-        else
-            Publish(current, State.SlideIndex, State.IsBlank);
+        Publish(current, State.SlideIndex, State.IsBlank);
     }
 
     public void Show(LiveItem item, int slideIndex = 0) =>

@@ -60,8 +60,18 @@ main.Search.Query = "duch";
 Save(window, "operator-szukaj");
 main.Search.Clear();
 
+services.GetRequiredService<IPlanStore>().Save(plan.CloneAs("Próba z dziećmi", null, PlanKind.Template));
+services.GetRequiredService<IPlanStore>().Save(plan.CloneAs("Uwielbienie 18 września 2026", new DateOnly(2026, 9, 18), PlanKind.Event));
 main.Plans.ShowCommand.Execute(null);
 Save(window, "plany");
+main.Plans.Selected = main.Plans.Items[1];
+main.Plans.EditName = "Uwielbienie młodzieżowe";
+Save(window, "plany-edycja");
+main.Plans.StartNewCommand.Execute(null);
+Save(window, "plany-nowe");
+main.Plans.ShowTemplatesTabCommand.Execute(null);
+main.Plans.RequestDeleteCommand.Execute(null);
+Save(window, "plany-szablony");
 main.Plans.IsOpen = false;
 
 var projection = services.GetRequiredService<Func<ProjectionWindow>>()();

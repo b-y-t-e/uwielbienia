@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -9,37 +8,59 @@ namespace Uwielbienia.App.Views;
 
 public partial class MainWindow : Window
 {
+    private static readonly DataFormat<PlanItemViewModel> PlanItemDataFormat =
+        DataFormat.CreateInProcessFormat<PlanItemViewModel>("uwielbienia-plan-item");
+    private PlanItemViewModel? _planDragCandidate;
+    private PointerPressedEventArgs? _planDragPress;
+    private Avalonia.Point _planDragStart;
+    private bool _planDragStarted;
+
     public MainWindow()
     {
         InitializeComponent();
         AddHandler(KeyDownEvent, OnKeyDownTunnel, RoutingStrategies.Tunnel);
+        AddHandler(KeyUpEvent, OnKeyUpTunnel, RoutingStrategies.Tunnel);
         AddHandler(TextInputEvent, OnTextInputTunnel, RoutingStrategies.Tunnel);
         PropertyChanged += (_, e) =>
         {
             if (e.Property == WindowStateProperty && e.OldValue is WindowState.FullScreen && WindowState == WindowState.Normal)
                 FitToScreen();
         };
-        SizeChanged += (_, _) => UpdateColumnWidths();
     }
 
     public MainWindow(MainViewModel viewModel) : this()
     {
         DataContext = viewModel;
-        viewModel.PropertyChanged += OnViewModelChanged;
-        UpdateColumnWidths();
+        ApplySavedColumnWidths();
     }
 
     private MainViewModel ViewModel => (MainViewModel)DataContext!;
 
-    private bool IsOverlayOpen => ViewModel.Plans.IsOpen || ViewModel.Remote.IsOpen;
+    private bool IsOverlayOpen =>
+        ViewModel.Plans.IsOpen || ViewModel.Remote.IsOpen || ViewModel.Plan.IsRemoveConfirmationOpen;
 
     private void OnKeyDownTunnel(object? sender, KeyEventArgs e)
     {
         var vm = ViewModel;
+        if (e.Key == Key.F11 && e.KeyModifiers == KeyModifiers.None)
+        {
+            WindowState = WindowState == WindowState.FullScreen
+                ? WindowState.Maximized
+                : WindowState.FullScreen;
+            e.Handled = true;
+            return;
+        }
+        if (e.Key == Key.Escape && vm.Plans.IsDeleteConfirmationOpen)
+        {
+            vm.Plans.CancelDeleteCommand.Execute(null);
+            e.Handled = true;
+            return;
+        }
         if (e.Key == Key.Escape && IsOverlayOpen)
         {
             vm.Plans.IsOpen = false;
             vm.Remote.IsOpen = false;
+            vm.Plan.CancelRemoveCommand.Execute(null);
             e.Handled = true;
             return;
         }
@@ -61,6 +82,15 @@ public partial class MainWindow : Window
             return;
         }
         e.Handled = LiveKeyboard.Handle(e, vm.Control, vm.Projection);
+    }
+
+    private void OnKeyUpTunnel(object? sender, KeyEventArgs e)
+    {
+        // KeyDown spacji steruje prezentacją. Nie pozwól, by jej KeyUp dodatkowo
+        // uruchomił przycisk, który zachował fokus po kliknięciu (np. „Wstecz”).
+        if (!IsOverlayOpen && e.Source is not TextBox && e.Key == Key.Space &&
+            e.KeyModifiers is KeyModifiers.None or KeyModifiers.Shift)
+            e.Handled = true;
     }
 
     private void HandleSearchKey(MainViewModel vm, KeyEventArgs e)
@@ -91,6 +121,105 @@ public partial class MainWindow : Window
         }
     }
 
+    private void OnSearchFocus(object? sender, FocusChangedEventArgs e) => UpdateSearchPopup();
+
+    private void OnSearchTextChanged(object? sender, TextChangedEventArgs e) => UpdateSearchPopup();
+
+    private void UpdateSearchPopup() =>
+        SearchPopup.IsOpen = !string.IsNullOrWhiteSpace(SearchBox.Text);
+
+    private void OnSearchResultPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        SearchPopup.IsOpen = false;
+        Focus();
+    }
+
+    private void OnPlanItemClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { DataContext: PlanItemViewModel item })
+            ViewModel.Plan.Selected = item;
+    }
+
+    private void OnPlanItemDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (sender is not Control { DataContext: PlanItemViewModel item })
+            return;
+        ViewModel.Plan.ShowLiveCommand.Execute(item);
+        e.Handled = true;
+    }
+
+    private void OnPlanItemPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is not Control { DataContext: PlanItemViewModel item } row ||
+            !e.GetCurrentPoint(row).Properties.IsLeftButtonPressed)
+            return;
+
+        _planDragCandidate = item;
+        _planDragPress = e;
+        _planDragStart = e.GetPosition(PlanList);
+        _planDragStarted = false;
+    }
+
+    private async void OnPlanItemPointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (_planDragCandidate is not { } item || _planDragPress is not { } press || _planDragStarted ||
+            sender is not Control row || !e.GetCurrentPoint(row).Properties.IsLeftButtonPressed)
+            return;
+
+        var position = e.GetPosition(PlanList);
+        if (Math.Abs(position.X - _planDragStart.X) < 6 && Math.Abs(position.Y - _planDragStart.Y) < 6)
+            return;
+
+        _planDragStarted = true;
+        e.Handled = true;
+        using var transfer = new DataTransfer();
+        transfer.Add(DataTransferItem.Create(PlanItemDataFormat, item));
+        await DragDrop.DoDragDropAsync(press, transfer, DragDropEffects.Move);
+        _planDragCandidate = null;
+        _planDragPress = null;
+        _planDragStarted = false;
+    }
+
+    private void OnPlanItemPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        if (!_planDragStarted)
+        {
+            _planDragCandidate = null;
+            _planDragPress = null;
+        }
+    }
+
+    private void OnPlanDragOver(object? sender, DragEventArgs e)
+    {
+        e.DragEffects = e.DataTransfer.Contains(PlanItemDataFormat)
+            ? DragDropEffects.Move
+            : DragDropEffects.None;
+        e.Handled = true;
+    }
+
+    private void OnPlanDrop(object? sender, DragEventArgs e)
+    {
+        var dragged = e.DataTransfer.TryGetValue(PlanItemDataFormat);
+        if (dragged is null)
+            return;
+
+        var sourceIndex = ViewModel.Plan.Items.IndexOf(dragged);
+        if (sourceIndex < 0)
+            return;
+
+        var target = (e.Source as Control)?.DataContext as PlanItemViewModel;
+        var insertionIndex = target is null ? ViewModel.Plan.Items.Count : ViewModel.Plan.Items.IndexOf(target);
+        if (target is not null && PlanList.ContainerFromItem(target) is Control container &&
+            e.GetPosition(container).Y > container.Bounds.Height / 2)
+            insertionIndex++;
+        if (sourceIndex < insertionIndex)
+            insertionIndex--;
+
+        if (sourceIndex != insertionIndex)
+            ViewModel.Plan.Reorder(dragged, insertionIndex);
+        e.Handled = true;
+    }
+
     /// <summary>Pisanie gdziekolwiek w oknie zaczyna wyszukiwanie pieśni.</summary>
     private void OnTextInputTunnel(object? sender, TextInputEventArgs e)
     {
@@ -100,12 +229,6 @@ public partial class MainWindow : Window
         SearchBox.Focus();
         SearchBox.CaretIndex = start.Length;
         e.Handled = true;
-    }
-
-    private void OnViewModelChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (e.PropertyName == nameof(MainViewModel.IsLivePanelVisible))
-            UpdateColumnWidths();
     }
 
     /// <summary>
@@ -125,22 +248,32 @@ public partial class MainWindow : Window
             area.Y + (int)((area.Height - Height * scale) / 2));
     }
 
-    private const double PlanColumnShare = 0.22, PlanColumnMin = 200, PlanColumnMax = 340;
-    private const double LiveColumnShare = 0.28, LiveColumnMin = 240, LiveColumnMax = 460;
-    private const double ColumnGap = 16;
-
-    /// <summary>Kolumny planu i podglądu ekranu rosną i maleją z oknem, żeby środek zawsze miał miejsce.</summary>
-    private void UpdateColumnWidths()
+    private void ApplySavedColumnWidths()
     {
-        if (DataContext is not MainViewModel vm)
-            return;
-        var width = Columns.Bounds.Width > 0 ? Columns.Bounds.Width : Width;
-        var visible = vm.IsLivePanelVisible;
-        Columns.ColumnDefinitions[0].Width = new GridLength(ColumnWidth(width, PlanColumnShare, PlanColumnMin, PlanColumnMax));
-        Columns.ColumnDefinitions[3].Width = new GridLength(visible ? ColumnGap : 0);
-        Columns.ColumnDefinitions[4].Width = new GridLength(visible ? ColumnWidth(width, LiveColumnShare, LiveColumnMin, LiveColumnMax) : 0);
+        var (plan, preview, live) = NormalizeRatios(
+            ViewModel.PlanColumnRatio, ViewModel.PreviewColumnRatio, ViewModel.LiveColumnRatio);
+        Columns.ColumnDefinitions[0].Width = new GridLength(plan, GridUnitType.Star);
+        Columns.ColumnDefinitions[2].Width = new GridLength(preview, GridUnitType.Star);
+        Columns.ColumnDefinitions[4].Width = new GridLength(live, GridUnitType.Star);
     }
 
-    private static double ColumnWidth(double availableWidth, double share, double min, double max) =>
-        Math.Clamp(availableWidth * share, min, max);
+    private void OnColumnSplitterDragCompleted(object? sender, VectorEventArgs e)
+    {
+        var plan = Columns.ColumnDefinitions[0].ActualWidth;
+        var preview = Columns.ColumnDefinitions[2].ActualWidth;
+        var live = Columns.ColumnDefinitions[4].ActualWidth;
+        var total = plan + preview + live;
+        if (total <= 0)
+            return;
+        ViewModel.SaveColumnRatios(plan / total, preview / total, live / total);
+    }
+
+    private static (double Plan, double Preview, double Live) NormalizeRatios(double plan, double preview, double live)
+    {
+        if (!double.IsFinite(plan) || !double.IsFinite(preview) || !double.IsFinite(live) ||
+            plan <= 0 || preview <= 0 || live <= 0)
+            return (0.16, 0.42, 0.42);
+        var total = plan + preview + live;
+        return (plan / total, preview / total, live / total);
+    }
 }

@@ -68,8 +68,6 @@ public sealed partial class MainViewModel : ObservableObject
 
     public string ProjectionStatus => Projection.Status;
 
-    public bool IsLivePanelVisible => _settings.Current.ShowLivePanel;
-
     public bool ShowChords => _settings.Current.ShowChords;
 
     public bool IsDarkTheme => _settings.Current.Theme == AppTheme.Dark;
@@ -80,14 +78,25 @@ public sealed partial class MainViewModel : ObservableObject
 
     public string? UpdateVersion => _updates.NewVersion;
 
+    public double PlanColumnRatio => _settings.Current.PlanColumnRatio;
+
+    public double PreviewColumnRatio => _settings.Current.PreviewColumnRatio;
+
+    public double LiveColumnRatio => _settings.Current.LiveColumnRatio;
+
+    public void SaveColumnRatios(double plan, double preview, double live) =>
+        _settings.Update(s => s with
+        {
+            PlanColumnRatio = plan,
+            PreviewColumnRatio = preview,
+            LiveColumnRatio = live,
+        });
+
     [RelayCommand]
     private void ToggleProjection() => Projection.Toggle();
 
     [RelayCommand]
     private void ShowOnThisScreen() => Projection.ShowOnSameScreen();
-
-    [RelayCommand]
-    private void ToggleLivePanel() => _settings.Update(s => s with { ShowLivePanel = !s.ShowLivePanel });
 
     [RelayCommand]
     private void ToggleChords() => _settings.Update(s => s with { ShowChords = !s.ShowChords });
@@ -115,10 +124,12 @@ public sealed partial class MainViewModel : ObservableObject
     private void OnSettingsChanged()
     {
         ApplyTheme();
-        OnPropertyChanged(nameof(IsLivePanelVisible));
         OnPropertyChanged(nameof(ShowChords));
         OnPropertyChanged(nameof(IsDarkTheme));
         OnPropertyChanged(nameof(IsProjectionDark));
+        OnPropertyChanged(nameof(PlanColumnRatio));
+        OnPropertyChanged(nameof(PreviewColumnRatio));
+        OnPropertyChanged(nameof(LiveColumnRatio));
     }
 
     private void ApplyTheme()
