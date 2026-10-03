@@ -21,7 +21,7 @@ Trzy kolumny (szerokość regulowana przeciąganiem, zapamiętywana):
 | Kolumna | Zawartość | Kod |
 |---|---|---|
 | **Plan** | kolejność pieśni: klik wybiera, dwuklik pokazuje, przeciąganie zmienia kolejność | `PlanViewModel` |
-| **Pieśń** | wyszukiwarka i tekst wybranej pieśni; nie zmienia ekranu bez „Pokaż na ekranie” | `SearchViewModel`, `PreviewViewModel` |
+| **Pieśń** | wyszukiwarka i tekst wybranej pieśni; pola wyboru części działają na żywo dla granej pieśni | `SearchViewModel`, `PreviewViewModel` |
 | **Na ekranie** | to, co widzi sala: postęp, bieżąca i następna część z akordami, Wstecz / Dalej | `LiveViewModel` |
 
 Plany (wydarzenia i szablony) zarządza się w oknie „Plany” po kliknięciu nazwy planu.
@@ -32,10 +32,10 @@ Plany (wydarzenia i szablony) zarządza się w oknie „Plany” po kliknięciu 
 |---|---|
 | Spacja, →, PageDown | następny slajd / następna pieśń planu |
 | Backspace, ←, PageUp | poprzedni slajd |
-| Enter | pokaż na ekranie pieśń wybraną w kolumnie „Pieśń” |
 | B lub . | czarny ekran |
 | F5 | włącz/wyłącz projekcję (drugi ekran albo ten sam) |
-| pisanie cyfr/liter | szybkie wyszukiwanie; Enter pokazuje, Ctrl+Enter dodaje jako następną |
+| pisanie cyfr/liter | szybkie wyszukiwanie; Enter wybiera do kolumny „Pieśń”, Ctrl+Enter dodaje jako następną |
+| dwuklik w planie | pokaż pieśń na ekranie (jedyny sposób w oknie operatora) |
 | Shift+1…9 | skok do slajdu bieżącej pieśni |
 | Esc | zamyka nakładkę; w trybie jednego ekranu wraca do okna operatora |
 

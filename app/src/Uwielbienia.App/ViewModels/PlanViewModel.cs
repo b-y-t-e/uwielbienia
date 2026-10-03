@@ -18,13 +18,15 @@ public sealed partial class PlanViewModel : ObservableObject
     private readonly ILiveControl _control;
     private readonly ILiveStateSource _live;
 
-    public PlanViewModel(ActivePlan plan, ISongLibrary library, ILiveControl control, ILiveStateSource live)
+    public PlanViewModel(ActivePlan plan, ISongLibrary library, ILiveControl control, ILiveStateSource live, PlanActions actions)
     {
         _plan = plan;
         _library = library;
         _control = control;
         _live = live;
         plan.Changed += (_, _) => Rebuild();
+        plan.Opened += (_, _) => StartFromBeginning();
+        actions.ItemAdded += (_, added) => Selected = Items.FirstOrDefault(i => i.Id == added.Id) ?? Selected;
         live.StateChanged += (_, _) => MarkLive();
         Rebuild();
     }
@@ -52,6 +54,9 @@ public sealed partial class PlanViewModel : ObservableObject
 
     /// <summary>Pozycja wybrana do kolumny „Pieśń” (zmienia się tylko przez zaznaczenie w planie).</summary>
     public event EventHandler<PlanItemViewModel>? ItemSelected;
+
+    /// <summary>Nie ma już wybranej pozycji (pusty plan, usunięta pieśń) — kolumna „Pieśń” ma być pusta.</summary>
+    public event EventHandler? SelectionCleared;
 
     partial void OnSelectedChanged(PlanItemViewModel? value)
     {
@@ -96,10 +101,26 @@ public sealed partial class PlanViewModel : ObservableObject
                 Items.Add(new PlanItemViewModel(item, song, position++));
         }
         Selected = Items.FirstOrDefault(i => i.Id == selectedId);
+        // Wybrana pieśń zniknęła z planu (usunięta) — kolumna „Pieśń” nie może jej dalej pokazywać.
+        if (selectedId is not null && Selected is null)
+            SelectionCleared?.Invoke(this, EventArgs.Empty);
         MarkLive();
         OnPropertyChanged(nameof(Name));
         OnPropertyChanged(nameof(DateText));
         OnPropertyChanged(nameof(IsEmpty));
+    }
+
+    /// <summary>
+    /// Po otwarciu innego planu: zaznaczona pierwsza pieśń, a ekran z pieśnią spoza tego planu
+    /// jest czyszczony — „Dalej” zacznie wtedy od pierwszej pieśni nowego planu.
+    /// </summary>
+    private void StartFromBeginning()
+    {
+        if (_live.State.Item is { } shown && Items.All(i => i.Id != shown.PlanItemId))
+            _control.Clear();
+        Selected = Items.FirstOrDefault();
+        if (Selected is null)
+            SelectionCleared?.Invoke(this, EventArgs.Empty);
     }
 
     private void MarkLive()
@@ -123,8 +144,6 @@ public sealed partial class PlanItemViewModel(SongPlanItem item, Song song, int 
     public int Number => Song.Number;
 
     public string Title => Song.Title;
-
-    public string Arrangement => string.Join(" ", Item.Arrangement ?? Song.Arrangement);
 
     [ObservableProperty]
     public partial bool IsLive { get; set; }

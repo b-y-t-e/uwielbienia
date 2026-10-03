@@ -13,10 +13,14 @@ public sealed class ActivePlan(IPlanStore store, ILiveItemFactory itemFactory, L
 
     public event EventHandler? Changed;
 
+    /// <summary>Otwarto inny plan (po <see cref="Changed"/>) — widoki zaczynają od początku planu.</summary>
+    public event EventHandler? Opened;
+
     public void Open(Plan plan)
     {
         Plan = plan;
         Refresh();
+        Opened?.Invoke(this, EventArgs.Empty);
     }
 
     public void Update(Func<Plan, Plan> change)

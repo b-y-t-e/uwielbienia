@@ -9,7 +9,7 @@
       <DockPanel>
         <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,18">
           <TextBlock Classes="songTitle" Text="Plany" />
-          <Button Grid.Column="1" Classes="quiet" Content="Zamknij  Esc" Command="{Binding CloseCommand}" />
+          <Button Grid.Column="1" Classes="quiet closeButton" Content="✕" ToolTip.Tip="Zamknij" Command="{Binding CloseCommand}" VerticalAlignment="Top" />
         </Grid>
 
         <!-- Zakładki + jedna akcja tworzenia, zależna od zakładki. -->
@@ -33,7 +33,7 @@
             <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}">
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:PlanSummaryViewModel">
-                  <Grid ColumnDefinitions="*,Auto">
+                  <Grid ColumnDefinitions="*,Auto" Background="Transparent" DoubleTapped="OnPlanDoubleTapped">
                     <StackPanel Spacing="2">
                       <TextBlock Classes="bodyStrong" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
                       <TextBlock Classes="caption" Text="{Binding Details}" />
@@ -65,7 +65,7 @@
                 <Grid DockPanel.Dock="Top" ColumnDefinitions="*,16,200" Margin="0,0,0,18">
                   <StackPanel Spacing="6">
                     <TextBlock Classes="bodyStrong" Text="Nazwa" />
-                    <TextBox Text="{Binding EditName}" PlaceholderText="{Binding NamePlaceholder}" />
+                    <TextBox x:Name="NameBox" Text="{Binding EditName}" PlaceholderText="{Binding NamePlaceholder}" />
                   </StackPanel>
                   <StackPanel Grid.Column="2" Spacing="6" IsVisible="{Binding ShowingEvents}">
                     <TextBlock Classes="bodyStrong" Text="Data" />
@@ -182,11 +182,6 @@
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="10" />
       <Setter Property="Padding" Value="14,10" />
-    </Style>
-    <Style Selector="Button.danger">
-      <Setter Property="Background" Value="{DynamicResource DangerBrush}" />
-      <Setter Property="Foreground" Value="{DynamicResource OnCandleBrush}" />
-      <Setter Property="FontWeight" Value="Bold" />
     </Style>
     <Style Selector="Button.dangerText">
       <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />

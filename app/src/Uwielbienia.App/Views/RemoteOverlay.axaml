@@ -8,7 +8,7 @@
       <StackPanel Spacing="14">
         <Grid ColumnDefinitions="*,Auto">
           <TextBlock Classes="songTitle" Text="Telefon lub drugi komputer" />
-          <Button Grid.Column="1" Classes="quiet" Content="Zamknij  Esc" Command="{Binding CloseCommand}" />
+          <Button Grid.Column="1" Classes="quiet closeButton" Content="✕" ToolTip.Tip="Zamknij" Command="{Binding CloseCommand}" VerticalAlignment="Top" />
         </Grid>
         <TextBlock TextWrapping="Wrap" FontSize="15"
                    Text="Zeskanuj kod aparatem telefonu. Otworzy się strona z pilotem: dalej, wstecz, czarny ekran i lista pieśni. Na komputerze otwórz ten sam adres i wybierz „Ekran”, żeby pokazywać tekst w przeglądarce." />

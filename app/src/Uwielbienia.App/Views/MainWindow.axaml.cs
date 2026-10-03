@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Uwielbienia.App.Services;
 using Uwielbienia.App.ViewModels;
@@ -11,6 +12,11 @@ namespace Uwielbienia.App.Views;
 public partial class MainWindow : Window
 {
     private const double PlanDragThreshold = 6;
+    private static readonly Cursor PlanDragCursor = new(StandardCursorType.SizeNorthSouth);
+    private const double PlanAutoScrollEdge = 48;
+    private const double PlanAutoScrollStep = 14;
+    private readonly DispatcherTimer _planAutoScroll = new() { Interval = TimeSpan.FromMilliseconds(30) };
+    private Point _planDragPosition;
     private PlanItemViewModel? _planDragCandidate;
     private Point _planDragStart;
     private bool _planDragStarted;
@@ -27,6 +33,7 @@ public partial class MainWindow : Window
         PlanList.AddHandler(PointerMovedEvent, OnPlanItemPointerMoved, RoutingStrategies.Tunnel, handledEventsToo: true);
         PlanList.AddHandler(PointerReleasedEvent, OnPlanItemPointerReleased, RoutingStrategies.Tunnel, handledEventsToo: true);
         PlanList.AddHandler(PointerCaptureLostEvent, (_, _) => EndPlanDrag(), RoutingStrategies.Bubble, handledEventsToo: true);
+        _planAutoScroll.Tick += (_, _) => AutoScrollPlan();
         PropertyChanged += (_, e) =>
         {
             if (e.Property == WindowStateProperty && e.OldValue is WindowState.FullScreen && WindowState == WindowState.Normal)
@@ -81,12 +88,6 @@ public partial class MainWindow : Window
         if (e.Source is TextBox)
             return;
 
-        if (e.Key == Key.Enter && e.KeyModifiers == KeyModifiers.None)
-        {
-            vm.Preview.ShowLiveCommand.Execute(null);
-            e.Handled = true;
-            return;
-        }
         e.Handled = LiveKeyboard.Handle(e, vm.Control, vm.Projection);
     }
 
@@ -108,7 +109,9 @@ public partial class MainWindow : Window
                 e.Handled = true;
                 break;
             case Key.Enter:
-                vm.Search.ShowNowCommand.Execute(null);
+                // Enter tylko wybiera pieśń do kolumny „Pieśń” — na ekran trafia wyłącznie dwuklikiem w planie.
+                SearchPopup.IsOpen = false;
+                Focus();
                 e.Handled = true;
                 break;
             case Key.Escape:
@@ -179,10 +182,13 @@ public partial class MainWindow : Window
                 return;
             _planDragStarted = true;
             item.IsDragged = true;
-            PlanList.Cursor = new Cursor(StandardCursorType.SizeNorthSouth);
+            PlanList.Cursor = PlanDragCursor;
+            _planAutoScroll.Start();
         }
 
+        _planDragPosition = position;
         ShowPlanDropMarker(PlanInsertionIndex(position.Y));
+        AutoScrollPlan();
         e.Handled = true;
     }
 
@@ -202,18 +208,39 @@ public partial class MainWindow : Window
         EndPlanDrag();
     }
 
+    /// <summary>Przeciąganie przy górnej/dolnej krawędzi listy przewija plan (także bez ruchu myszą).</summary>
+    private void AutoScrollPlan()
+    {
+        if (!_planDragStarted || PlanList.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault() is not { } scroll)
+            return;
+        var y = _planDragPosition.Y;
+        var height = PlanList.Bounds.Height;
+        var step = y < PlanAutoScrollEdge ? -PlanAutoScrollStep
+            : y > height - PlanAutoScrollEdge ? PlanAutoScrollStep
+            : 0;
+        var maxOffset = Math.Max(0, scroll.Extent.Height - scroll.Viewport.Height);
+        var offset = Math.Clamp(scroll.Offset.Y + step, 0, maxOffset);
+        if (step == 0 || offset == scroll.Offset.Y)
+            return;
+        scroll.Offset = scroll.Offset.WithY(offset);
+        ShowPlanDropMarker(PlanInsertionIndex(y));
+    }
+
     /// <summary>Indeks, przed którym wstawić przeciągany wiersz (liczba wierszy = na koniec).</summary>
     private int PlanInsertionIndex(double y)
     {
+        // Lista tworzy tylko widoczne wiersze — poza nimi wynik nie może „przeskoczyć” niewidocznych pieśni.
         var items = ViewModel.Plan.Items;
+        var afterLastVisible = 0;
         for (var i = 0; i < items.Count; i++)
         {
             if (PlanList.ContainerFromIndex(i) is not Control row || row.TranslatePoint(default, PlanList) is not { } top)
                 continue;
             if (y < top.Y + row.Bounds.Height / 2)
                 return i;
+            afterLastVisible = i + 1;
         }
-        return items.Count;
+        return afterLastVisible;
     }
 
     private void ShowPlanDropMarker(int insertionIndex)
@@ -238,6 +265,7 @@ public partial class MainWindow : Window
             item.IsDropBefore = false;
             item.IsDropAfter = false;
         }
+        _planAutoScroll.Stop();
         _planDragCandidate = null;
         _planDragStarted = false;
         _planDropIndex = -1;

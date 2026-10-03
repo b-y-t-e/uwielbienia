@@ -8,7 +8,9 @@ using Uwielbienia.Core.Songs;
 namespace Uwielbienia.App.ViewModels;
 
 /// <summary>
-/// Szybki wybór pieśni: numer albo słowa. Enter = od razu na ekran (i do planu za bieżącą), Ctrl+Enter = dodaj jako następną w planie.
+/// Szybki wybór pieśni: numer albo słowa. Ctrl+Enter = dodaj jako następną w planie. W oknie operatora Enter
+/// tylko wybiera pieśń do kolumny „Pieśń”; w nakładce na projekcji (tryb jednego ekranu) <see cref="ShowNowCommand"/>
+/// pokazuje ją od razu i dodaje do planu za bieżącą.
 /// Ten sam model działa w oknie operatora i w nakładce na ekranie projekcji (tryb jednego urządzenia).
 /// </summary>
 public sealed partial class SearchViewModel : ObservableObject
@@ -114,24 +116,29 @@ public sealed class SongResultViewModel(Song song)
 /// <summary>Operacje na planie wspólne dla wyszukiwarki, kolumny „Pieśń” i pilota.</summary>
 public sealed class PlanActions(ActivePlan plan, ILiveStateSource live)
 {
+    /// <summary>Dodano pieśń do planu — plan zaznacza ją, żeby kolumna „Pieśń” pokazywała pozycję planu.</summary>
+    public event EventHandler<SongPlanItem>? ItemAdded;
+
     public LiveItem? LiveItemFor(SongPlanItem item) => plan.FindLiveItem(item.Id);
 
     /// <summary>Wstawia pieśń zaraz za tą, która jest na ekranie (albo na koniec, gdy ekran pokazuje coś spoza planu).</summary>
-    public SongPlanItem AddAfterLive(Song song)
+    public SongPlanItem AddAfterLive(Song song, IReadOnlyList<string>? arrangement = null)
     {
-        var item = SongPlanItem.For(song.Id);
+        var item = SongPlanItem.For(song.Id) with { Arrangement = arrangement };
         plan.Update(p =>
         {
             var liveIndex = live.State.Item?.PlanItemId is { } id ? p.IndexOf(id) : -1;
             return p.Insert(liveIndex >= 0 ? liveIndex + 1 : p.Items.Count, item);
         });
+        ItemAdded?.Invoke(this, item);
         return item;
     }
 
-    public SongPlanItem AddToEnd(Song song)
+    public SongPlanItem AddToEnd(Song song, IReadOnlyList<string>? arrangement = null)
     {
-        var item = SongPlanItem.For(song.Id);
+        var item = SongPlanItem.For(song.Id) with { Arrangement = arrangement };
         plan.Update(p => p.Insert(p.Items.Count, item));
+        ItemAdded?.Invoke(this, item);
         return item;
     }
 }

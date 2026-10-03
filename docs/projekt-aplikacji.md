@@ -5,9 +5,10 @@ Status: etap 1 i strona pilota zrobione (2026-09-25); dalsze etapy w p. 7.
 ## 1. Idea w jednym zdaniu
 
 Operator ma przed sobą **plan** (listę pieśni) i wybraną **pieśń**, a publiczność widzi tylko
-**ekran** — duży, czysty tekst bieżącej części pieśni. Przeglądanie i układanie pieśni
-nigdy nie zmienia tego, co jest na ekranie. Ekran zmienia się tylko po świadomym
-„Pokaż” albo spacji / Backspace.
+**ekran** — duży, czysty tekst bieżącej części pieśni. Przeglądanie pieśni nigdy nie
+zmienia tego, co jest na ekranie: pieśń trafia na ekran dwuklikiem w planie, a dalej
+prowadzą Dalej / Wstecz (spacja / Backspace). Wyjątkiem jest układ części granej pieśni —
+odznaczenie albo przywrócenie części działa na żywo.
 
 ## 2. Scenariusze
 
@@ -45,10 +46,10 @@ wyświetla. Dzięki temu nowe odbiorniki nie wymagają zmian w logice.
 |---|---|
 | `Spacja`, `→`, `PageDown`, `↓` | następny slajd; po ostatnim slajdzie → pierwszy slajd następnej pozycji planu |
 | `Backspace`, `←`, `PageUp`, `↑` | poprzedni slajd |
-| `Enter` | pokaż na ekranie pieśń wybraną w kolumnie „Pieśń” |
+| Dwuklik w planie | pokaż pieśń na ekranie — jedyny sposób w oknie operatora |
 | `B` lub `.` | czarny ekran (włącz/wyłącz), jak w PowerPoint |
 | `Shift`+`1`–`9` | skok do n-tego slajdu bieżącej pieśni (same cyfry zaczynają wyszukiwanie numeru) |
-| Pisanie cyfr lub liter | **szybki wybór**: `47` albo `jezus mój` → lista wyników, `Enter` = pokaż od razu (pieśń trafia do planu zaraz za bieżącą, więc „Dalej” wraca do planu), `Ctrl+Enter` = dodaj jako następną w planie |
+| Pisanie cyfr lub liter | **szybki wybór**: `47` albo `jezus mój` → lista wyników, `Enter` = wybierz do kolumny „Pieśń”, `Ctrl+Enter` = dodaj jako następną w planie. W trybie jednego ekranu (nakładka na projekcji) `Enter` pokazuje od razu, a pieśń trafia do planu zaraz za bieżącą |
 | `F5` | włącz/wyłącz okno projekcji |
 | Pilot do prezentacji | działa od razu — wysyła `PageUp` / `PageDown` |
 
@@ -68,15 +69,15 @@ Trzy kolumny o regulowanej szerokości (zapamiętywanej): **Plan · Pieśń · N
 
 ```
 ┌──────────────┬──────────────────────────────────┬─────────────────────────┐
-│ Plan         │ [Szukaj pieśni: numer albo słowa]│ Na ekranie              │
-│              │ Pieśń                            │ 94 To On, nasz Pan  33% │
-│ 47 Jezus mój │ 30  Chcę wywyższać Imię Twe      │ ▬▬▬▬▬▬▬───────────────  │
-│▌94 To On...  │ [Pokaż na ekranie]               │ [ Wstecz ] [  Dalej  ]  │
-│ 30 Chcę ... ✕│ [V1] [C] [V1] [C]       Akordy   │ ┌ TERAZ · Refren ─────┐ │
-│ 36 Godzien   │ ┌ Zwrotka 1 ───────────────────┐ │ │ G e                 │ │
-│              │ │ G C D                        │ │ │ Jak wielki jest Bóg │ │
-│              │ │ Chcę wywyższać Imię Twe      │ │ └─────────────────────┘ │
-│              │ └──────────────────────────────┘ │ NASTĘPNA · Zwrotka 2    │
+│ Plan         │ Pieśń                     Akordy │ Na ekranie       Akordy │
+│              │ [Szukaj pieśni: numer albo słowa]│ 94 To On, nasz Pan  33% │
+│ 47 Jezus mój✕│ 30  Chcę wywyższać Imię Twe      │ ▬▬▬▬▬▬▬───────────────  │
+│▌94 To On... ✕│ ┌ Zwrotka 1 ─────────────── ☑ ┐  │ [ Wstecz ] [  Dalej  ]  │
+│ 30 Chcę ... ✕│ │ G C D                        │ │ ┌ TERAZ · Refren ─────┐ │
+│ 36 Godzien  ✕│ │ Chcę wywyższać Imię Twe      │ │ │ G e                 │ │
+│              │ └──────────────────────────────┘ │ │ Jak wielki jest Bóg │ │
+│              │ ┌ Zwrotka 2 ─────────────── ☐ ┐  │ └─────────────────────┘ │
+│              │ │ (pominięta, przygaszona)     │ │ NASTĘPNA · Zwrotka 2    │
 └──────────────┴──────────────────────────────────┴─────────────────────────┘
 ```
 
@@ -84,8 +85,11 @@ Trzy kolumny o regulowanej szerokości (zapamiętywanej): **Plan · Pieśń · N
   ją na ekranie, przeciąganie zmienia kolejność, ✕ usuwa (z potwierdzeniem). Pozycja na
   ekranie ma znacznik świecy (bursztynowy pasek).
 - **Pieśń** (środek): wyszukiwarka (wyniki w liście rozwijanej) i tekst wybranej pieśni z
-  akordami, części jedna pod drugą. Chipy `[V1] [C] …` wybierają części do zaśpiewania.
-  Nic tu nie zmienia tego, co widzi sala, poza jawnym „Pokaż na ekranie”. Docelowo tu
+  akordami, części jedna pod drugą; pole wyboru w rogu części decyduje, czy jest śpiewana.
+  Pole wyboru przy części decyduje, czy jest śpiewana; dla pieśni, która jest na ekranie,
+  działa na żywo (odznaczenie wyświetlanej części przenosi ekran do najbliższej zachowanej).
+  Poza tym nic tu nie zmienia tego, co widzi sala. Pieśń spoza planu można dodać „Jako następna” albo
+  „Na koniec planu”, a na ekran trafia dopiero dwuklikiem w planie. Docelowo tu
   będzie też edycja pieśni.
 - **Na ekranie** (prawo, min. ~33% szerokości): to, co widzi sala, czytelne dla muzyków —
   postęp w pieśni, bieżąca część z akordami, zapowiedź następnej, przyciski Wstecz / Dalej.

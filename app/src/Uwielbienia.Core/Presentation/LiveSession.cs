@@ -53,15 +53,64 @@ public sealed class LiveSession : ILiveControl, ILiveStateSource
     public event EventHandler<LiveState>? StateChanged;
 
     /// <summary>
-    /// Aktualizuje kolejkę pieśni (plan), nie zmieniając migawki aktualnie wyświetlanej pieśni.
-    /// Zmiany planu zaczną obowiązywać, gdy operator jawnie pokaże pieśń ponownie.
+    /// Aktualizuje kolejkę pieśni (plan). Gdy w planie zmienił się układ części pieśni, która jest
+    /// na ekranie, zmiana działa na żywo: ten sam slajd zostaje na ekranie, a jeśli jego część
+    /// pominięto — ekran przechodzi do najbliższej dalszej (albo wcześniejszej) zachowanej części.
+    /// Gdy pominięto wszystkie części, ekran nie pokazuje tekstu, a „Dalej” przechodzi do następnej pieśni.
     /// </summary>
     public void SetPlaylist(IReadOnlyList<LiveItem> playlist)
     {
         _playlist = playlist;
         var current = State.Item;
-        Publish(current, State.SlideIndex, State.IsBlank);
+        var slideIndex = State.SlideIndex;
+        // Ta sama struktura slajdów (np. zmiana kolejności planu) = ta sama migawka — bez ponownego
+        // przejścia (CrossFade) na rzutniku.
+        if (current?.PlanItemId is { } id && playlist.FirstOrDefault(i => i.PlanItemId == id) is { } updated &&
+            !SameSlides(current.Slides, updated.Slides))
+        {
+            slideIndex = MapSlide(current.Slides, updated.Slides, slideIndex);
+            current = updated;
+        }
+        Publish(current, slideIndex, State.IsBlank);
     }
+
+    /// <summary>
+    /// Odpowiednik slajdu <paramref name="index"/> po zmianie układu części. Oba układy powstają
+    /// z kolejności pieśni przez pominięcie części, więc krótszy jest podciągiem dłuższego.
+    /// </summary>
+    private static int MapSlide(IReadOnlyList<Slide> before, IReadOnlyList<Slide> after, int index)
+    {
+        var map = new int?[before.Count];
+        if (after.Count <= before.Count)
+        {
+            var j = 0;
+            for (var i = 0; i < before.Count && j < after.Count; i++)
+                if (SameSlide(before[i], after[j]))
+                    map[i] = j++;
+        }
+        else
+        {
+            var i = 0;
+            for (var j = 0; j < after.Count && i < before.Count; j++)
+                if (SameSlide(before[i], after[j]))
+                    map[i++] = j;
+        }
+
+        if (index < map.Length && map[index] is { } same)
+            return same;
+        for (var i = index + 1; i < map.Length; i++)
+            if (map[i] is { } following)
+                return following;
+        for (var i = Math.Min(index, map.Length) - 1; i >= 0; i--)
+            if (map[i] is { } preceding)
+                return preceding;
+        return 0;
+    }
+
+    private static bool SameSlide(Slide a, Slide b) => a.SectionCode == b.SectionCode && a.Label == b.Label;
+
+    private static bool SameSlides(IReadOnlyList<Slide> a, IReadOnlyList<Slide> b) =>
+        a.Count == b.Count && a.Zip(b).All(pair => SameSlide(pair.First, pair.Second));
 
     public void Show(LiveItem item, int slideIndex = 0) =>
         Publish(item, Math.Clamp(slideIndex, 0, Math.Max(0, item.Slides.Count - 1)), isBlank: false);
@@ -107,8 +156,13 @@ public sealed class LiveSession : ILiveControl, ILiveStateSource
         if (item.PlanItemId is not { } id)
             return null;
         var index = _playlist.ToList().FindIndex(i => i.PlanItemId == id);
-        var target = index + step;
-        return index >= 0 && target >= 0 && target < _playlist.Count ? _playlist[target] : null;
+        if (index < 0)
+            return null;
+        // Pieśni ze wszystkimi częściami pominiętymi nie ma czego pokazać — przeskakujemy je.
+        for (var target = index + step; target >= 0 && target < _playlist.Count; target += step)
+            if (_playlist[target].Slides.Count > 0)
+                return _playlist[target];
+        return null;
     }
 
     private void Publish(LiveItem? item, int slideIndex, bool isBlank)

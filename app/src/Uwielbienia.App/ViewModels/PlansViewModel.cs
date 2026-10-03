@@ -103,7 +103,7 @@ public sealed partial class PlansViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(CanSave), nameof(CanCreate), nameof(IsDirty))]
     public partial DateTime? EditDate { get; set; }
 
-    public string NamePlaceholder => ShowingTemplates ? "Np. Próba z dziećmi" : "Np. Uwielbienie";
+    public string NamePlaceholder => "Wpisz nazwę";
 
     public bool IsDirty => Selected is { } s && (EditName.Trim() != s.Plan.Name || EditDateOnly != s.Plan.Date);
 
@@ -164,7 +164,7 @@ public sealed partial class PlansViewModel : ObservableObject
         Selected = null;
         IsDeleteConfirmationOpen = false;
         IsCreating = true;
-        EditName = ShowingTemplates ? "" : DefaultEventName;
+        EditName = "";
         EditDate = ShowingTemplates ? null : DateTime.Today;
         RefreshFormState();
     }
@@ -202,7 +202,12 @@ public sealed partial class PlansViewModel : ObservableObject
     [RelayCommand]
     private void OpenSelected()
     {
-        if (Selected is { } selected)
+        if (Selected is not { } selected)
+            return;
+        // Ten plan już jest otwarty — tylko zamknij okno, bez przewijania widoków do początku.
+        if (selected.IsOpen)
+            IsOpen = false;
+        else
             Open(selected.Plan);
     }
 

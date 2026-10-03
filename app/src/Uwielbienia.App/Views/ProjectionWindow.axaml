@@ -30,8 +30,6 @@
     <Border IsVisible="{Binding IsQuickPickOpen}" Background="{DynamicResource ScrimBrush}" Cursor="Arrow">
       <Border Classes="panel" Width="720" MaxHeight="620" VerticalAlignment="Top" Margin="0,80,0,0">
         <DockPanel>
-          <TextBlock DockPanel.Dock="Top" Classes="caption" Margin="4,0,0,10"
-                     Text="Enter pokazuje od razu, Ctrl+Enter dodaje jako następną, Esc zamyka" />
           <TextBox x:Name="QuickPickBox" DockPanel.Dock="Top" Classes="search"
                    Text="{Binding QuickPick.Query}" PlaceholderText="Numer albo słowa pieśni" />
           <ListBox ItemsSource="{Binding QuickPick.Results}" SelectedItem="{Binding QuickPick.Selected}"

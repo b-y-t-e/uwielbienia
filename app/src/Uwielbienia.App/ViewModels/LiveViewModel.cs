@@ -51,7 +51,7 @@ public sealed partial class LiveViewModel : ObservableObject
 
     public IReadOnlyList<SlideLine> NextLines => NextTab?.Slide.Lines ?? [];
 
-    public string? CurrentLabel => CurrentTab?.Label;
+    public string? CurrentLabel => CurrentTab?.Label ?? (HasItem && Slides.Count == 0 ? "Wszystkie części pominięte" : null);
 
     public string? UpcomingLabel => NextTab?.Label ?? NextText;
 

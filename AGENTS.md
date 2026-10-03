@@ -161,9 +161,10 @@ ostatnia linia fragmentu :| {x2} `D`
 - Okno operatora ma trzy kolumny i tak je nazywamy wszędzie (UI, komentarze, dokumentacja):
   **Plan** (`PlanViewModel`) · **Pieśń** (wyszukiwarka + wybrana pieśń, `SearchViewModel`,
   `PreviewViewModel`; tu będzie edycja) · **Na ekranie** (to, co widzi sala, `LiveViewModel`).
-  Nie używamy nazw „Podgląd”, „Prowadzenie”, „Zarządzanie”. Kolumna „Pieśń” nigdy nie zmienia
-  projekcji bez jawnego „Pokaż na ekranie”.
-- Nazwa planu nie zawiera daty — data to osobne pole (domyślna nazwa wydarzenia: „Uwielbienie”).
+  Nie używamy nazw „Podgląd”, „Prowadzenie”, „Zarządzanie”. W oknie operatora pieśń trafia na ekran
+  wyłącznie dwuklikiem w planie. Kolumna „Pieśń” i wyszukiwarka nie zmieniają projekcji — wyjątek:
+  zmiana układu części granej pieśni działa na żywo (`LiveSession.SetPlaylist`).
+- Nazwa planu nie zawiera daty — data to osobne pole. Nazwę wpisuje operator (wymagana, bez wartości domyślnej).
 - Po zmianach w UI sprawdzić wygląd: `dotnet run --project app/tools/Uwielbienia.Screenshots`.
 - Strona pilota `app/web/remote` mówi protokołem z `Uwielbienia.Link/RemoteProtocol.cs`;
   zmiana protokołu = zmiana w obu miejscach.

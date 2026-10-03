@@ -41,6 +41,7 @@ public sealed partial class MainViewModel : ObservableObject
         LibraryWarning = library.Errors.Count > 0 ? $"Nie udało się odczytać pieśni: {library.Errors.Count}" : null;
 
         plan.ItemSelected += (_, item) => preview.ShowPlanItem(item);
+        plan.SelectionCleared += (_, _) => preview.Clear();
         search.SongSelected += (_, song) => preview.ShowSong(song);
         projection.Changed += (_, _) => OnPropertyChanged(nameof(ProjectionStatus));
         settings.Changed += (_, _) => OnSettingsChanged();

@@ -53,12 +53,81 @@ public class LiveSessionTests
     }
 
     [Fact]
-    public void Updating_playlist_does_not_change_current_item_slides()
+    public void Skipping_other_part_of_current_song_keeps_the_same_slide_on_screen()
     {
         _session.Show(_second, 2);
-        var shorter = _second with { Slides = _second.Slides.Take(1).ToList() };
-        _session.SetPlaylist([_first, shorter]);
-        Assert.Equal((_second, 2), (_session.State.Item, _session.State.SlideIndex));
+        var withoutFirst = _second with { Slides = _second.Slides.Skip(1).ToList() };
+        _session.SetPlaylist([_first, withoutFirst]);
+        Assert.Equal((withoutFirst, 1), (_session.State.Item, _session.State.SlideIndex));
+        Assert.Equal("V3", _session.State.Slide!.SectionCode);
+    }
+
+    [Fact]
+    public void Skipping_the_part_on_screen_moves_to_the_next_kept_part()
+    {
+        _session.Show(_second, 1);
+        var withoutMiddle = _second with { Slides = [_second.Slides[0], _second.Slides[2]] };
+        _session.SetPlaylist([_first, withoutMiddle]);
+        Assert.Equal("V3", _session.State.Slide!.SectionCode);
+    }
+
+    [Fact]
+    public void Skipping_the_last_part_on_screen_moves_back_to_the_previous_kept_part()
+    {
+        _session.Show(_second, 2);
+        var withoutLast = _second with { Slides = _second.Slides.Take(2).ToList() };
+        _session.SetPlaylist([_first, withoutLast]);
+        Assert.Equal("V2", _session.State.Slide!.SectionCode);
+    }
+
+    [Fact]
+    public void Restoring_a_part_keeps_the_same_slide_on_screen()
+    {
+        var withoutFirst = _second with { Slides = _second.Slides.Skip(1).ToList() };
+        _session.SetPlaylist([_first, withoutFirst]);
+        _session.Show(withoutFirst, 0);
+        _session.SetPlaylist([_first, _second]);
+        Assert.Equal((_second, 1), (_session.State.Item, _session.State.SlideIndex));
+    }
+
+    [Fact]
+    public void Plan_change_without_new_parts_keeps_the_same_snapshot()
+    {
+        _session.Show(_second, 1);
+        var rebuilt = _second with { Slides = _second.Slides.ToList() };
+        _session.SetPlaylist([rebuilt, _first]);
+        Assert.Same(_second, _session.State.Item);
+        Assert.Equal(1, _session.State.SlideIndex);
+    }
+
+    [Fact]
+    public void Skipping_all_parts_of_current_song_clears_text_and_next_goes_to_following_song()
+    {
+        _session.Show(_first, 1);
+        var nothing = _first with { Slides = [] };
+        _session.SetPlaylist([nothing, _second]);
+        Assert.Null(_session.State.Slide);
+        _session.Next();
+        Assert.Equal((_second, 0), (_session.State.Item, _session.State.SlideIndex));
+    }
+
+    [Fact]
+    public void Next_skips_songs_with_all_parts_skipped()
+    {
+        var third = Item("Trzecia", 1);
+        _session.SetPlaylist([_first, _second with { Slides = [] }, third]);
+        _session.Show(_first, 1);
+        _session.Next();
+        Assert.Equal(third, _session.State.Item);
+    }
+
+    [Fact]
+    public void Song_shown_outside_the_plan_is_not_replaced()
+    {
+        var outside = _second with { PlanItemId = null };
+        _session.Show(outside, 2);
+        _session.SetPlaylist([_first]);
+        Assert.Equal((outside, 2), (_session.State.Item, _session.State.SlideIndex));
     }
 
     [Fact]
