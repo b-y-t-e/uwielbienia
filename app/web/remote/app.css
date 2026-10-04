@@ -12,6 +12,8 @@
   --text: #E9ECF5; --muted: #8E97B3; --candle: #F2B84B; --candle-soft: rgba(242, 184, 75, .2);
   --on-candle: #1B1608; --danger: #EE8A8A; --chord: #7FB6E8;
   --radius: 14px;
+  /* skala jak w aplikacji (Themes/Controls.axaml): 13 / 15 / 18 / 24; tekst pieśni ma własny, dopasowany rozmiar */
+  --fs-small: 13px; --fs-body: 15px; --fs-large: 18px; --fs-title: 24px;
   color-scheme: dark;
 }
 @media (prefers-color-scheme: light) {
@@ -26,7 +28,7 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
 body {
-  font: 17px/1.45 "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  font: var(--fs-body)/1.45 "Atkinson Hyperlegible Next", system-ui, sans-serif;
   background: var(--ink); color: var(--text);
   -webkit-tap-highlight-color: transparent;
 }
@@ -48,10 +50,10 @@ input {
 .screen { max-width: 40rem; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; }
 #pairing { padding: 12vh 1.4rem 2rem; gap: 1rem; }
 .brand-icon { border-radius: 16px; }
-.brand { font: 600 2.2rem/1.1 "Literata", Georgia, serif; margin: 0; }
+.brand { font: 600 var(--fs-title)/1.2 "Literata", Georgia, serif; margin: 0; }
 .lead { color: var(--muted); margin: 0; max-width: 32rem; }
 .pair-form { display: grid; gap: .6rem; margin-top: 1.5rem; }
-.pair-form label { font-size: .9rem; color: var(--muted); }
+.pair-form label { font-size: var(--fs-small); color: var(--muted); }
 .error { color: var(--danger); min-height: 1.4em; }
 
 /* ---------- pilot ----------
@@ -59,20 +61,24 @@ input {
    następny slajd przygaszony, na dole Wstecz / Dalej. Działa też poziomo na pulpicie. */
 .pilot {
   height: 100dvh; max-width: 48rem; margin: 0 auto;
-  display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto;
+  display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto auto;
   padding: env(safe-area-inset-top) 1rem calc(.8rem + env(safe-area-inset-bottom));
   touch-action: manipulation; user-select: none; -webkit-user-select: none;
 }
 .topbar { display: flex; align-items: baseline; gap: .6rem; padding: .8rem 0 .4rem; min-width: 0; }
-.topbar .number { color: var(--muted); font-weight: 700; font-size: .95rem; font-variant-numeric: tabular-nums; }
-.now-title { flex: 1; min-width: 0; font: 600 1.15rem/1.25 "Literata", Georgia, serif; letter-spacing: -.005em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topbar .number { color: var(--muted); font-weight: 700; font-size: var(--fs-small); font-variant-numeric: tabular-nums; }
+.now-title { flex: 1; min-width: 0; font: 600 var(--fs-large)/1.25 "Literata", Georgia, serif; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Połączenie: sama kropka świecy, napis tylko gdy coś jest nie tak */
-.status { align-self: center; font-size: .8rem; padding: .25rem .6rem; border-radius: 999px; background: var(--raised); color: var(--muted); white-space: nowrap; }
+.status { align-self: center; font-size: var(--fs-small); padding: .25rem .6rem; border-radius: 999px; background: var(--raised); color: var(--muted); white-space: nowrap; }
 .status[data-state="connected"] {
   width: .6rem; height: .6rem; padding: 0; overflow: hidden; color: transparent; background: var(--candle);
   box-shadow: 0 0 0 4px var(--candle-soft);
 }
 .status[data-state="failed"] { color: var(--danger); }
+/* Akordy: włączone = podświetlony przycisk (jak „Akordy” w aplikacji); wybór zapamiętuje telefon */
+.toggle { align-self: center; padding: .35rem .8rem; font-size: var(--fs-small); font-weight: 700; border-radius: 999px; background: transparent; color: var(--muted); box-shadow: inset 0 0 0 1px var(--line); }
+.toggle[aria-pressed="true"] { background: var(--raised); color: var(--chord); box-shadow: none; }
+.pilot.no-chords .chords { display: none; }
 /* „Ekran” (przeglądarka jako drugi ekran) tylko na komputerze z myszą — na telefonie nie ma czego przełączyć */
 #toDisplay { align-self: center; }
 @media (pointer: coarse) { #toDisplay { display: none; } }
@@ -86,13 +92,13 @@ input {
 }
 .current.empty { box-shadow: inset 0 0 0 1.5px var(--line); }
 .current-head { display: flex; justify-content: space-between; align-items: center; gap: .6rem; min-height: 1.6rem; }
-.now-label { color: var(--candle); font-size: .85rem; font-weight: 700; letter-spacing: .01em; }
-.badge { font-size: .8rem; font-weight: 700; color: var(--danger); background: var(--raised); padding: .2rem .6rem; border-radius: 999px; }
+.now-label { color: var(--candle); font-size: var(--fs-small); font-weight: 700; }
+.badge { font-size: var(--fs-small); font-weight: 700; color: var(--danger); background: var(--raised); padding: .2rem .6rem; border-radius: 999px; }
 
 /* Wersy z akordami jak w śpiewniku: tekst Literatą (ten krój co na rzutniku), akordy nad wersem
    krojem interfejsu, refren prawdziwą kursywą, zawinięty wers wcięty (widać, że to ciąg dalszy).
    Rozmiar ustawia app.js (fitText), tu tylko proporcje. */
-.lines { min-height: 0; overflow: hidden; font: 400 28px/1.22 "Literata", Georgia, serif; padding-top: .15em; }
+.lines { min-height: 0; overflow: hidden; font: 400 24px/1.25 "Literata", Georgia, serif; padding-top: .15em; }
 .lines p { margin: 0; padding-left: .8em; text-indent: -.8em; }
 .lines .line { break-inside: avoid; }
 .lines .line + .line { margin-top: .28em; }
@@ -102,20 +108,22 @@ input {
   color: var(--chord); font: 700 .6em/1.2 "Atkinson Hyperlegible Next", system-ui, sans-serif;
   letter-spacing: .03em; word-spacing: .25em;
 }
-.lines .rep { color: var(--muted); font: 400 .62em "Atkinson Hyperlegible Next", system-ui, sans-serif; }
+.lines .rep { color: var(--muted); font: 400 .6em "Atkinson Hyperlegible Next", system-ui, sans-serif; }
 .lines.image { display: grid; place-items: center; color: var(--muted); }
 /* pomiar szerokości wersów bez zawijania (app.js: avoidWrapping) */
 .lines.measure p { white-space: nowrap; width: max-content; }
 
 .upcoming { padding: .75rem 1.1rem .2rem; }
-.next-label { color: var(--muted); font-size: .85rem; margin-bottom: .25rem; }
+.next-label { color: var(--muted); font-size: var(--fs-small); margin-bottom: .25rem; }
 .upcoming .lines { color: var(--muted); }
-.upcoming .chords { font-size: .75em; }
-.upcoming .lines { max-height: 16dvh; font-size: 18px; }
-.upcoming .lines p { font-weight: 400; }
+/* następny slajd: stałe rozmiary ze skali, bez dopasowywania */
+.upcoming .lines { font-size: var(--fs-body); }
+.upcoming .chords { font-size: var(--fs-small); }
+.upcoming .rep { font-size: var(--fs-small); }
+.upcoming .lines p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .controls { display: grid; grid-template-columns: 1fr 2fr; gap: .6rem; padding-top: .7rem; }
-.controls .big { padding: 1.35rem .5rem; font-size: 1.2rem; font-weight: 700; border-radius: 16px; letter-spacing: .01em; }
+.controls .big { padding: 1.35rem .5rem; font-size: var(--fs-large); font-weight: 700; border-radius: 16px; }
 .controls #prev { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
 
 /* Poziomo (telefon na pulpicie): przyciski z boku, tekst zajmuje całą wysokość */

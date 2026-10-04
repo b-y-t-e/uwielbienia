@@ -252,9 +252,10 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   szyfrowane); sparowane urządzenia łączą się same przy starcie. **Telefon tylko zmienia slajdy** —
   jeden prosty widok (`web/remote`, tokeny kolorów i kroje jak w aplikacji): bieżący slajd z akordami
   jak w śpiewniku (tekst Literatą, refren jej kursywą `fonts/Literata-Italic.ttf`, zawinięty wers wcięty;
-  rozmiar dopasowany do ekranu bez przewijania — muzyk gra i nie dotyka telefonu — i lekko zmniejszany,
-  żeby wersy się nie zawijały), początek następnego
-  slajdu, Wstecz / Dalej; ekran telefonu się nie wygasza. Bez planu, wyszukiwania, gaszenia ekranu i
+  24 px, mniej tylko gdy slajd się nie mieści — cały widoczny bez przewijania, bo muzyk gra i nie dotyka
+  telefonu — i lekko zmniejszany, żeby wersy się nie zawijały; przełącznik „Akordy” zapamiętany w przeglądarce), początek następnego
+  slajdu, Wstecz / Dalej; ekran telefonu się nie wygasza. Rozmiary jak w aplikacji: 13 / 15 / 18 / 24
+  (`--fs-*`), tekst pieśni 24 px lub mniej, akordy i „×N” 0,6 tego rozmiaru. Bez planu, wyszukiwania, gaszenia ekranu i
   edycji — telefon można dać dziecku. Tryb „Ekran” (przeglądarka jako drugi ekran; przycisk tylko na
   komputerze z myszą) rysuje slajd jak rzutnik (`renderSlide`: płótno 16:9 w jednostkach `cqw`,
   wymiary i kolory jak `SlideView`). Stan niesie wersy z akordami (`LineMessage`: `Chords`, `Title`,

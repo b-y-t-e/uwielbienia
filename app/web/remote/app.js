@@ -148,10 +148,11 @@ function chordLine(l) {
   return div;
 }
 
-// Bieżący slajd jak największy, ale cały widoczny — bez przewijania (muzyk nie dotyka telefonu).
+// Bieżący slajd w stałym rozmiarze (24 px, największy ze skali); mniejszy tylko wtedy, gdy się nie mieści —
+// cały ma być widoczny bez przewijania (muzyk nie dotyka telefonu). Krótki slajd nie robi się olbrzymi.
 function fitText(box, max) {
   if (!box.offsetParent) return;
-  let low = 10, high = max;
+  let low = 13, high = max;
   box.style.fontSize = `${high}px`;
   if (box.scrollHeight <= box.clientHeight && box.scrollWidth <= box.clientWidth) return;
   while (high - low > 0.5) {
@@ -176,9 +177,8 @@ function avoidWrapping(box) {
 }
 
 function fitAll() {
-  fitText(ui.currentLines, 36);
+  fitText(ui.currentLines, 24);
   avoidWrapping(ui.currentLines);
-  fitText(ui.nextLines, Math.min(22, parseFloat(ui.currentLines.style.fontSize || "22") * 0.7));
 }
 new ResizeObserver(() => fitAll()).observe(ui.remote);
 document.fonts.addEventListener("loadingdone", () => fitAll());
@@ -213,6 +213,17 @@ function keepAwake() {
   navigator.wakeLock?.request("screen").catch(() => {});
 }
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && link) keepAwake(); });
+
+// Akordy nad wersami: dla muzyka; dziecko może mieć sam tekst. Zapamiętane w tej przeglądarce.
+const chordsToggle = $("chordsToggle");
+function showChords(on) {
+  chordsToggle.setAttribute("aria-pressed", String(on));
+  ui.remote.classList.toggle("no-chords", !on);
+  localStorage.setItem("akordy", on ? "1" : "0");
+  fitAll();
+}
+chordsToggle.onclick = () => showChords(ui.remote.classList.contains("no-chords"));
+showChords(localStorage.getItem("akordy") !== "0");
 
 $("next").onclick = () => command("next");
 $("prev").onclick = () => command("prev");
