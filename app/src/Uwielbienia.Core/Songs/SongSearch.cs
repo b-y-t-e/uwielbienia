@@ -24,7 +24,7 @@ public sealed class SongSearch : ISongSearch
 
     private void Index(ISongLibrary library) =>
         _index = library.Songs
-            .Select(s => (s, Normalize(s.Title), Normalize(s.FirstLine),
+            .Select(s => (s, Normalize(s.DisplayTitle), Normalize(s.FirstLine),
                 Normalize(string.Join(' ', s.Sections.SelectMany(x => x.Lines).Where(l => l.IsSung).Select(l => l.Text)))))
             .ToList();
 

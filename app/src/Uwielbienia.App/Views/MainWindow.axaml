@@ -98,7 +98,7 @@
                           <Ellipse Classes="textDot" IsVisible="{Binding IsText}" />
                         </Panel>
                         <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                          <TextBlock Classes="bodyStrong" Text="{Binding Title}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Classes="bodyStrong" Classes.textItem="{Binding IsText}" Text="{Binding Title}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
                       </Grid>
                     </Button>
@@ -152,7 +152,9 @@
                   <TextBlock Classes="displayNumber" Text="{Binding Preview.Number}" Margin="0,2,14,0" VerticalAlignment="Top"
                              IsVisible="{Binding Preview.Number, Converter={x:Static ObjectConverters.IsNotNull}}" />
                   <StackPanel Grid.Column="1">
-                    <TextBlock Classes="songTitle" Text="{Binding Preview.Title}" TextWrapping="Wrap" TextTrimming="None" />
+                    <!-- Długi tytuł (np. pierwszy wers tekstu bez tytułu) w jednej linii z „…”; pełny w podpowiedzi. -->
+                    <TextBlock Classes="songTitle" Text="{Binding Preview.Title}" TextTrimming="CharacterEllipsis"
+                               ToolTip.Tip="{Binding Preview.Title}" />
                     <StackPanel Orientation="Horizontal" Spacing="10">
                       <TextBlock Classes="caption" Text="{Binding Preview.Category}" />
                       <TextBlock Classes="caption" Foreground="{DynamicResource CandleBrush}" Text="{Binding Preview.OriginText}"
@@ -339,7 +341,7 @@
                     <Ellipse Classes="textDot" IsVisible="{Binding IsText}" Margin="6,0,0,0" />
                   </Panel>
                   <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                    <TextBlock Classes="bodyStrong" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Classes="bodyStrong" Classes.textItem="{Binding IsText}" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
                     <TextBlock Classes="caption" Text="{Binding FirstLine}" TextTrimming="CharacterEllipsis"
                                IsVisible="{Binding FirstLine, Converter={x:Static ObjectConverters.IsNotNull}}" />
                   </StackPanel>
@@ -381,11 +383,14 @@
     <Style Selector="TextBlock.chords.hidden, TextBlock.chords.empty">
       <Setter Property="IsVisible" Value="False" />
     </Style>
-    <!-- Tekst nie ma numeru: w jego miejscu kropka. -->
+    <!-- Tekst (część Mszy, modlitwa…) odróżnia się od pieśni kolorem; zamiast numeru ma kropkę. -->
+    <Style Selector="TextBlock.textItem">
+      <Setter Property="Foreground" Value="{DynamicResource TextItemBrush}" />
+    </Style>
     <Style Selector="Ellipse.textDot">
       <Setter Property="Width" Value="8" />
       <Setter Property="Height" Value="8" />
-      <Setter Property="Fill" Value="{DynamicResource MutedBrush}" />
+      <Setter Property="Fill" Value="{DynamicResource TextItemBrush}" />
     </Style>
     <Style Selector="Button.addSmall">
       <Setter Property="FontSize" Value="20" />

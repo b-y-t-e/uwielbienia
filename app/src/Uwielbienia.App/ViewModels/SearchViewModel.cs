@@ -108,11 +108,11 @@ public sealed class SongResultViewModel(Song song)
 
     public bool IsText => Song.IsText;
 
-    public string Title => Song.Title;
+    public string Title => Song.DisplayTitle;
 
     /// <summary>Pierwszy wers, gdy różni się od tytułu (tytuł to zwykle incipit).</summary>
     public string? FirstLine =>
-        SongSearch.Normalize(Song.FirstLine) == SongSearch.Normalize(Song.Title) ? null : Song.FirstLine;
+        SongSearch.Normalize(Song.FirstLine) == SongSearch.Normalize(Song.DisplayTitle) ? null : Song.FirstLine;
 }
 
 /// <summary>Operacje na planie wspólne dla wyszukiwarki, kolumny „Pieśń” i pilota.</summary>

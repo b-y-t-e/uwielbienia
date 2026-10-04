@@ -136,9 +136,20 @@ public class SongEditingTests : IDisposable
     }
 
     [Fact]
+    public void Text_without_title_is_shown_by_its_first_line()
+    {
+        var text = _editor.Save(SongDraft.New(SongKind.Text) with { Parts = [new DraftPart("O", "", "Pan z wami\nI z duchem twoim")] });
+
+        Assert.Equal("", text.Title);
+        Assert.Equal("Pan z wami", text.DisplayTitle);
+        Assert.Equal("tekst-pan-z-wami", text.Id);
+    }
+
+    [Fact]
     public void Draft_without_title_or_text_is_invalid()
     {
         Assert.NotNull(SongDraft.New(SongKind.Song).Validate());
         Assert.NotNull((SongDraft.New(SongKind.Text) with { Title = "Pusty" }).Validate());
+        Assert.NotNull(SongDraft.New(SongKind.Text).Validate());
     }
 }

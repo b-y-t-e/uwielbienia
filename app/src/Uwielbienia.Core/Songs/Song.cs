@@ -25,6 +25,9 @@ public sealed record Song(
 
     public bool IsText => Kind == SongKind.Text;
 
+    /// <summary>Tytuł; tekst bez tytułu przedstawia się pierwszym wersem.</summary>
+    public string DisplayTitle => Title.Length > 0 ? Title : FirstLine;
+
     public Section? FindSection(string code) =>
         Sections.FirstOrDefault(s => string.Equals(s.Code, code, StringComparison.Ordinal));
 

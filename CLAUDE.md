@@ -89,7 +89,7 @@ ostatnia linia fragmentu :| {x2} `D`
 | `tonacja`        | string \| `null`| Pierwszy akord pieśni (przybliżenie tonacji) |
 | `kolejnosc`      | lista kodów     | Kolejność wykonania (arrangement); kody muszą istnieć jako sekcje |
 | `zrodlo`         | string          | Plik źródłowy (PDF, z którego pochodzi pieśń) |
-| `rodzaj`         | `"tekst"`       | Opcjonalny, tylko w plikach lokalnych aplikacji: **tekst** (część Mszy, modlitwa, ogłoszenie…) — bez akordów, `numer: null`, części `[O1] Część 1`, `[O2] Część 2`… |
+| `rodzaj`         | `"tekst"`       | Opcjonalny, tylko w plikach lokalnych aplikacji: **tekst** (część Mszy, modlitwa, ogłoszenie…) — bez akordów, `numer: null`, `tytul` może być pusty (`""`), części `[O1] Część 1`, `[O2] Część 2`… |
 
 ### Treść
 
@@ -180,7 +180,9 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   (`MarkdownSongParser` — reguły z tego pliku) i po `Reload()` wysyła `Changed`; nasłuchują go
   `SongSearch` (indeks bez polskich znaków), `ActivePlan` i kolumna „Pieśń”.
 - **Pieśń i tekst** to ten sam model `Song` (`Kind`): pieśń ma numer i akordy, tekst (część Mszy,
-  modlitwa, ogłoszenie) nie ma numeru ani akordów (w planie kropka zamiast numeru); ten sam format pliku.
+  modlitwa, ogłoszenie) nie ma numeru ani akordów (w planie kropka zamiast numeru i kolor `TextItemBrush`), a tytuł jest
+  opcjonalny — bez tytułu przedstawia go pierwszy wers (`Song.DisplayTitle`; rzutnik pokazuje
+  tytuł nad pierwszym slajdem tylko, gdy jest własny); ten sam format pliku.
 - **Zapis lokalny.** `LocalSongEditor` (`ISongEditor`) zapisuje własne pieśni (numery od 1000),
   teksty (`tekst-slug`) i poprawki pieśni śpiewnika w `%APPDATA%\Uwielbienia\teksty\{id}\piesn.md`
   (`MarkdownSongWriter` — odwrotność parsera, odtwarza pliki śpiewnika co do znaku). Plik o `id`
@@ -244,10 +246,14 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
 
 ### Wygląd
 
-- Paleta „nocny granat + świeca” (`Themes/Palette.axaml`, jasny i ciemny); świeca (`CandleBrush`)
-  to jedyny akcent i oznacza to, co jest na ekranie. Typografia operatora: skala 13/15/18/24
-  (`Themes/Controls.axaml`). Kroje: Atkinson Hyperlegible Next (interfejs), Literata (tytuły,
-  tekst na rzutniku).
+- Paleta „nocny granat + świeca” (`Themes/Palette.axaml`, jasny i ciemny). Akcenty mają stałe
+  znaczenie: świeca (`CandleBrush`) = to, co jest na ekranie; `ChordBrush` = akordy;
+  `TextItemBrush` = teksty w planie; `DangerBrush` = usuwanie. Typografia operatora: skala
+  13/15/18/24 (`Themes/Controls.axaml`). Kroje: Atkinson Hyperlegible Next (interfejs), Literata
+  (tytuły, tekst na rzutniku).
+- Rzutnik (`ProjectionAppearance`): ciemny = czerń i ciepła kość słoniowa, jasny = biel i granat;
+  tytuł pieśni w delikatnym ciepłym odcieniu z linią pod spodem; bez stałej wysokości wiersza
+  (Literata ma długie ogonki liter).
 - Bez zbędnych objaśnień i podpisów: pusty stan, krótka podpowiedź w polu, ostrzeżenie przy
   usuwaniu — tak; opisy pod nagłówkami — nie. Teksty interfejsu po polsku.
 

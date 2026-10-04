@@ -5,7 +5,7 @@
              x:Class="Uwielbienia.App.Views.SongEditorView"
              x:DataType="vm:SongEditorViewModel">
   <DockPanel>
-    <TextBox x:Name="TitleBox" DockPanel.Dock="Top" Text="{Binding Title}" PlaceholderText="Tytuł" Margin="0,0,0,14" />
+    <TextBox x:Name="TitleBox" DockPanel.Dock="Top" Text="{Binding Title}" PlaceholderText="{Binding TitlePlaceholder}" Margin="0,0,0,14" />
 
 
     <!-- Akcje na dole: zapis zawsze lokalny (na tym komputerze). -->

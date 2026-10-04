@@ -59,7 +59,8 @@ public sealed partial record SongDraft(SongKind Kind, string Title, string Categ
     /// <summary>Komunikat dla operatora albo <c>null</c>, gdy można zapisać.</summary>
     public string? Validate()
     {
-        if (string.IsNullOrWhiteSpace(Title))
+        // Tekst może nie mieć tytułu — przedstawia go wtedy pierwszy wers.
+        if (Kind == SongKind.Song && string.IsNullOrWhiteSpace(Title))
             return "Wpisz tytuł.";
         if (!Parts.Any(p => ParseLines(p.Text).Any(l => l.IsSung)))
             return "Wpisz tekst co najmniej jednej części.";
@@ -98,6 +99,11 @@ public sealed partial record SongDraft(SongKind Kind, string Title, string Categ
             .Where(l => l.Length > 0)
             .Select(l => Kind == SongKind.Text ? ParseTextLine(l) : MarkdownSongParser.ParseLine(EditorChords().Replace(l, m => " `" + m.Groups["akordy"].Value.Trim() + "`")))
             .ToList();
+
+    /// <summary>Tytuł albo (tekst bez tytułu) pierwszy wers — np. do identyfikatora pliku.</summary>
+    public string DisplayTitle => !string.IsNullOrWhiteSpace(Title)
+        ? Title.Trim()
+        : Parts.SelectMany(p => ParseLines(p.Text)).FirstOrDefault(l => l.IsSung)?.Text ?? "";
 
     public static string ToEditorLine(SongLine line)
     {

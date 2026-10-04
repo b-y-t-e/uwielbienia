@@ -145,7 +145,7 @@ public sealed partial class PlanItemViewModel(SongPlanItem item, Song song, int 
 
     public bool IsText => Song.IsText;
 
-    public string Title => Song.Title;
+    public string Title => Song.DisplayTitle;
 
     [ObservableProperty]
     public partial bool IsLive { get; set; }

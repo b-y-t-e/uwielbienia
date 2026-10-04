@@ -43,6 +43,8 @@ public sealed partial class SongEditorViewModel : ObservableObject
         ? IsText ? "Nowy tekst" : "Nowa pieśń"
         : IsText ? "Edycja tekstu" : "Edycja pieśni";
 
+    public string TitlePlaceholder => IsText ? "Tytuł (opcjonalnie)" : "Tytuł";
+
     public string LinesPlaceholder => IsText ? "Treść" : "Treść, akordy w nawiasie: Panie [G C D]";
 
     public IReadOnlyList<SongPartType> PartTypes => SongPartType.All;

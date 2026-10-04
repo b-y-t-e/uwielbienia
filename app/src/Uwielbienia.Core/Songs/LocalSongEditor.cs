@@ -30,7 +30,7 @@ public sealed class LocalSongEditor(string directory, ISongLibrary library) : IS
         var (id, number) = draft.Original is { } original
             ? (original.Id, original.Number)
             : draft.Kind == SongKind.Text
-                ? (NewId("tekst", draft.Title), (int?)null)
+                ? (NewId("tekst", draft.DisplayTitle), (int?)null)
                 : NewSongIdentity(draft.Title);
 
         var song = draft.Build(id, number);

@@ -69,7 +69,7 @@ public sealed class SongLibrary : ISongLibrary
         Songs = songs
             .OrderBy(s => s.IsText)
             .ThenBy(s => s.Number ?? int.MaxValue)
-            .ThenBy(s => s.Title, StringComparer.CurrentCulture)
+            .ThenBy(s => s.DisplayTitle, StringComparer.CurrentCulture)
             .ThenBy(s => s.Id, StringComparer.Ordinal)
             .ToList();
         Errors = errors;

@@ -68,7 +68,7 @@ public sealed partial class PreviewViewModel : ObservableObject
 
     public bool HasSong => Song is not null;
 
-    public string? Title => Song?.Title;
+    public string? Title => Song?.DisplayTitle;
 
     public string? Number => Song?.Number?.ToString();
 

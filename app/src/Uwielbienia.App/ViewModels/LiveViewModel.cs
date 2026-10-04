@@ -27,7 +27,7 @@ public sealed partial class LiveViewModel : ObservableObject
 
     /// <summary>Strona rzutnika: slajd i — na pierwszym slajdzie pieśni — jej tytuł.</summary>
     public ProjectedPage? Page => State.VisibleSlide is { } slide && State.Item is { } item
-        ? new ProjectedPage(slide, State.SlideIndex == 0 ? item.Title : null)
+        ? new ProjectedPage(slide, State.SlideIndex == 0 && item.HasOwnTitle ? item.Title : null)
         : null;
 
     public string Title => State.Item is { } item ? item.Title : "Ekran jest pusty";

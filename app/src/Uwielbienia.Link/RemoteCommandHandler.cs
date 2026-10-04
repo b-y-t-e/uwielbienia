@@ -60,7 +60,7 @@ public sealed class RemoteCommandHandler(
                 break;
             case "search":
                 return new CommandReply(true, Results: search.Search(command.Query ?? "", 30)
-                    .Select(s => new SongHit(s.Id, s.Number, s.Title, s.FirstLine)).ToList());
+                    .Select(s => new SongHit(s.Id, s.Number, s.DisplayTitle, s.FirstLine)).ToList());
             default:
                 return new CommandReply(false, $"Nieznane polecenie: {command.Cmd}");
         }
