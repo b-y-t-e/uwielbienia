@@ -14,14 +14,14 @@ public sealed partial class PlanViewModel : ObservableObject
     private static readonly CultureInfo Polish = CultureInfo.GetCultureInfo("pl-PL");
 
     private readonly ActivePlan _plan;
-    private readonly ISongLibrary _library;
+    private readonly IPlanItemTypes _itemTypes;
     private readonly ILiveControl _control;
     private readonly ILiveStateSource _live;
 
-    public PlanViewModel(ActivePlan plan, ISongLibrary library, ILiveControl control, ILiveStateSource live, PlanActions actions)
+    public PlanViewModel(ActivePlan plan, IPlanItemTypes itemTypes, ILiveControl control, ILiveStateSource live, PlanActions actions)
     {
         _plan = plan;
-        _library = library;
+        _itemTypes = itemTypes;
         _control = control;
         _live = live;
         plan.Changed += (_, _) => Rebuild();
@@ -95,10 +95,10 @@ public sealed partial class PlanViewModel : ObservableObject
         var selectedId = Selected?.Id;
         Items.Clear();
         var position = 1;
-        foreach (var item in _plan.Plan?.Items.OfType<SongPlanItem>() ?? [])
+        foreach (var item in _plan.Plan?.Items ?? [])
         {
-            if (_library.Find(item.SongId) is { } song)
-                Items.Add(new PlanItemViewModel(item, song, position++));
+            if (_itemTypes.Describe(item) is { } info)
+                Items.Add(new PlanItemViewModel(item, info, position++));
         }
         Selected = Items.FirstOrDefault(i => i.Id == selectedId);
         // Wybrana pieśń zniknęła z planu (usunięta) — kolumna „Pieśń” nie może jej dalej pokazywać.
@@ -131,21 +131,22 @@ public sealed partial class PlanViewModel : ObservableObject
     }
 }
 
-public sealed partial class PlanItemViewModel(SongPlanItem item, Song song, int position) : ObservableObject, IReorderableItem
+/// <summary>Wiersz planu — dowolny rodzaj pozycji; tytuł, numer i rodzaj z <see cref="IPlanItemTypes"/>.</summary>
+public sealed partial class PlanItemViewModel(PlanItem item, PlanItemInfo info, int position) : ObservableObject, IReorderableItem
 {
     public Guid Id => Item.Id;
 
-    public SongPlanItem Item { get; } = item;
+    public PlanItem Item { get; } = item;
 
-    public Song Song { get; } = song;
+    public PlanItemInfo Info { get; } = info;
 
     public int Position { get; } = position;
 
-    public int? Number => Song.Number;
+    public int? Number => Info.Number;
 
-    public bool IsText => Song.IsText;
+    public bool IsText => Info.Kind == PlanItemKind.Text;
 
-    public string Title => Song.DisplayTitle;
+    public string Title => Info.Title;
 
     [ObservableProperty]
     public partial bool IsLive { get; set; }

@@ -20,12 +20,12 @@ public sealed class RemoteCommandHandlerTests : IDisposable
 
     public RemoteCommandHandlerTests()
     {
-        var factory = new LiveItemFactory(Library, new SectionSlideBuilder());
-        _plan = new ActivePlan(new JsonPlanStore(_plans), factory, _session, Library);
+        var songs = new SongPlanItemType(Library, new SectionSlideBuilder());
+        _plan = new ActivePlan(new JsonPlanStore(_plans), new PlanItemTypes([songs]), _session, Library);
         _plan.Open(Plan.Create("Test", null)
             .Insert(0, SongPlanItem.For(Library.Songs.First(s => s.Number == 47).Id))
             .Insert(1, SongPlanItem.For(Library.Songs.First(s => s.Number == 94).Id)));
-        _handler = new RemoteCommandHandler(_session, _session, _plan, Library, new SongSearch(Library), factory, new ImmediateDispatcher());
+        _handler = new RemoteCommandHandler(_session, _session, _plan, Library, new SongSearch(Library), songs, new ImmediateDispatcher());
     }
 
     private async Task<JsonElement> Send(string json) =>

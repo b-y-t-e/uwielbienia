@@ -82,18 +82,18 @@ public sealed partial class PreviewViewModel : ObservableObject
 
     public bool HasRemovedSections => RemovedSections.Count > 0;
 
-    public void ShowPlanItem(PlanItemViewModel item)
+    public void ShowPlanItem(SongPlanItem planItem, Song song)
     {
         // Plan przebudowuje się po każdym zapisie (np. zmianie układu) — ta sama pozycja z tym samym
         // układem nie wymaga ponownego wczytania, które skasowałoby listę części w trakcie jej zmiany.
-        if (_planItem?.Id == item.Item.Id && ReferenceEquals(Song, item.Song) && SameLayout(_planItem, item.Item))
+        if (_planItem?.Id == planItem.Id && ReferenceEquals(Song, song) && SameLayout(_planItem, planItem))
         {
-            _planItem = item.Item;
+            _planItem = planItem;
             return;
         }
-        _planItem = item.Item;
+        _planItem = planItem;
         IsFromPlan = true;
-        Load(item.Song, item.Item);
+        Load(song, planItem);
     }
 
     public void ShowSong(Song song)

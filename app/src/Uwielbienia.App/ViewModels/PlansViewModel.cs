@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Uwielbienia.App.Services;
 using Uwielbienia.Core.Plans;
+using Uwielbienia.Core.Presentation;
 using Uwielbienia.Core.Songs;
 
 namespace Uwielbienia.App.ViewModels;
@@ -21,14 +22,14 @@ public sealed partial class PlansViewModel : ObservableObject
     private readonly IPlanStore _store;
     private readonly ActivePlan _active;
     private readonly ISettingsStore _settings;
-    private readonly ISongLibrary _library;
+    private readonly IPlanItemTypes _itemTypes;
 
-    public PlansViewModel(IPlanStore store, ActivePlan active, ISettingsStore settings, ISongLibrary library)
+    public PlansViewModel(IPlanStore store, ActivePlan active, ISettingsStore settings, IPlanItemTypes itemTypes)
     {
         _store = store;
         _active = active;
         _settings = settings;
-        _library = library;
+        _itemTypes = itemTypes;
         EditName = "";
     }
 
@@ -70,8 +71,10 @@ public sealed partial class PlansViewModel : ObservableObject
 
     public IReadOnlyList<string> SelectedSongs => Selected is null
         ? []
-        : Selected.Plan.Items.OfType<SongPlanItem>()
-            .Select(i => _library.Find(i.SongId) is { } song ? song.Number is { } n ? $"{n}. {song.DisplayTitle}" : song.DisplayTitle : "Nieznana pieśń")
+        : Selected.Plan.Items
+            .Select(_itemTypes.Describe)
+            .OfType<PlanItemInfo>()
+            .Select(info => info.Number is { } n ? $"{n}. {info.Title}" : info.Title)
             .ToList();
 
     public string SelectedSongsHeader => Selected?.Plan.Items.Count switch

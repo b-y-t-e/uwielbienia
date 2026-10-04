@@ -3,6 +3,7 @@ using Avalonia.Styling;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Uwielbienia.App.Services;
+using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Presentation;
 using Uwielbienia.Core.Songs;
 using Uwielbienia.Core.Updates;
@@ -41,18 +42,34 @@ public sealed partial class MainViewModel : ObservableObject
         _updates = updates;
         LibraryWarning = library.Errors.Count > 0 ? $"Nie udało się odczytać pieśni: {library.Errors.Count}" : null;
 
-        plan.ItemSelected += (_, item) => preview.ShowPlanItem(item);
+        plan.ItemSelected += (_, item) => ShowDetails(item, library, preview);
         plan.SelectionCleared += (_, _) => preview.Clear();
         // „Nowa pieśń / Nowy tekst” z okna dodawania: edytor w kolumnie „Pieśń”, po zapisie — w wybrane miejsce planu.
         planAdd.NewRequested += (_, request) =>
             preview.StartNew(request.Kind, song => planActions.InsertAt(song, request.Index));
-        projection.Changed += (_, _) => OnPropertyChanged(nameof(ProjectionStatus));
+        projection.Changed += (_, _) =>
+        {
+            OnPropertyChanged(nameof(ProjectionStatus));
+            OnPropertyChanged(nameof(ProjectionHint));
+        };
         settings.Changed += (_, _) => OnSettingsChanged();
         _updates.UpdateAvailable += OnUpdateAvailable;
         ApplyTheme();
     }
 
     public LiveViewModel Live { get; }
+
+    /// <summary>
+    /// Kolumna „Pieśń” dla zaznaczonej pozycji planu. Nowy rodzaj elementu prezentacji dostaje tu
+    /// własny model widoku (i szablon w <c>MainWindow</c>); nieznany rodzaj czyści kolumnę.
+    /// </summary>
+    private static void ShowDetails(PlanItemViewModel item, ISongLibrary library, PreviewViewModel preview)
+    {
+        if (item.Item is SongPlanItem songItem && library.Find(songItem.SongId) is { } song)
+            preview.ShowPlanItem(songItem, song);
+        else
+            preview.Clear();
+    }
 
     public PlanViewModel Plan { get; }
 
@@ -71,6 +88,8 @@ public sealed partial class MainViewModel : ObservableObject
     public string? LibraryWarning { get; }
 
     public string ProjectionStatus => Projection.Status;
+
+    public string ProjectionHint => Projection.Hint;
 
     public bool ShowChords => _settings.Current.ShowChords;
 

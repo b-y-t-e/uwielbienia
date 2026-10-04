@@ -196,7 +196,11 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   `SongPlanItem` z `Arrangement` / `Layout` — `null` = układ z pliku pieśni) w `JsonPlanStore`
   (`%APPDATA%\Uwielbienia\plany\{id}.json`). `ActivePlan` trzyma otwarty plan, zapisuje każdą
   zmianę, buduje `Playlist` (`LiveItem`) i wysyła `Changed` / `Opened` (po otwarciu innego planu
-  widoki zaczynają od początku). Dodawanie do planu: `PlanActions` (`InsertAt`, `ItemAdded`).
+  widoki zaczynają od początku). Dodawanie do planu: `PlanActions` (`Insert`, `InsertAt`, `ItemAdded`).
+- **Rodzaje pozycji planu.** Plan nie zakłada, że pozycja to pieśń: `IPlanItemTypes`
+  (`PlanItemTypes` — rejestr wszystkich `IPlanItemType`) daje opis na liście (`PlanItemInfo`:
+  tytuł, numer, `PlanItemKind`) i slajdy (`LiveItem`). Dziś jeden rodzaj: `SongPlanItemType`
+  (pieśń i tekst; jest też `ISongPresenter` — pieśń spoza planu na ekran).
 - **Przeciąganie** (plan, części pieśni): `ListReorderDrag` — zwykłe przeciąganie myszą ze
   znacznikiem miejsca i przewijaniem przy krawędzi; wiersze implementują `IReorderableItem`.
 - **Ekran.** `LiveSession` to jedyne źródło prawdy: polecenia przez `ILiveControl` (klawiatura —
@@ -213,6 +217,32 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   `Uwielbienia-win-Setup.exe` sprawdza GitHub Releases, pobiera w tle i proponuje „Aktualizuj”.
 - **Start** (`App.OnFrameworkInitializationCompleted`): DI → otwarcie ostatniego planu →
   okno operatora (maksymalizowane, F11 = pełny ekran) → projekcja → telefon → aktualizacje.
+
+### Nowy rodzaj elementu prezentacji (obok pieśni i tekstu)
+
+Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — wystarczą te kroki
+(wzorzec: `PlanItemTypesTests`, rodzaj „ogłoszenie”):
+
+1. **Pozycja planu** (Core, `Plans/Plan.cs`): `record XPlanItem(Guid Id, …) : PlanItem(Id)` z
+   `WithNewId()` i atrybut `[JsonDerivedType(typeof(XPlanItem), "x")]` na `PlanItem` — inaczej
+   plan się nie zapisze. Stare plany muszą się dalej wczytywać.
+2. **Rodzaj** (Core, `Presentation/`): `XPlanItemType : IPlanItemType` — `Describe` (tytuł,
+   numer albo `null`, `PlanItemKind`; nowy znacznik = nowa wartość enum) i `Present` (`LiveItem`
+   ze slajdami). Rejestracja w `AppComposition` jako `IPlanItemType`.
+3. **Slajd:** treść tekstowa — zwykły `Slide` z `Lines`. Inna treść (obraz, odliczanie…) —
+   `record XSlide(…) : Slide(kod, etykieta, [])` i `DataTemplate DataType="p:XSlide"` w
+   `Views/SlideView.axaml` **przed** szablonem `p:Slide`. Porównanie slajdów w `LiveSession`
+   (podmiana na żywo) działa dla pól rekordu; kolekcje porównuje tylko `Lines`.
+4. **Lista planu** (`MainWindow.axaml`, wiersz planu i „Dodaj do planu”): znacznik i kolor wg
+   `PlanItemKind` (dziś: numer albo kropka + `TextItemBrush` dla `Text`).
+5. **Kolumna „Pieśń”:** `MainViewModel.ShowDetails` wybiera widok dla zaznaczonej pozycji;
+   nowy rodzaj dostaje własny model widoku i szablon (np. podgląd obrazu, edycja).
+6. **Dodawanie:** przycisk w oknie „Dodaj do planu” (`PlanAddViewModel`) tworzący pozycję i
+   wstawiający ją przez `PlanActions.Insert(item, index)`.
+7. **Kolumna „Na ekranie” i telefon:** pokazują `Lines` — dla treści innej niż tekst dodać
+   szablon w `MainWindow.axaml` (TERAZ / NASTĘPNA) i ewentualnie pole w `RemoteProtocol.cs`
+   + `web/remote` (zmiana protokołu = zmiana w obu miejscach).
+8. Testy w Core (rodzaj, zapis planu z nową pozycją) i zrzuty (`tools/Uwielbienia.Screenshots`).
 
 ### Okno operatora
 

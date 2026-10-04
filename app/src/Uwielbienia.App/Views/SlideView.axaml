@@ -26,18 +26,26 @@
                                Foreground="{Binding #Root.SlideTitle}" />
                     <Border Height="4" CornerRadius="2" Margin="0,14,0,0" Background="{Binding #Root.SlideAccent}" />
                   </StackPanel>
-                  <ItemsControl ItemsSource="{Binding Slide.Lines}">
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate x:DataType="p:SlideLine">
-                        <TextBlock TextAlignment="Center" TextWrapping="Wrap" FontFamily="{StaticResource TitleFont}"
-                                   FontSize="86" Margin="0,4"
-                                   Foreground="{Binding #Root.SlideForeground}">
-                          <Run Text="{Binding Text}" /><Run Text="{Binding Repeat, Converter={x:Static v:SlideConverters.RepeatSuffix}}"
-                               FontSize="54" Foreground="{Binding #Root.SlideMuted}" />
-                        </TextBlock>
+                  <!-- Treść slajdu: szablon wybierany wg rodzaju slajdu. Nowy rodzaj (rekord dziedziczący
+                       po Slide) = nowy DataTemplate PRZED szablonem tekstu, bo ten pasuje do każdego Slide. -->
+                  <ContentControl Content="{Binding Slide}">
+                    <ContentControl.DataTemplates>
+                      <DataTemplate DataType="p:Slide">
+                        <ItemsControl ItemsSource="{Binding Lines}">
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="p:SlideLine">
+                              <TextBlock TextAlignment="Center" TextWrapping="Wrap" FontFamily="{StaticResource TitleFont}"
+                                         FontSize="86" Margin="0,4"
+                                         Foreground="{Binding #Root.SlideForeground}">
+                                <Run Text="{Binding Text}" /><Run Text="{Binding Repeat, Converter={x:Static v:SlideConverters.RepeatSuffix}}"
+                                     FontSize="54" Foreground="{Binding #Root.SlideMuted}" />
+                              </TextBlock>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                       </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
+                    </ContentControl.DataTemplates>
+                  </ContentControl>
                 </StackPanel>
               </Viewbox>
             </Panel>

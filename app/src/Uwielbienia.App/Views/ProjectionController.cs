@@ -22,9 +22,16 @@ public sealed class ProjectionController(Func<ProjectionWindow> createWindow) : 
     public string Status => Mode switch
     {
         ProjectionMode.SecondScreen => $"Projekcja: {Describe(_screen)}",
-        ProjectionMode.SameScreen => "Projekcja na tym ekranie — Esc wraca",
-        _ when HasSecondScreen => "Projekcja wyłączona — F5 włącza",
-        _ => "Brak drugiego ekranu — F5 pokazuje na tym",
+        ProjectionMode.SameScreen => "Projekcja: ten ekran",
+        _ => "Włącz projekcję",
+    };
+
+    public string Hint => Mode switch
+    {
+        ProjectionMode.SecondScreen => "Wyłącz projekcję (F5)",
+        ProjectionMode.SameScreen => "Esc wraca do okna operatora, F5 wyłącza projekcję",
+        _ when HasSecondScreen => "Pełny ekran na drugim monitorze (F5)",
+        _ => "Brak drugiego ekranu — projekcja zakryje to okno, Esc wraca (F5)",
     };
 
     public event EventHandler? Changed;

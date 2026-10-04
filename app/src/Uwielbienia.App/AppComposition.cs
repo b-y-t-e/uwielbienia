@@ -39,7 +39,11 @@ public static class AppComposition
         // plany i ekran
         services.AddSingleton<IPlanStore>(sp => new JsonPlanStore(sp.GetRequiredService<AppPaths>().Plans));
         services.AddSingleton<ISlideBuilder>(sp => new SectionSlideBuilder(sp.GetRequiredService<ISettingsStore>().Current.MaxLinesPerSlide));
-        services.AddSingleton<ILiveItemFactory, LiveItemFactory>();
+        // Rodzaje pozycji planu — nowy rodzaj elementu prezentacji rejestrujemy tutaj (CLAUDE.md: „Nowy rodzaj elementu”).
+        services.AddSingleton<SongPlanItemType>();
+        services.AddSingleton<IPlanItemType>(sp => sp.GetRequiredService<SongPlanItemType>());
+        services.AddSingleton<ISongPresenter>(sp => sp.GetRequiredService<SongPlanItemType>());
+        services.AddSingleton<IPlanItemTypes, PlanItemTypes>();
         services.AddSingleton<LiveSession>();
         services.AddSingleton<ILiveControl>(sp => sp.GetRequiredService<LiveSession>());
         services.AddSingleton<ILiveStateSource>(sp => sp.GetRequiredService<LiveSession>());

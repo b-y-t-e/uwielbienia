@@ -35,7 +35,7 @@
         </DockPanel>
 
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
-          <Button Command="{Binding ToggleProjectionCommand}" ToolTip.Tip="F5">
+          <Button Command="{Binding ToggleProjectionCommand}" ToolTip.Tip="{Binding ProjectionHint}">
             <TextBlock Text="{Binding ProjectionStatus}" />
           </Button>
           <Button Command="{Binding Remote.ShowCommand}" ToolTip.Tip="Sparuj telefon jako pilota albo przeglądarkę jako ekran">
@@ -62,10 +62,10 @@
         <!-- PLAN -->
         <Border Classes="panel" Padding="10,14">
           <DockPanel>
-            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="8,0,0,10">
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="8,0,0,10" MinHeight="34">
               <TextBlock Classes="heading" Text="Plan" VerticalAlignment="Center" />
               <Button Grid.Column="1" Classes="addSmall" Content="+" ToolTip.Tip="Dodaj pieśń lub tekst"
-                      Click="OnPlanAddClick" />
+                      Click="OnPlanAddClick" IsVisible="{Binding !Plan.IsEmpty}" />
             </Grid>
             <Button DockPanel.Dock="Top" Classes="addEmpty" Content="+ Dodaj pieśń lub tekst" Margin="4,4,4,0"
                     IsVisible="{Binding Plan.IsEmpty}" Click="OnPlanAddClick" />

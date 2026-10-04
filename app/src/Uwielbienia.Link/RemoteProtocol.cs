@@ -43,7 +43,7 @@ public sealed record StateMessage(
 
     public static StateMessage From(LiveState state) => new(
         state.Version,
-        state.Item?.SongId,
+        state.Item?.ContentId,
         state.Item?.PlanItemId,
         state.Item?.Number,
         state.Item?.Title,
@@ -63,7 +63,7 @@ public sealed record PlanMessage(string? Name, IReadOnlyList<PlanItemMessage> It
     public string Type => "plan";
 
     public static PlanMessage From(Plan? plan, IReadOnlyList<LiveItem> playlist) =>
-        new(plan?.Name, playlist.Select(i => new PlanItemMessage(i.PlanItemId!.Value, i.SongId, i.Number, i.Title)).ToList());
+        new(plan?.Name, playlist.Select(i => new PlanItemMessage(i.PlanItemId!.Value, i.ContentId, i.Number, i.Title)).ToList());
 }
 
 public sealed record PlanItemMessage(Guid Id, string SongId, int? Number, string Title);

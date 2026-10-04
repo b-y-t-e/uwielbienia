@@ -16,14 +16,14 @@ namespace Uwielbienia.App.ViewModels;
 public sealed partial class SearchViewModel : ObservableObject
 {
     private readonly ISongSearch _search;
-    private readonly ILiveItemFactory _items;
+    private readonly ISongPresenter _songs;
     private readonly ILiveControl _control;
     private readonly PlanActions _planActions;
 
-    public SearchViewModel(ISongSearch search, ILiveItemFactory items, ILiveControl control, PlanActions planActions)
+    public SearchViewModel(ISongSearch search, ISongPresenter songs, ILiveControl control, PlanActions planActions)
     {
         _search = search;
-        _items = items;
+        _songs = songs;
         _control = control;
         _planActions = planActions;
     }
@@ -66,7 +66,7 @@ public sealed partial class SearchViewModel : ObservableObject
         // Pieśń dobrana „na szybko” trafia do planu zaraz za bieżącą — plan zostaje zapisem tego,
         // co śpiewano, a „Dalej” prowadzi z powrotem do dalszej części planu.
         var item = _planActions.AddAfterLive(target.Song);
-        _control.Show(_planActions.LiveItemFor(item) ?? _items.Create(target.Song));
+        _control.Show(_planActions.LiveItemFor(item) ?? _songs.Present(target.Song));
         Clear();
     }
 
@@ -118,8 +118,8 @@ public sealed class SongResultViewModel(Song song)
 /// <summary>Operacje na planie wspólne dla wyszukiwarki, kolumny „Pieśń” i pilota.</summary>
 public sealed class PlanActions(ActivePlan plan, ILiveStateSource live)
 {
-    /// <summary>Dodano pieśń do planu — plan zaznacza ją, żeby kolumna „Pieśń” pokazywała pozycję planu.</summary>
-    public event EventHandler<SongPlanItem>? ItemAdded;
+    /// <summary>Dodano pozycję do planu — plan ją zaznacza, żeby kolumna „Pieśń” pokazywała pozycję planu.</summary>
+    public event EventHandler<PlanItem>? ItemAdded;
 
     public LiveItem? LiveItemFor(SongPlanItem item) => plan.FindLiveItem(item.Id);
 
@@ -136,14 +136,16 @@ public sealed class PlanActions(ActivePlan plan, ILiveStateSource live)
         return item;
     }
 
-    /// <summary>Wstawia pieśń lub tekst w podane miejsce planu („Dodaj przed / po” w planie).</summary>
-    public SongPlanItem InsertAt(Song song, int index)
+    /// <summary>Wstawia dowolną pozycję (pieśń, tekst, inny rodzaj) w podane miejsce planu.</summary>
+    public T Insert<T>(T item, int index) where T : PlanItem
     {
-        var item = SongPlanItem.For(song.Id);
         plan.Update(p => p.Insert(index, item));
         ItemAdded?.Invoke(this, item);
         return item;
     }
+
+    /// <summary>Wstawia pieśń lub tekst w podane miejsce planu („Dodaj przed / po” w planie).</summary>
+    public SongPlanItem InsertAt(Song song, int index) => Insert(SongPlanItem.For(song.Id), index);
 
     public SongPlanItem AddToEnd(Song song, IReadOnlyList<string>? arrangement = null)
     {

@@ -118,8 +118,13 @@ public sealed class LiveSession : ILiveControl, ILiveStateSource
 
     private static bool SameSlide(Slide a, Slide b) => a.SectionCode == b.SectionCode && a.Label == b.Label;
 
+    private static readonly IReadOnlyList<SlideLine> NoLines = [];
+
+    /// <summary>Ta sama treść: wersy i pozostałe pola (także slajdów innych rodzajów niż tekst).</summary>
     private static bool SameSlides(IReadOnlyList<Slide> a, IReadOnlyList<Slide> b) =>
-        a.Count == b.Count && a.Zip(b).All(pair => SameSlide(pair.First, pair.Second) && pair.First.Lines.SequenceEqual(pair.Second.Lines));
+        a.Count == b.Count && a.Zip(b).All(pair =>
+            pair.First with { Lines = NoLines } == pair.Second with { Lines = NoLines } &&
+            pair.First.Lines.SequenceEqual(pair.Second.Lines));
 
     public void Show(LiveItem item, int slideIndex = 0) =>
         Publish(item, Math.Clamp(slideIndex, 0, Math.Max(0, item.Slides.Count - 1)), isBlank: false);

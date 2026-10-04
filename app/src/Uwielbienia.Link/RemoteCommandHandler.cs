@@ -13,7 +13,7 @@ public sealed class RemoteCommandHandler(
     ActivePlan plan,
     ISongLibrary library,
     ISongSearch search,
-    ILiveItemFactory itemFactory,
+    ISongPresenter songs,
     IUiDispatcher dispatcher)
 {
     public async Task<byte[]> HandleAsync(ReadOnlyMemory<byte> request)
@@ -56,7 +56,7 @@ public sealed class RemoteCommandHandler(
                 control.Show(item);
                 break;
             case "showSong" when command.SongId is { } songId && library.Find(songId) is { } song:
-                control.Show(itemFactory.Create(song));
+                control.Show(songs.Present(song));
                 break;
             case "search":
                 return new CommandReply(true, Results: search.Search(command.Query ?? "", 30)

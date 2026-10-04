@@ -14,8 +14,11 @@ public interface IProjectionController
 {
     ProjectionMode Mode { get; }
 
-    /// <summary>Opis dla operatora, np. „Ekran: HDMI-1” albo „Brak drugiego ekranu”.</summary>
+    /// <summary>Krótki napis na przycisku, np. „Projekcja: HDMI-1” albo „Włącz projekcję”.</summary>
     string Status { get; }
+
+    /// <summary>Podpowiedź do przycisku: co się stanie i jakie klawisze działają.</summary>
+    string Hint { get; }
 
     bool HasSecondScreen { get; }
 
