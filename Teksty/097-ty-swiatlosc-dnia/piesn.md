@@ -4,7 +4,7 @@ tytul: "Ty, Światłość dnia"
 kategoria: "Uwielbienie"
 numer_zrodlowy: 1095
 tonacja: "E"
-kolejnosc: [V1, C, V2, C]
+kolejnosc: [V1, C, V2, C, B, C]
 zrodlo: "20260925-073507-spiewnik_17_08_10.pdf"
 ---
 
@@ -28,4 +28,7 @@ Ty, czasów Król, wywyższony na wieki
 Jaśnieje w niebie Twój tron
 Zszedłeś na ziemię, by stać się człowiekiem
 By rajem stał się mój dom
-I niczym nie odpłacę się za miłość Twą i za Twój krzyż `G C F`
+
+## [B] Mostek
+I niczym nie odpłacę się za miłość Twą i za Twój krzyż {x3} `G C F`
+Wezwij Imię Twojego Pana, i On zbawi Cię! {x4}

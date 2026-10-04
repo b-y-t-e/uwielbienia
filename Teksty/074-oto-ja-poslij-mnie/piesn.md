@@ -23,4 +23,4 @@ Abym stał się winem abym gasił twe pragnienie
 
 ## [V2] Zwrotka 2
 Nie chcę ci już mówić o moich potrzebach
-Panie ty wiesz wszsytko objaw mi swe pragnienie
+Panie ty wiesz wszystko objaw mi swe pragnienie

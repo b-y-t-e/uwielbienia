@@ -11,7 +11,7 @@ zrodlo: "20260925-073507-spiewnik_17_08_10.pdf"
 # Dotknij, Panie moich oczu, abym przejrzał
 
 ## [V1] Zwrotka 1
-Dotknij, Panie moich oczu, abym przejrzał `D A h G A`
+Dotknij, Panie moich oczu, abym przejrzał, abym przejrzał `D A h G A`
 Dotknij, Panie moich warg, abym przemówił uwielbieniem
 Dotknij, Panie mego serca i oczyść je `D A h G A`
 Niech Twój Święty Duch dziś ogarnia mnie. `G A`

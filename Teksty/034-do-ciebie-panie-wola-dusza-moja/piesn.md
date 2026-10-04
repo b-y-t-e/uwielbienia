@@ -12,7 +12,7 @@ zrodlo: "20260925-073507-spiewnik_17_08_10.pdf"
 
 ## [V1] Zwrotka 1
 Do Ciebie Panie, woła dusza moja `E A`
-Tęskni ciało me . Gdy nie ma Cię, gdy nie ma Cię moje
+Tęskni ciało me. Gdy nie ma Cię, gdy nie ma Cię moje
 serce ogarnia lęk. Przyjdź dotknij mnie rozraduj mnie
 
 ## [C] Refren

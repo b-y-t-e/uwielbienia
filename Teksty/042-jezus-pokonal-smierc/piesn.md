@@ -11,7 +11,6 @@ zrodlo: "20260925-073507-spiewnik_17_08_10.pdf"
 # Jezus pokonał śmierć
 
 ## [V1] Zwrotka 1
-Jezus pokonał śmierć
 Jezus {x4} `D e G A D`
 
 ## [C] Refren
