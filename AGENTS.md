@@ -251,7 +251,9 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
 - **Telefon / przeglądarka.** `RemoteViewModel` paruje przez kod QR (tailcat-link, połączenie
   szyfrowane); sparowane urządzenia łączą się same przy starcie. **Telefon tylko zmienia slajdy** —
   jeden prosty widok (`web/remote`, tokeny kolorów i kroje jak w aplikacji): bieżący slajd z akordami
-  (tekst dopasowany do ekranu, bez przewijania — muzyk gra i nie dotyka telefonu), początek następnego
+  jak w śpiewniku (tekst Literatą, refren jej kursywą `fonts/Literata-Italic.ttf`, zawinięty wers wcięty;
+  rozmiar dopasowany do ekranu bez przewijania — muzyk gra i nie dotyka telefonu — i lekko zmniejszany,
+  żeby wersy się nie zawijały), początek następnego
   slajdu, Wstecz / Dalej; ekran telefonu się nie wygasza. Bez planu, wyszukiwania, gaszenia ekranu i
   edycji — telefon można dać dziecku. Tryb „Ekran” (przeglądarka jako drugi ekran; przycisk tylko na
   komputerze z myszą) rysuje slajd jak rzutnik (`renderSlide`: płótno 16:9 w jednostkach `cqw`,

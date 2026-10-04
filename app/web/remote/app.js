@@ -162,8 +162,22 @@ function fitText(box, max) {
   box.style.fontSize = `${low}px`;
 }
 
+// Wers w jednej linii czyta się lepiej niż zawinięty: zmniejsz tekst najwyżej o 25%, tak żeby zawijało się
+// jak najmniej wersów (szerokość wersu rośnie liniowo z rozmiarem czcionki; za długie zostają zawinięte).
+function avoidWrapping(box) {
+  const size = parseFloat(box.style.fontSize);
+  if (!size) return;
+  box.classList.add("measure");
+  const widths = [...box.querySelectorAll("p")].map((p) => p.scrollWidth);
+  box.classList.remove("measure");
+  const fitting = widths.map((w) => size * (box.clientWidth / w) * 0.98).filter((s) => s >= size * 0.75);
+  const target = Math.min(size, ...fitting);
+  if (target < size) box.style.fontSize = `${target}px`;
+}
+
 function fitAll() {
-  fitText(ui.currentLines, 40);
+  fitText(ui.currentLines, 36);
+  avoidWrapping(ui.currentLines);
   fitText(ui.nextLines, Math.min(22, parseFloat(ui.currentLines.style.fontSize || "22") * 0.7));
 }
 new ResizeObserver(() => fitAll()).observe(ui.remote);

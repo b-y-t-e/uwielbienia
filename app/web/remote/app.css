@@ -2,6 +2,8 @@
 @font-face { font-family: "Atkinson Hyperlegible Next"; src: url("fonts/AtkinsonHyperlegibleNext-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
 @font-face { font-family: "Literata"; src: url("fonts/Literata-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
 @font-face { font-family: "Literata"; src: url("fonts/Literata-SemiBold.ttf") format("truetype"); font-weight: 600; font-display: swap; }
+/* kursywa (refren) — instancja wght 400 z Google Fonts, tylko znaki łacińskie */
+@font-face { font-family: "Literata"; src: url("fonts/Literata-Italic.ttf") format("truetype"); font-weight: 400; font-style: italic; font-display: swap; }
 
 /* Te same tokeny co w aplikacji (Themes/Palette.axaml): nocny granat + światło świecy.
    Świeca = to, co jest na ekranie; niebieski = akordy. */
@@ -62,8 +64,8 @@ input {
   touch-action: manipulation; user-select: none; -webkit-user-select: none;
 }
 .topbar { display: flex; align-items: baseline; gap: .6rem; padding: .8rem 0 .4rem; min-width: 0; }
-.topbar .number { color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; }
-.now-title { flex: 1; min-width: 0; font: 600 1.2rem/1.25 "Literata", Georgia, serif; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topbar .number { color: var(--muted); font-weight: 700; font-size: .95rem; font-variant-numeric: tabular-nums; }
+.now-title { flex: 1; min-width: 0; font: 600 1.15rem/1.25 "Literata", Georgia, serif; letter-spacing: -.005em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Połączenie: sama kropka świecy, napis tylko gdy coś jest nie tak */
 .status { align-self: center; font-size: .8rem; padding: .25rem .6rem; border-radius: 999px; background: var(--raised); color: var(--muted); white-space: nowrap; }
 .status[data-state="connected"] {
@@ -78,32 +80,43 @@ input {
 /* Bieżący slajd: ramka świecy = to, co widzi sala */
 .current {
   min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr);
-  background: var(--surface); border-radius: var(--radius); box-shadow: inset 0 0 0 1.5px var(--candle);
-  padding: .6rem 1rem .8rem;
+  background: var(--surface); border-radius: var(--radius);
+  box-shadow: inset 0 0 0 1.5px var(--candle), 0 12px 32px -18px rgba(0, 0, 0, .45);
+  padding: .7rem 1.1rem .9rem;
 }
 .current.empty { box-shadow: inset 0 0 0 1.5px var(--line); }
 .current-head { display: flex; justify-content: space-between; align-items: center; gap: .6rem; min-height: 1.6rem; }
-.now-label { color: var(--candle); font-size: .9rem; font-weight: 700; }
+.now-label { color: var(--candle); font-size: .85rem; font-weight: 700; letter-spacing: .01em; }
 .badge { font-size: .8rem; font-weight: 700; color: var(--danger); background: var(--raised); padding: .2rem .6rem; border-radius: 999px; }
 
-/* Wersy z akordami: rozmiar ustawia app.js (fitText), tu tylko proporcje */
-.lines { min-height: 0; overflow: hidden; font-size: 28px; line-height: 1.2; }
-.lines p { margin: 0; font-weight: 700; }
+/* Wersy z akordami jak w śpiewniku: tekst Literatą (ten krój co na rzutniku), akordy nad wersem
+   krojem interfejsu, refren prawdziwą kursywą, zawinięty wers wcięty (widać, że to ciąg dalszy).
+   Rozmiar ustawia app.js (fitText), tu tylko proporcje. */
+.lines { min-height: 0; overflow: hidden; font: 400 28px/1.22 "Literata", Georgia, serif; padding-top: .15em; }
+.lines p { margin: 0; padding-left: .8em; text-indent: -.8em; }
 .lines .line { break-inside: avoid; }
-.lines .line + .line { margin-top: .3em; }
-.lines .line.part-start { margin-top: .9em; }
+.lines .line + .line { margin-top: .28em; }
+.lines .line.part-start { margin-top: .95em; }
 .lines .chorus p { font-style: italic; }
-.lines .chords { color: var(--chord); font-weight: 700; font-size: .78em; line-height: 1.15; }
-.lines .rep { color: var(--muted); font-weight: 400; font-size: .75em; }
+.lines .chords {
+  color: var(--chord); font: 700 .6em/1.2 "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  letter-spacing: .03em; word-spacing: .25em;
+}
+.lines .rep { color: var(--muted); font: 400 .62em "Atkinson Hyperlegible Next", system-ui, sans-serif; }
 .lines.image { display: grid; place-items: center; color: var(--muted); }
+/* pomiar szerokości wersów bez zawijania (app.js: avoidWrapping) */
+.lines.measure p { white-space: nowrap; width: max-content; }
 
-.upcoming { padding: .7rem .2rem .2rem; opacity: .62; }
-.next-label { color: var(--muted); font-size: .9rem; margin-bottom: .2rem; }
+.upcoming { padding: .75rem 1.1rem .2rem; }
+.next-label { color: var(--muted); font-size: .85rem; margin-bottom: .25rem; }
+.upcoming .lines { color: var(--muted); }
+.upcoming .chords { font-size: .75em; }
 .upcoming .lines { max-height: 16dvh; font-size: 18px; }
 .upcoming .lines p { font-weight: 400; }
 
 .controls { display: grid; grid-template-columns: 1fr 2fr; gap: .6rem; padding-top: .7rem; }
-.controls .big { padding: 1.4rem .5rem; font-size: 1.25rem; font-weight: 700; border-radius: 16px; }
+.controls .big { padding: 1.35rem .5rem; font-size: 1.2rem; font-weight: 700; border-radius: 16px; letter-spacing: .01em; }
+.controls #prev { background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); }
 
 /* Poziomo (telefon na pulpicie): przyciski z boku, tekst zajmuje całą wysokość */
 @media (orientation: landscape) and (max-height: 32rem) {
