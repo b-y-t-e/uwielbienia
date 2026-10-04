@@ -39,7 +39,11 @@ public static class AppComposition
 
         // plany i ekran
         services.AddSingleton<IPlanStore>(sp => new JsonPlanStore(sp.GetRequiredService<AppPaths>().Plans));
-        services.AddSingleton<ISlideBuilder>(sp => new SectionSlideBuilder(sp.GetRequiredService<ISettingsStore>().Current.MaxLinesPerSlide));
+        services.AddSingleton<ISlideBuilder>(sp =>
+        {
+            var settings = sp.GetRequiredService<ISettingsStore>().Current;
+            return new SectionSlideBuilder(settings.MaxLinesPerSlide, settings.JoinVerseAndChorus);
+        });
         // Rodzaje pozycji planu — nowy rodzaj elementu prezentacji rejestrujemy tutaj (CLAUDE.md: „Nowy rodzaj elementu”).
         services.AddSingleton<SongPlanItemType>();
         services.AddSingleton<IPlanItemType>(sp => sp.GetRequiredService<SongPlanItemType>());

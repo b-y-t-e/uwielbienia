@@ -34,7 +34,7 @@ if (light)
 var library = services.GetRequiredService<ISongLibrary>();
 var active = services.GetRequiredService<ActivePlan>();
 var plan = Plan.Create("Uwielbienie", new DateOnly(2026, 9, 25));
-foreach (var number in new[] { 47, 94, 30, 36, 117, 128 })
+foreach (var number in new[] { 47, 94, 30, 36, 117, 128, 24, 143, 59 })
     plan = plan.Insert(plan.Items.Count, SongPlanItem.For(library.Songs.First(s => s.Number == number).Id));
 // Prezentacja z obrazów (PowerPoint w narzędziu niedostępny): trzy slajdy narysowane tutaj.
 var slideFiles = Enumerable.Range(1, 3).Select(i => DrawSlide(i, Path.Combine(root, $"ogloszenia-{i}.png"))).ToList();
@@ -100,6 +100,15 @@ control.Show(active.Playlist[1], 0);
 Save(projection, "projekcja-poczatek");
 control.Show(active.Playlist[1], 1);
 Save(projection, "projekcja");
+// Krótka zwrotka z refrenem na jednym slajdzie (24), także z zawijanymi wersami (143) i najdłuższa (59: 9 wersów).
+control.Show(active.Playlist.First(i => i.Number == 24), 1);
+Save(projection, "projekcja-zwrotka-refren", settle: true);
+Save(window, "operator-zwrotka-refren", settle: true);
+control.Show(active.Playlist.First(i => i.Number == 143), 1);
+Save(projection, "projekcja-zwrotka-refren-dlugie", settle: true);
+var longest = active.Playlist.First(i => i.Number == 59);
+control.Show(longest, longest.Slides.ToList().FindIndex(sl => sl.Label.Contains(Slide.JoinSeparator, StringComparison.Ordinal)));
+Save(projection, "projekcja-zwrotka-refren-7", settle: true);
 // Prezentacja: kolumna „Pieśń”, „Na ekranie” i rzutnik.
 main.Plan.Selected = main.Plan.Items.First(i => i.IsPresentation);
 control.Show(active.Playlist.First(i => i.Slides.FirstOrDefault() is ImageSlide), 1);

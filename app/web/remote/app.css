@@ -95,6 +95,8 @@ input {
 .display-lines { width: 86vw; text-align: center; font-weight: 500; font-size: min(5.2vw, 9vh); line-height: 1.24; transition: opacity .15s; }
 .display-lines p { margin: .1em 0; }
 .display-lines .rep { color: #8A8F9E; font-size: .64em; }
+.chorus { font-style: italic; }
+p.part-start { margin-top: .6em; }
 .display-exit { position: fixed; bottom: 1rem; right: 1rem; opacity: 0; background: #222; color: #fff; }
 .display:hover .display-exit { opacity: .6; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .display-lines { transition: none; } }

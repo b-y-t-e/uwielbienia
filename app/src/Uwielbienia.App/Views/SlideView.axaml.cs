@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
@@ -79,4 +80,13 @@ public static class SlideConverters
             var list = values.ToList();
             return list is [true, IBrush title, _] ? title : list.ElementAtOrDefault(2) as IBrush;
         });
+
+    /// <summary>Refren dołączony do zwrotki na tym samym slajdzie — kursywą, jak w śpiewniku.</summary>
+    public static readonly IValueConverter ChorusStyle =
+        new FuncValueConverter<bool, FontStyle>(chorus => chorus ? FontStyle.Italic : FontStyle.Normal);
+
+    /// <summary>Odstęp nad pierwszym wersem dołączonej części; parametr = odstęp w pikselach.</summary>
+    public static readonly IValueConverter PartGap =
+        new FuncValueConverter<bool, string, Thickness>((start, gap) =>
+            new Thickness(0, start ? double.Parse(gap ?? "0", CultureInfo.InvariantCulture) : 0, 0, 0));
 }

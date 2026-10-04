@@ -10,6 +10,7 @@ public enum AppTheme
 }
 
 /// <param name="SongsFolder">Folder <c>Teksty/</c> z repozytorium; <c>null</c> = wykryj automatycznie / wbudowane.</param>
+/// <param name="JoinVerseAndChorus">Krótka zwrotka i refren po niej na jednym slajdzie, gdy się mieszczą.</param>
 /// <param name="ProjectionCorners">Dopasowanie obrazu do rzutnika: x, y 4 narożników (0..1); <c>null</c> = pełny ekran.</param>
 public sealed record AppSettings(
     AppTheme Theme = AppTheme.Dark,
@@ -21,7 +22,8 @@ public sealed record AppSettings(
     double PlanColumnRatio = 0.16,
     double PreviewColumnRatio = 0.42,
     double LiveColumnRatio = 0.42,
-    double[]? ProjectionCorners = null);
+    double[]? ProjectionCorners = null,
+    bool JoinVerseAndChorus = true);
 
 public sealed class AppPaths
 {

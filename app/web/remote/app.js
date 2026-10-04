@@ -83,12 +83,19 @@ function setStatus(kind, text) {
   ui.status.textContent = text;
 }
 
+// Refren dołączony do zwrotki na tym samym slajdzie: odstęp nad nim i kursywa.
+function part(p, line) {
+  p.classList.toggle("chorus", !!line.chorus);
+  p.classList.toggle("part-start", !!line.partStart);
+  return p;
+}
+
 function renderState() {
   const s = state;
   ui.nowNumber.textContent = s.number ?? "";
   ui.nowTitle.textContent = s.title ?? "Ekran jest pusty";
   ui.nowLabel.textContent = [s.label, s.next ? `dalej: ${s.next}` : null].filter(Boolean).join(", ");
-  ui.nowLines.replaceChildren(...s.lines.map((l) => paragraph(l.text)));
+  ui.nowLines.replaceChildren(...s.lines.map((l) => part(paragraph(l.text), l)));
   ui.blankBadge.hidden = !s.isBlank;
   $("blank").setAttribute("aria-pressed", String(s.isBlank));
 
@@ -121,7 +128,7 @@ function renderDisplay() {
   if (ui.display.hidden) return;
   const visible = state && !state.isBlank ? state.lines : [];
   ui.displayLines.replaceChildren(...visible.map((l) => {
-    const p = paragraph(l.text);
+    const p = part(paragraph(l.text), l);
     if (l.repeat > 1) p.append(Object.assign(document.createElement("span"), { className: "rep", textContent: `  ×${l.repeat}` }));
     return p;
   }));

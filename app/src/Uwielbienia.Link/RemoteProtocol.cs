@@ -50,13 +50,15 @@ public sealed record StateMessage(
         state.SlideIndex,
         state.Item?.Slides.Count ?? 0,
         state.Slide?.Label,
-        state.Slide?.Lines.Select(l => new LineMessage(l.Text, l.Repeat)).ToList() ?? [],
+        state.Slide?.Lines.Select(l => new LineMessage(l.Text, l.Repeat, l.IsChorus, l.StartsPart)).ToList() ?? [],
         state.Item?.Slides.Select(s => s.Label).ToList() ?? [],
         state.IsBlank,
         state.Next);
 }
 
-public sealed record LineMessage(string Text, int Repeat);
+/// <param name="Chorus">Refren dołączony do zwrotki (kursywa).</param>
+/// <param name="PartStart">Początek dołączonej części (odstęp nad wersem).</param>
+public sealed record LineMessage(string Text, int Repeat, bool Chorus = false, bool PartStart = false);
 
 public sealed record PlanMessage(string? Name, IReadOnlyList<PlanItemMessage> Items)
 {

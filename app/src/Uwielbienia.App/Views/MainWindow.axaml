@@ -319,10 +319,11 @@
                       <ItemsControl ItemsSource="{Binding Live.CurrentLines}">
                         <ItemsControl.ItemTemplate>
                           <DataTemplate x:DataType="p:SlideLine">
-                            <StackPanel Margin="0,0,0,12">
+                            <StackPanel Margin="{Binding StartsPart, Converter={x:Static v:SlideConverters.PartGap}, ConverterParameter=12}">
                               <TextBlock Classes="chords" Text="{Binding Chords}" Classes.empty="{Binding Chords, Converter={x:Static StringConverters.IsNullOrEmpty}}"
                                          Classes.hidden="{Binding !$parent[Window].((vm:MainViewModel)DataContext).ShowChords}" />
-                              <TextBlock Classes="lead" Text="{Binding Text}" TextWrapping="Wrap" FontWeight="SemiBold" />
+                              <TextBlock Classes="lead" Text="{Binding Text}" TextWrapping="Wrap" FontWeight="SemiBold" Margin="0,0,0,12"
+                                         FontStyle="{Binding IsChorus, Converter={x:Static v:SlideConverters.ChorusStyle}}" />
                             </StackPanel>
                           </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -344,10 +345,11 @@
                       <ItemsControl ItemsSource="{Binding Live.NextLines}">
                         <ItemsControl.ItemTemplate>
                           <DataTemplate x:DataType="p:SlideLine">
-                            <StackPanel Margin="0,0,0,8">
+                            <StackPanel Margin="{Binding StartsPart, Converter={x:Static v:SlideConverters.PartGap}, ConverterParameter=8}">
                               <TextBlock Classes="chords" Text="{Binding Chords}" Classes.empty="{Binding Chords, Converter={x:Static StringConverters.IsNullOrEmpty}}"
                                          Classes.hidden="{Binding !$parent[Window].((vm:MainViewModel)DataContext).ShowChords}" />
-                              <TextBlock Text="{Binding Text}" TextWrapping="Wrap" />
+                              <TextBlock Text="{Binding Text}" TextWrapping="Wrap" Margin="0,0,0,8"
+                                         FontStyle="{Binding IsChorus, Converter={x:Static v:SlideConverters.ChorusStyle}}" />
                             </StackPanel>
                           </DataTemplate>
                         </ItemsControl.ItemTemplate>

@@ -123,7 +123,8 @@ public sealed class LiveSession : ILiveControl, ILiveStateSource
         return 0;
     }
 
-    private static bool SameSlide(Slide a, Slide b) => a.SectionCode == b.SectionCode && a.Label == b.Label;
+    /// <summary>Ten sam slajd po zmianie układu — także zwrotka, która straciła albo zyskała dołączony refren.</summary>
+    private static bool SameSlide(Slide a, Slide b) => a.SectionCode == b.SectionCode && a.FirstPartLabel == b.FirstPartLabel;
 
     private static readonly IReadOnlyList<SlideLine> NoLines = [];
 

@@ -195,7 +195,14 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   `SongDraft` zamienia formularz edytora na `Song`: kody części (`V1`, `C`, `C2`, tekst `O1`…),
   kolejność (edycja: dotychczasowa; nowa pieśń: refren po każdej zwrotce), tonacja.
 - **Slajdy.** `SectionSlideBuilder`: jedno wystąpienie części z `kolejnosc` = slajd, dłuższe niż
-  `MaxLinesPerSlide` dzielone równo; `ChordResolver` realizuje dziedziczenie akordów.
+  `MaxLinesPerSlide` dzielone równo; `ChordResolver` realizuje dziedziczenie akordów. Krótka zwrotka
+  i refren zaraz po niej to jeden slajd („Zwrotka 1 + Refren”), gdy razem mają najwyżej 9 wierszy
+  rzutnika (wers dłuższy niż ok. 40 znaków = 2 wiersze; 8 mieści się w pełnej wielkości, przy 9 tekst
+  zmniejsza się o ok. 12%): mniej przełączania w pieśniach o krótkich częściach. Nigdy więcej niż dwie części, nie części podzielone,
+  nie teksty; wersy refrenu mają `SlideLine.IsChorus` (kursywa) i `StartsPart` (odstęp nad nim) — na
+  rzutniku, w kolumnie „Na ekranie” i w przeglądarce. Kod slajdu = kod zwrotki, a `LiveSession` dopasowuje
+  slajdy po `Slide.FirstPartLabel`, więc pominięcie refrenu na żywo zostawia na ekranie tę samą zwrotkę.
+  Wyłącznik: `AppSettings.JoinVerseAndChorus`.
 - **Plany.** `Plan` (rekord: nazwa, osobna data, rodzaj wydarzenie/szablon, pozycje
   `SongPlanItem` z `Arrangement` / `Layout` — `null` = układ z pliku pieśni) w `JsonPlanStore`
   (`%APPDATA%\Uwielbienia\plany\{id}.json`). `ActivePlan` trzyma otwarty plan, zapisuje każdą
@@ -308,7 +315,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 ### Dane i ustawienia (`AppPaths`, `%APPDATA%\Uwielbienia`, Linux `~/.config/Uwielbienia`)
 
 `ustawienia.json` (`AppSettings`: motyw okna i ekranu, akordy, szerokości kolumn, ostatni plan,
-`MaxLinesPerSlide`, opcjonalny folder pieśni, narożniki „Dopasuj obraz”), `plany/`, `teksty/`,
+`MaxLinesPerSlide`, `JoinVerseAndChorus`, opcjonalny folder pieśni, narożniki „Dopasuj obraz”), `plany/`, `teksty/`,
 `prezentacje/` (kopie prezentacji i ich slajdy; nieużywane nie są dziś usuwane), `polaczenia/`
 (tailcat-link), `aktualizacje.log`.
 
@@ -322,7 +329,9 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
   (tytuły, tekst na rzutniku).
 - Ikona: płomień świecy na nocnym granacie — `Assets/icon.ico` / `icon.png` (okna w XAML, `ApplicationIcon`
   w `Uwielbienia.Desktop.csproj`, `vpk pack --icon` w `release.yml`); generuje ją `python app/tools/make_icon.py`.
-- Rzutnik (`ProjectionAppearance`): ciemny = czerń i ciepła kość słoniowa, jasny = biel i granat;
+- Rzutnik (`ProjectionAppearance`): tekst w polu 1640×1000 (marginesy 140 px z boków, 40 px u góry
+  i u dołu — brzegi ekranu w sali załatwia „Dopasuj obraz”), za długi zmniejsza się w całości.
+  Kolory: ciemny = czerń i ciepła kość słoniowa, jasny = biel i granat;
   tytuł pieśni w delikatnym ciepłym odcieniu z linią pod spodem; bez stałej wysokości wiersza
   (Literata ma długie ogonki liter). Slajd prezentacji: obraz na cały ekran na czarnym tle.
 - Bez zbędnych objaśnień i podpisów: pusty stan, krótka podpowiedź w polu, ostrzeżenie przy

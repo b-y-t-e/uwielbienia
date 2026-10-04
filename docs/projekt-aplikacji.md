@@ -39,7 +39,8 @@ wyświetla. Dzięki temu nowe odbiorniki nie wymagają zmian w logice.
   części wg `kolejnosc`; operator odznacza części albo zmienia kolejność. Pozycja jest
   abstrakcją (`PlanItem` + `IPlanItemType`), pieśń i prezentacja to jej rodzaje.
 - **Slajd** — to, co jest naraz na ekranie: jedna część pieśni albo jej fragment, jeśli
-  część jest zbyt długa (np. >6 wersów → dzielimy równo).
+  część jest zbyt długa (np. >6 wersów → dzielimy równo). Krótka zwrotka i refren po niej
+  dzielą jeden slajd, gdy razem mają najwyżej 9 wierszy (refren kursywą, z odstępem).
 - **Pieśń** vs **Na ekranie** — dwa niezależne wskaźniki. Pieśń = to, co operator
   ogląda (i edytuje). Na ekranie = to, co widzi sala.
 

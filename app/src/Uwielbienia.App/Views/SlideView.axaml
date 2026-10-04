@@ -23,7 +23,8 @@
           </DataTemplate>
           <DataTemplate DataType="vm:ProjectedPage">
             <Panel>
-              <Viewbox StretchDirection="DownOnly" Margin="140,90" VerticalAlignment="Center">
+              <!-- Małe marginesy u góry i u dołu: obraz dopasowuje się do ekranu w sali narożnikami („Dopasuj obraz”). -->
+              <Viewbox StretchDirection="DownOnly" Margin="140,40" VerticalAlignment="Center">
                 <StackPanel Width="1640">
                   <!-- Początek pieśni: tytuł tej samej wielkości co tekst, oddzielony linią w kolorze świecy. -->
                   <StackPanel IsVisible="{Binding HasTitle}" HorizontalAlignment="Center" Margin="0,0,0,40">
@@ -41,8 +42,11 @@
                           <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="p:SlideLine">
                               <!-- Wers powtarzający tytuł pieśni (zamiast tytułu nad tekstem) — w kolorze tytułu. -->
+                              <!-- Refren dołączony do zwrotki: odstęp nad nim i kursywa. -->
                               <TextBlock TextAlignment="Center" TextWrapping="Wrap" FontFamily="{StaticResource TitleFont}"
-                                         FontSize="86" Margin="0,4">
+                                         FontSize="86" Padding="0,4"
+                                         Margin="{Binding StartsPart, Converter={x:Static v:SlideConverters.PartGap}, ConverterParameter=40}"
+                                         FontStyle="{Binding IsChorus, Converter={x:Static v:SlideConverters.ChorusStyle}}">
                                 <TextBlock.Foreground>
                                   <MultiBinding Converter="{x:Static v:SlideConverters.LineBrush}">
                                     <Binding Path="IsTitle" />

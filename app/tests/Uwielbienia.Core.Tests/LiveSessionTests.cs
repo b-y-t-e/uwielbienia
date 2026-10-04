@@ -149,6 +149,22 @@ public class LiveSessionTests
     }
 
     [Fact]
+    public void Skipping_the_chorus_keeps_its_verse_on_screen()
+    {
+        var line = new SlideLine("t", null, 1, false, false);
+        var id = Guid.NewGuid();
+        LiveItem joined = new(id, "s", 1, "S",
+            [new("C", "Refren", [line]), new("V1", "Zwrotka 1 + Refren", [line, line]), new("V2", "Zwrotka 2 + Refren", [line, line])]);
+        var session = new LiveSession();
+        session.SetPlaylist([joined]);
+        session.Show(joined, 2);
+
+        session.SetPlaylist([joined with { Slides = [new("V1", "Zwrotka 1", [line]), new("V2", "Zwrotka 2", [line])] }]);
+
+        Assert.Equal("Zwrotka 2", session.State.Slide!.Label);
+    }
+
+    [Fact]
     public void Plan_clone_gets_new_ids()
     {
         var plan = Plan.Create("Próba z dziećmi", null, PlanKind.Template).Insert(0, SongPlanItem.For("001-a"));
