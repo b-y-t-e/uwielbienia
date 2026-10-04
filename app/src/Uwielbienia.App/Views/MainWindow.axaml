@@ -88,6 +88,7 @@
                         <MenuItem Header="Pokaż na ekranie" Click="OnPlanMenuShow" />
                         <MenuItem Header="Dodaj przed…" Click="OnPlanMenuAddBefore" />
                         <MenuItem Header="Dodaj po…" Click="OnPlanMenuAddAfter" />
+                        <MenuItem Header="Duplikuj" Click="OnPlanMenuDuplicate" />
                         <Separator />
                         <MenuItem Header="Usuń z planu" Click="OnPlanMenuRemove" />
                       </ContextMenu>

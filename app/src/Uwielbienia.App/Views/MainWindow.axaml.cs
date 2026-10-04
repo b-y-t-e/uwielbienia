@@ -145,6 +145,12 @@ public partial class MainWindow : Window
             ViewModel.PlanAdd.Open(ViewModel.Plan.Items.IndexOf(item) + 1);
     }
 
+    private void OnPlanMenuDuplicate(object? sender, RoutedEventArgs e)
+    {
+        if (MenuItemTarget(sender) is { } item)
+            ViewModel.Plan.DuplicateCommand.Execute(item);
+    }
+
     private void OnPlanMenuRemove(object? sender, RoutedEventArgs e)
     {
         if (MenuItemTarget(sender) is { } item)

@@ -17,6 +17,7 @@ public sealed partial class PlanViewModel : ObservableObject
     private readonly IPlanItemTypes _itemTypes;
     private readonly ILiveControl _control;
     private readonly ILiveStateSource _live;
+    private readonly PlanActions _actions;
 
     public PlanViewModel(ActivePlan plan, IPlanItemTypes itemTypes, ILiveControl control, ILiveStateSource live, PlanActions actions)
     {
@@ -24,6 +25,7 @@ public sealed partial class PlanViewModel : ObservableObject
         _itemTypes = itemTypes;
         _control = control;
         _live = live;
+        _actions = actions;
         plan.Changed += (_, _) => Rebuild();
         plan.Opened += (_, _) => StartFromBeginning();
         actions.ItemAdded += (_, added) => Selected = Items.FirstOrDefault(i => i.Id == added.Id) ?? Selected;
@@ -74,6 +76,11 @@ public sealed partial class PlanViewModel : ObservableObject
 
     public void Reorder(PlanItemViewModel item, int newIndex) =>
         _plan.Update(p => p.Move(item.Id, newIndex));
+
+    /// <summary>Kopia pozycji zaraz za nią — ta sama pieśń (z jej układem części) drugi raz w planie.</summary>
+    [RelayCommand]
+    private void Duplicate(PlanItemViewModel item) =>
+        _actions.Insert(item.Item.WithNewId(), Items.IndexOf(item) + 1);
 
     [RelayCommand]
     private void RequestRemove(PlanItemViewModel item) => PendingRemoval = item;
