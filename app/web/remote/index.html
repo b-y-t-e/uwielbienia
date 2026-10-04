@@ -27,50 +27,31 @@
     <p id="pairError" class="error" role="alert"></p>
   </main>
 
-  <!-- Pilot -->
-  <main id="remote" class="screen" hidden>
+  <!-- Pilot: tylko zmiana slajdów. Bieżący slajd z akordami (muzyk widzi wszystko bez dotykania),
+       pod nim następny, na dole Wstecz / Dalej. Bez planu i edycji — dziecko nic nie zepsuje. -->
+  <main id="remote" class="pilot" hidden>
     <header class="topbar">
+      <span id="nowNumber" class="number"></span>
+      <span id="nowTitle" class="now-title">Ekran jest pusty</span>
       <span id="status" class="status" data-state="connecting" role="status">Łączenie…</span>
-      <span id="planName" class="plan-name"></span>
       <button id="toDisplay" class="quiet">Ekran</button>
     </header>
 
-    <!-- To, co widzi sala: miniatura ekranu rzutnika (ten sam wygląd co tryb „Ekran”) -->
-    <section class="now" aria-live="polite">
-      <div id="nowScreen" class="slide-screen mini">
-        <div class="slide-fit"><div class="slide-text"></div></div>
-        <span id="blankBadge" class="screen-badge" hidden>Czarny ekran</span>
+    <section class="current" aria-live="polite">
+      <div class="current-head">
+        <span id="nowLabel" class="now-label"></span>
+        <span id="blankBadge" class="badge" hidden>Ekran wygaszony</span>
       </div>
-      <div class="now-meta">
-        <span id="nowNumber" class="marker"></span>
-        <div class="now-heading">
-          <div id="nowTitle" class="now-title">Ekran jest pusty</div>
-          <div id="nowLabel" class="now-label"></div>
-          <div id="nowNext" class="now-next"></div>
-        </div>
-      </div>
+      <div id="currentLines" class="lines"></div>
     </section>
 
-    <div id="slides" class="slides" role="list"></div>
-
-    <nav class="tabs" role="tablist">
-      <button class="tab" role="tab" aria-selected="true" data-tab="plan">Plan</button>
-      <button class="tab" role="tab" aria-selected="false" data-tab="search">Szukaj</button>
-    </nav>
-
-    <section id="tab-plan" class="tab-panel">
-      <ol id="planList" class="list"></ol>
-      <p id="planEmpty" class="hint" hidden>Plan jest pusty. Pieśń znajdziesz w „Szukaj”.</p>
-    </section>
-
-    <section id="tab-search" class="tab-panel" hidden>
-      <input id="searchInput" type="search" inputmode="search" autocomplete="off" placeholder="Numer albo słowa pieśni">
-      <ol id="searchList" class="list"></ol>
+    <section class="upcoming">
+      <div id="nextLabel" class="next-label"></div>
+      <div id="nextLines" class="lines"></div>
     </section>
 
     <footer class="controls">
       <button id="prev" class="big">Wstecz</button>
-      <button id="blank" class="big">Czarny</button>
       <button id="next" class="big primary">Dalej</button>
     </footer>
   </main>

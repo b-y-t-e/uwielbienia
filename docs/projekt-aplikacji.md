@@ -17,7 +17,7 @@ odznaczenie albo przywrócenie części działa na żywo.
 | S1 | **Laptop + drugi ekran** (główny) | Okno operatora na ekranie, na którym jest aplikacja. Okno projekcji otwiera się na pełnym ekranie na **innym** monitorze (wykrywanym automatycznie; przy podłączeniu/odłączeniu przenosi się samo). |
 | S2 | **Jedno urządzenie, bez drugiego ekranu** (awaryjny) | Laptop, tablet lub telefon sam jest ekranem. Tryb sceniczny: pełny ekran z tekstem, a szybki wybór pieśni nakłada się na chwilę na tekst (opis w p. 4). |
 | S3 | **Dwa komputery sparowane** (tailcat-link) | Komputer A = operator, komputer B = tylko ekran (ta sama aplikacja w trybie „Ekran”). A wysyła stan: pieśń, slajd, czarny ekran. |
-| S4 | **Telefon jako pilot** (strona `greysource.eu/uwielbienie`) | Parowanie kodem QR z okna operatora. Na telefonie: Następny / Poprzedni, Czarny ekran, plan z możliwością wyboru pieśni, wyszukiwarka. |
+| S4 | **Telefon jako pilot** (strona `greysource.eu/uwielbienie`) | Parowanie kodem QR z okna operatora. Na telefonie tylko zmiana slajdów: bieżący slajd z akordami, początek następnego, Wstecz / Dalej — bez planu i edycji (może go obsługiwać dziecko albo muzyk z gitarą). |
 | S5 | **Telefon jako ekran** (przyszłość) | Ta sama strona w trybie „ekran” — wymaga tylko renderowania stanu, który już wysyłamy w S3/S4. |
 
 Wspólny mianownik S3–S5: **stan projekcji** (`LiveState`) to mały, samowystarczalny

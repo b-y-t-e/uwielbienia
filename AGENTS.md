@@ -249,12 +249,16 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   dokładnie, Esc = koniec kalibracji. Kliknięcie bez przeciągania w trybie jednego ekranu = dalej /
   wstecz (prawa / lewa połowa). Zapis: `AppSettings.ProjectionCorners` (8 liczb 0..1).
 - **Telefon / przeglądarka.** `RemoteViewModel` paruje przez kod QR (tailcat-link, połączenie
-  szyfrowane); sparowane urządzenia łączą się same przy starcie. Strona (`web/remote`, te same tokeny
-  kolorów i kroje co aplikacja) pokazuje miniaturę ekranu rzutnika — ten sam kod rysuje tryb „Ekran”
-  (`renderSlide`: płótno 16:9 w jednostkach `cqw`, wymiary i kolory jak `SlideView`, za długi tekst
-  zmniejszany w całości) — oraz plan ze znacznikami jak w aplikacji (`PlanItemMessage.Kind`).
-  Stan niesie wszystko, co potrzebne do wyglądu slajdu: `ShowTitle`, wersy z `Title` / `Chorus` /
-  `PartStart`. Podgląd bez aplikacji: kopia strony z udawanym `lib/tailcat/index.js`.
+  szyfrowane); sparowane urządzenia łączą się same przy starcie. **Telefon tylko zmienia slajdy** —
+  jeden prosty widok (`web/remote`, tokeny kolorów i kroje jak w aplikacji): bieżący slajd z akordami
+  (tekst dopasowany do ekranu, bez przewijania — muzyk gra i nie dotyka telefonu), początek następnego
+  slajdu, Wstecz / Dalej; ekran telefonu się nie wygasza. Bez planu, wyszukiwania, gaszenia ekranu i
+  edycji — telefon można dać dziecku. Tryb „Ekran” (przeglądarka jako drugi ekran; przycisk tylko na
+  komputerze z myszą) rysuje slajd jak rzutnik (`renderSlide`: płótno 16:9 w jednostkach `cqw`,
+  wymiary i kolory jak `SlideView`). Stan niesie wersy z akordami (`LineMessage`: `Chords`, `Title`,
+  `Chorus`, `PartStart`), `ShowTitle` i `NextLines`. Polecenia `blank` / `goto` / `showItem` /
+  `showSong` / `search` zostają w protokole, strona ich nie używa. Podgląd bez aplikacji: kopia strony
+  z udawanym `lib/tailcat/index.js`.
 - **Aktualizacje.** `UpdateService` + `VelopackReleaseFeed`: tylko instalacja z
   `Uwielbienia-win-Setup.exe` sprawdza GitHub Releases, pobiera w tle i proponuje „Aktualizuj”.
 - **Start** (`App.OnFrameworkInitializationCompleted`): DI → otwarcie ostatniego planu →

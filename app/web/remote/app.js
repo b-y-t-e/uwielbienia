@@ -1,6 +1,8 @@
 // Pilot i ekran w przeglądarce dla aplikacji „Uwielbienia”.
 // Protokół: app/src/Uwielbienia.Link/RemoteProtocol.cs — host wysyła {type:"state"|"plan"},
-// strona pyta poleceniami {cmd:"hello"|"next"|"prev"|"blank"|"goto"|"showItem"|"showSong"|"search"}.
+// strona pyta poleceniami {cmd:"hello"|"next"|"prev"}. Telefon tylko zmienia slajdy: bez planu,
+// wyszukiwania i gaszenia ekranu (to zostaje w aplikacji) — dziecko nic nie zepsuje, a muzyk widzi
+// bieżący i następny slajd z akordami bez dotykania telefonu.
 
 import { TailcatLink, PairingRefusedError } from "./lib/tailcat/index.js";
 
@@ -9,17 +11,14 @@ const $ = (id) => document.getElementById(id);
 
 const ui = {
   pairing: $("pairing"), remote: $("remote"), display: $("display"),
-  status: $("status"), planName: $("planName"),
-  nowNumber: $("nowNumber"), nowTitle: $("nowTitle"), nowLabel: $("nowLabel"), nowNext: $("nowNext"), nowScreen: $("nowScreen"),
-  blankBadge: $("blankBadge"), slides: $("slides"),
-  planList: $("planList"), planEmpty: $("planEmpty"),
-  searchInput: $("searchInput"), searchList: $("searchList"),
+  status: $("status"),
+  nowNumber: $("nowNumber"), nowTitle: $("nowTitle"), nowLabel: $("nowLabel"), blankBadge: $("blankBadge"),
+  currentLines: $("currentLines"), nextLabel: $("nextLabel"), nextLines: $("nextLines"),
   displayScreen: $("displayScreen"),
 };
 
 let link = null;
 let state = null;
-let plan = { name: null, items: [] };
 
 // ---------- połączenie ----------
 
@@ -55,7 +54,6 @@ async function command(cmd, extra = {}) {
   try {
     const reply = JSON.parse(await link.request(JSON.stringify({ cmd, ...extra })));
     if (reply.state) receive({ ...reply.state, type: "state" });
-    if (reply.plan) receive({ ...reply.plan, type: "plan" });
     return reply;
   } catch {
     setStatus("failed", "Polecenie nie dotarło");
@@ -70,9 +68,6 @@ function receive(message) {
     if (state && message.version < state.version) return; // starsza wiadomość po nowszej
     state = message;
     renderState();
-  } else if (message.type === "plan") {
-    plan = message;
-    renderPlan();
   }
 }
 
@@ -86,7 +81,7 @@ function setStatus(kind, text) {
 
 // Slajd tak jak na rzutniku: tytuł z linią (tylko gdy coś wnosi), wersy tytułowe w kolorze tytułu,
 // refren dołączony do zwrotki kursywą z odstępem, „×N” przy powtarzanych wersach.
-function renderSlide(screen, s, { showImageNote = false } = {}) {
+function renderSlide(screen, s) {
   const text = screen.querySelector(".slide-text");
   const content = [];
   if (s && !s.isBlank) {
@@ -99,8 +94,6 @@ function renderSlide(screen, s, { showImageNote = false } = {}) {
       if (l.repeat > 1) p.append(Object.assign(document.createElement("span"), { className: "rep", textContent: `  ×${l.repeat}` }));
       content.push(p);
     }
-    // slajd prezentacji (obraz) — telefon nie dostaje obrazu, tylko jego nazwę
-    if (showImageNote && s.lines.length === 0 && s.label) content.push(Object.assign(paragraph(s.label), { className: "image-note" }));
   }
   text.replaceChildren(...content);
   fit(screen);
@@ -124,66 +117,62 @@ for (const screen of document.querySelectorAll(".slide-screen")) {
 
 function renderState() {
   const s = state;
-  setMarker(ui.nowNumber, s.number, s.itemId ? kindOf(s.itemId) : null);
+  ui.nowNumber.textContent = s.number ?? "";
   ui.nowTitle.textContent = s.title ?? "Ekran jest pusty";
   ui.nowLabel.textContent = s.label ?? "";
-  ui.nowNext.textContent = s.next ? `Dalej: ${s.next}` : "";
-  renderSlide(ui.nowScreen, s, { showImageNote: true });
-  ui.nowScreen.classList.toggle("blank", s.isBlank || !s.title);
   ui.blankBadge.hidden = !s.isBlank;
-  $("blank").setAttribute("aria-pressed", String(s.isBlank));
+  ui.currentLines.parentElement.classList.toggle("empty", !s.title);
+  // slajd prezentacji (obraz) — telefon dostaje tylko jego nazwę
+  ui.currentLines.replaceChildren(...(s.lines.length ? s.lines.map(chordLine) : []));
+  ui.currentLines.classList.toggle("image", s.lines.length === 0 && !!s.label);
+  if (s.lines.length === 0 && s.label) ui.currentLines.append(paragraph(s.label));
 
-  ui.slides.replaceChildren(...s.slideLabels.map((label, index) => {
-    const b = button(label, () => command("goto", { slide: index }));
-    b.setAttribute("aria-current", String(index === s.slideIndex));
-    return b;
-  }));
-  ui.slides.querySelector('[aria-current="true"]')?.scrollIntoView({ inline: "center", block: "nearest" });
-
-  markLive();
+  // początek następnego slajdu (2 wersy z akordami) — muzyk wie, co nadchodzi, a bieżący zostaje duży
+  const nextLines = (s.nextLines ?? []).slice(0, 2);
+  ui.nextLabel.textContent = s.next ? `Dalej: ${s.next}` : "";
+  ui.nextLines.replaceChildren(...nextLines.map(chordLine));
+  fitAll();
   renderDisplay();
 }
 
-function renderPlan() {
-  ui.planName.textContent = plan.name ?? "";
-  ui.planEmpty.hidden = plan.items.length > 0;
-  ui.planList.replaceChildren(...plan.items.map((item) =>
-    listItem(item.number, item.kind, item.title, null, () => command("showItem", { itemId: item.id }), item.id)));
-  markLive();
-  if (state) setMarker(ui.nowNumber, state.number, state.itemId ? kindOf(state.itemId) : null);
+// Wers z akordami nad nim (jak kolumna „Na ekranie” w aplikacji); refren dołączony do zwrotki kursywą.
+function chordLine(l) {
+  const div = document.createElement("div");
+  div.className = "line";
+  div.classList.toggle("chorus", !!l.chorus);
+  div.classList.toggle("part-start", !!l.partStart);
+  if (l.chords) div.append(Object.assign(document.createElement("div"), { className: "chords", textContent: l.chords }));
+  const text = paragraph(l.text);
+  if (l.repeat > 1) text.append(Object.assign(document.createElement("span"), { className: "rep", textContent: ` ×${l.repeat}` }));
+  div.append(text);
+  return div;
 }
 
-const kindOf = (itemId) => plan.items.find((i) => i.id === itemId)?.kind ?? "song";
-
-function markLive() {
-  for (const b of ui.planList.querySelectorAll("button")) {
-    b.classList.toggle("live", state?.itemId != null && b.dataset.id === state.itemId);
+// Bieżący slajd jak największy, ale cały widoczny — bez przewijania (muzyk nie dotyka telefonu).
+function fitText(box, max) {
+  if (!box.offsetParent) return;
+  let low = 10, high = max;
+  box.style.fontSize = `${high}px`;
+  if (box.scrollHeight <= box.clientHeight && box.scrollWidth <= box.clientWidth) return;
+  while (high - low > 0.5) {
+    const size = (low + high) / 2;
+    box.style.fontSize = `${size}px`;
+    if (box.scrollHeight <= box.clientHeight && box.scrollWidth <= box.clientWidth) low = size; else high = size;
   }
+  box.style.fontSize = `${low}px`;
 }
+
+function fitAll() {
+  fitText(ui.currentLines, 40);
+  fitText(ui.nextLines, Math.min(22, parseFloat(ui.currentLines.style.fontSize || "22") * 0.7));
+}
+new ResizeObserver(() => fitAll()).observe(ui.remote);
+document.fonts.addEventListener("loadingdone", () => fitAll());
 
 function renderDisplay() {
   if (ui.display.hidden) return;
   renderSlide(ui.displayScreen, state);
 }
-
-// ---------- wyszukiwanie ----------
-
-let searchTimer = 0;
-ui.searchInput.addEventListener("input", () => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(async () => {
-    const query = ui.searchInput.value.trim();
-    if (!query) { ui.searchList.replaceChildren(); return; }
-    const reply = await command("search", { query });
-    ui.searchList.replaceChildren(...(reply?.results ?? []).map((hit) =>
-      listItem(hit.number, hit.isText ? "text" : "song", hit.title, hit.firstLine !== hit.title ? hit.firstLine : null, async () => {
-        await command("showSong", { songId: hit.songId });
-        ui.searchInput.value = "";
-        ui.searchList.replaceChildren();
-        selectTab("plan");
-      })));
-  }, 200);
-});
 
 // ---------- tryby i zdarzenia ----------
 
@@ -200,26 +189,24 @@ function showMain() {
   ui.pairing.hidden = true;
   ui.remote.hidden = isDisplayMode();
   ui.display.hidden = !isDisplayMode();
+  keepAwake();
+  fitAll();
   renderDisplay();
 }
 
-function selectTab(name) {
-  for (const tab of document.querySelectorAll(".tab")) tab.setAttribute("aria-selected", String(tab.dataset.tab === name));
-  $("tab-plan").hidden = name !== "plan";
-  $("tab-search").hidden = name !== "search";
-  if (name === "search") ui.searchInput.focus();
+// Telefon na pulpicie ani ekran w przeglądarce nie mogą się wygaszać (blokada wraca po powrocie do karty).
+function keepAwake() {
+  navigator.wakeLock?.request("screen").catch(() => {});
 }
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && link) keepAwake(); });
 
 $("next").onclick = () => command("next");
 $("prev").onclick = () => command("prev");
-$("blank").onclick = () => command("blank");
-for (const tab of document.querySelectorAll(".tab")) tab.onclick = () => selectTab(tab.dataset.tab);
 
 $("toDisplay").onclick = async () => {
   location.hash = "ekran";
   showMain();
   await document.documentElement.requestFullscreen?.().catch(() => {});
-  navigator.wakeLock?.request("screen").catch(() => {});
 };
 $("leaveDisplay").onclick = () => {
   history.replaceState(null, "", location.pathname);
@@ -233,7 +220,6 @@ document.addEventListener("keydown", (e) => {
   if (e.target instanceof HTMLInputElement || !link) return;
   if ([" ", "ArrowRight", "ArrowDown", "PageDown"].includes(e.key)) { command("next"); e.preventDefault(); }
   else if (["Backspace", "ArrowLeft", "ArrowUp", "PageUp"].includes(e.key)) { command("prev"); e.preventDefault(); }
-  else if (e.key === "b" || e.key === ".") command("blank");
 });
 
 $("pairForm").addEventListener("submit", (e) => {
@@ -246,31 +232,6 @@ $("pairForm").addEventListener("submit", (e) => {
 
 function paragraph(text) {
   return Object.assign(document.createElement("p"), { textContent: text });
-}
-
-function button(text, onClick) {
-  const b = Object.assign(document.createElement("button"), { type: "button", textContent: text });
-  b.onclick = onClick;
-  return b;
-}
-
-// Znacznik pozycji jak w aplikacji: numer pieśni, kropka (tekst), znak slajdu (prezentacja).
-function setMarker(el, number, kind) {
-  el.className = `marker ${number == null && kind ? kind : ""}`;
-  el.textContent = number ?? "";
-}
-
-function listItem(number, kind, title, sub, onClick, id) {
-  const li = document.createElement("li");
-  const b = button("", onClick);
-  b.classList.add(kind);
-  if (id) b.dataset.id = id;
-  const marker = document.createElement("span");
-  setMarker(marker, number, kind);
-  b.append(marker, Object.assign(document.createElement("span"), { className: "title", textContent: title }));
-  if (sub) b.append(Object.assign(document.createElement("span"), { className: "sub", textContent: sub }));
-  li.append(b);
-  return li;
 }
 
 // ---------- start ----------

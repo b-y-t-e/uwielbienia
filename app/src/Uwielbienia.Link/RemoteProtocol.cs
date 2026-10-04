@@ -38,7 +38,8 @@ public sealed record StateMessage(
     IReadOnlyList<string> SlideLabels,
     bool IsBlank,
     string? Next,
-    bool ShowTitle = false)
+    bool ShowTitle = false,
+    IReadOnlyList<LineMessage>? NextLines = null)
 {
     public string Type => "state";
 
@@ -51,17 +52,29 @@ public sealed record StateMessage(
         state.SlideIndex,
         state.Item?.Slides.Count ?? 0,
         state.Slide?.Label,
-        state.Slide?.Lines.Select(l => new LineMessage(l.Text, l.Repeat, l.IsChorus, l.StartsPart, l.IsTitle)).ToList() ?? [],
+        LinesOf(state.Slide),
         state.Item?.Slides.Select(s => s.Label).ToList() ?? [],
         state.IsBlank,
         state.Next,
-        state.Item is { ShowTitle: true } && state.SlideIndex == 0 && state.Slide is { Lines.Count: > 0 });
+        state.Item is { ShowTitle: true } && state.SlideIndex == 0 && state.Slide is { Lines.Count: > 0 },
+        // następny slajd tej samej pieśni — muzyk widzi, co nadchodzi (inna pieśń: tylko tytuł w Next)
+        state.Item is { } item && state.SlideIndex + 1 < item.Slides.Count ? LinesOf(item.Slides[state.SlideIndex + 1]) : null);
+
+    private static List<LineMessage> LinesOf(Slide? slide) =>
+        slide?.Lines.Select(l => new LineMessage(l.Text, l.Repeat, l.IsChorus, l.StartsPart, l.IsTitle, l.Chords)).ToList() ?? [];
 }
 
 /// <param name="Chorus">Refren dołączony do zwrotki (kursywa).</param>
 /// <param name="PartStart">Początek dołączonej części (odstęp nad wersem).</param>
 /// <param name="Title">Wers powtarza tytuł pieśni (kolor tytułu).</param>
-public sealed record LineMessage(string Text, int Repeat, bool Chorus = false, bool PartStart = false, bool Title = false);
+/// <param name="Chords">Akordy wersu (telefon muzyka), jak w kolumnie „Na ekranie”.</param>
+public sealed record LineMessage(
+    string Text,
+    int Repeat,
+    bool Chorus = false,
+    bool PartStart = false,
+    bool Title = false,
+    string? Chords = null);
 
 public sealed record PlanMessage(string? Name, IReadOnlyList<PlanItemMessage> Items)
 {

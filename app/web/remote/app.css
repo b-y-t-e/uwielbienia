@@ -4,11 +4,11 @@
 @font-face { font-family: "Literata"; src: url("fonts/Literata-SemiBold.ttf") format("truetype"); font-weight: 600; font-display: swap; }
 
 /* Te same tokeny co w aplikacji (Themes/Palette.axaml): nocny granat + światło świecy.
-   Świeca = to, co jest na ekranie; zieleń = teksty; fiolet = prezentacje. */
+   Świeca = to, co jest na ekranie; niebieski = akordy. */
 :root {
   --ink: #161B2E; --surface: #1F2640; --raised: #283052; --line: #323B60;
   --text: #E9ECF5; --muted: #8E97B3; --candle: #F2B84B; --candle-soft: rgba(242, 184, 75, .2);
-  --on-candle: #1B1608; --danger: #EE8A8A; --text-item: #A8D5B5; --presentation-item: #C4B5F0;
+  --on-candle: #1B1608; --danger: #EE8A8A; --chord: #7FB6E8;
   --radius: 14px;
   color-scheme: dark;
 }
@@ -16,7 +16,7 @@
   :root {
     --ink: #F6F7FB; --surface: #FFFFFF; --raised: #EEF0F7; --line: #DCE0EC;
     --text: #1B2138; --muted: #5E6784; --candle: #B7791F; --candle-soft: rgba(183, 121, 31, .15);
-    --on-candle: #FFFFFF; --danger: #B42318; --text-item: #2E7D4F; --presentation-item: #5B45A8;
+    --on-candle: #FFFFFF; --danger: #B42318; --chord: #2F6DB5;
     color-scheme: light;
   }
 }
@@ -52,75 +52,70 @@ input {
 .pair-form label { font-size: .9rem; color: var(--muted); }
 .error { color: var(--danger); min-height: 1.4em; }
 
-/* ---------- pilot ---------- */
-#remote { padding: 0 1rem calc(6.5rem + env(safe-area-inset-bottom)); }
-.topbar {
-  display: flex; align-items: center; gap: .7rem; padding: .7rem 0;
-  position: sticky; top: 0; background: var(--ink); z-index: 2;
+/* ---------- pilot ----------
+   Jeden widok na cały telefon: tytuł, bieżący slajd z akordami (największy, bez przewijania),
+   następny slajd przygaszony, na dole Wstecz / Dalej. Działa też poziomo na pulpicie. */
+.pilot {
+  height: 100dvh; max-width: 48rem; margin: 0 auto;
+  display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto;
+  padding: env(safe-area-inset-top) 1rem calc(.8rem + env(safe-area-inset-bottom));
+  touch-action: manipulation; user-select: none; -webkit-user-select: none;
 }
-.plan-name { flex: 1; font: 600 1.05rem/1.2 "Literata", Georgia, serif; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.topbar { display: flex; align-items: baseline; gap: .6rem; padding: .8rem 0 .4rem; min-width: 0; }
+.topbar .number { color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; }
+.now-title { flex: 1; min-width: 0; font: 600 1.2rem/1.25 "Literata", Georgia, serif; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Połączenie: sama kropka świecy, napis tylko gdy coś jest nie tak */
-.status { font-size: .8rem; padding: .25rem .6rem; border-radius: 999px; background: var(--raised); color: var(--muted); white-space: nowrap; }
+.status { align-self: center; font-size: .8rem; padding: .25rem .6rem; border-radius: 999px; background: var(--raised); color: var(--muted); white-space: nowrap; }
 .status[data-state="connected"] {
   width: .6rem; height: .6rem; padding: 0; overflow: hidden; color: transparent; background: var(--candle);
   box-shadow: 0 0 0 4px var(--candle-soft);
 }
 .status[data-state="failed"] { color: var(--danger); }
+/* „Ekran” (przeglądarka jako drugi ekran) tylko na komputerze z myszą — na telefonie nie ma czego przełączyć */
+#toDisplay { align-self: center; }
+@media (pointer: coarse) { #toDisplay { display: none; } }
 
-/* Miniatura ekranu: ramka w kolorze świecy, bo to jest dokładnie to, co widzi sala */
-.now { display: grid; gap: .7rem; }
-.slide-screen.mini { border-radius: 10px; box-shadow: 0 0 0 1.5px var(--candle), 0 10px 30px -12px rgba(0, 0, 0, .6); }
-.slide-screen.mini.blank { box-shadow: 0 0 0 1.5px var(--line); }
-.screen-badge {
-  position: absolute; inset: auto auto .6rem .7rem; font: 700 .75rem/1 "Atkinson Hyperlegible Next", system-ui, sans-serif;
-  color: #9C968C; background: rgba(255, 255, 255, .07); padding: .3rem .55rem; border-radius: 999px;
+/* Bieżący slajd: ramka świecy = to, co widzi sala */
+.current {
+  min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr);
+  background: var(--surface); border-radius: var(--radius); box-shadow: inset 0 0 0 1.5px var(--candle);
+  padding: .6rem 1rem .8rem;
 }
-.now-meta { display: grid; grid-template-columns: 2.6rem 1fr; align-items: start; gap: .1rem .4rem; }
-.now-meta .marker { padding-top: .2rem; }
-.now-title { font: 600 1.2rem/1.25 "Literata", Georgia, serif; }
+.current.empty { box-shadow: inset 0 0 0 1.5px var(--line); }
+.current-head { display: flex; justify-content: space-between; align-items: center; gap: .6rem; min-height: 1.6rem; }
 .now-label { color: var(--candle); font-size: .9rem; font-weight: 700; }
-.now-next { color: var(--muted); font-size: .9rem; }
+.badge { font-size: .8rem; font-weight: 700; color: var(--danger); background: var(--raised); padding: .2rem .6rem; border-radius: 999px; }
 
-.slides { display: flex; gap: .4rem; overflow-x: auto; padding: .9rem 0 .2rem; scrollbar-width: none; }
-.slides::-webkit-scrollbar { display: none; }
-.slides button { white-space: nowrap; background: var(--surface); font-size: .9rem; padding: .5rem .8rem; flex: none; }
-.slides button[aria-current="true"] { background: var(--candle-soft); box-shadow: inset 0 0 0 1.5px var(--candle); font-weight: 700; }
+/* Wersy z akordami: rozmiar ustawia app.js (fitText), tu tylko proporcje */
+.lines { min-height: 0; overflow: hidden; font-size: 28px; line-height: 1.2; }
+.lines p { margin: 0; font-weight: 700; }
+.lines .line { break-inside: avoid; }
+.lines .line + .line { margin-top: .3em; }
+.lines .line.part-start { margin-top: .9em; }
+.lines .chorus p { font-style: italic; }
+.lines .chords { color: var(--chord); font-weight: 700; font-size: .78em; line-height: 1.15; }
+.lines .rep { color: var(--muted); font-weight: 400; font-size: .75em; }
+.lines.image { display: grid; place-items: center; color: var(--muted); }
 
-.tabs { display: flex; gap: .4rem; margin: 1rem 0 .4rem; border-bottom: 1px solid var(--line); }
-.tab { flex: 1; background: transparent; color: var(--muted); border-bottom: 2px solid transparent; border-radius: 0; margin-bottom: -1px; }
-.tab[aria-selected="true"] { color: var(--text); border-bottom-color: var(--candle); font-weight: 700; }
-#searchInput { margin-top: .6rem; }
+.upcoming { padding: .7rem .2rem .2rem; opacity: .62; }
+.next-label { color: var(--muted); font-size: .9rem; margin-bottom: .2rem; }
+.upcoming .lines { max-height: 16dvh; font-size: 18px; }
+.upcoming .lines p { font-weight: 400; }
 
-/* Lista planu i wyniki: znacznik jak w aplikacji — numer, kropka (tekst), znak slajdu (prezentacja) */
-.list { list-style: none; margin: .4rem 0 0; padding: 0; display: grid; gap: .15rem; }
-.list button {
-  width: 100%; text-align: left; background: transparent; display: grid; grid-template-columns: 2.6rem 1fr;
-  gap: .1rem .4rem; align-items: center; padding: .65rem .5rem; position: relative;
+.controls { display: grid; grid-template-columns: 1fr 2fr; gap: .6rem; padding-top: .7rem; }
+.controls .big { padding: 1.4rem .5rem; font-size: 1.25rem; font-weight: 700; border-radius: 16px; }
+
+/* Poziomo (telefon na pulpicie): przyciski z boku, tekst zajmuje całą wysokość */
+@media (orientation: landscape) and (max-height: 32rem) {
+  .pilot { max-width: none; grid-template-columns: minmax(0, 1fr) 11rem; grid-template-rows: auto minmax(0, 1fr) auto; column-gap: 1rem; }
+  .topbar { grid-column: 1 / -1; padding-top: .4rem; }
+  .current { grid-row: 2; grid-column: 1; }
+  .upcoming { grid-row: 3; grid-column: 1; }
+  .current .lines { columns: 2; column-gap: 2em; }
+  .upcoming { padding-top: .4rem; }
+  .upcoming .lines { display: none; }
+  .controls { grid-row: 2 / 4; grid-column: 2; grid-template-columns: 1fr; grid-template-rows: 1fr 2fr; padding-top: 0; }
 }
-.list button:active { background: var(--raised); }
-.list .live { background: var(--candle-soft); }
-.list .live::before { content: ""; position: absolute; left: 0; top: .55rem; bottom: .55rem; width: 3px; border-radius: 2px; background: var(--candle); }
-.list .title { font-weight: 700; }
-.list .text .title { color: var(--text-item); }
-.list .presentation .title { color: var(--presentation-item); }
-.list .sub { grid-column: 2; color: var(--muted); font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.marker { color: var(--muted); font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
-.marker.text::after { content: ""; display: inline-block; width: .5rem; height: .5rem; border-radius: 50%; background: var(--text-item); }
-.marker.presentation::after {
-  content: ""; display: inline-block; width: .85rem; height: .62rem; border-radius: 2px; border: 1.5px solid var(--presentation-item);
-}
-.hint { color: var(--muted); }
-
-.controls {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 3;
-  display: grid; grid-template-columns: 1fr .8fr 1.4fr; gap: .5rem;
-  max-width: 40rem; margin: 0 auto;
-  padding: .7rem 1rem calc(.7rem + env(safe-area-inset-bottom));
-  background: var(--ink);
-}
-.controls::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 1.5rem; background: linear-gradient(transparent, var(--ink)); pointer-events: none; }
-.controls .big { padding: 1.1rem .5rem; font-size: 1.1rem; font-weight: 700; }
-#blank[aria-pressed="true"] { background: var(--candle-soft); box-shadow: inset 0 0 0 1.5px var(--candle); }
 
 /* ---------- slajd ----------
    Wierne odwzorowanie rzutnika (Views/SlideView.axaml): płótno 16:9, wymiary w jednostkach kontenera
@@ -142,7 +137,6 @@ input {
 .slide-text .rep { color: #9C968C; font-size: .628em; }
 .slide-text .slide-title { color: #D8C4A0; width: fit-content; margin: 0 auto 2.08cqw; }
 .slide-text .slide-title::after { content: ""; display: block; height: .21cqw; border-radius: .1cqw; background: #C9A15A; margin-top: .73cqw; }
-.slide-text .image-note { color: #9C968C; font: 400 3.4cqw/1.3 "Atkinson Hyperlegible Next", system-ui, sans-serif; }
 
 /* Ekran w przeglądarce: czysta czerń, płótno wpisane w okno */
 .display { position: fixed; inset: 0; background: #000; display: grid; place-items: center; cursor: none; }

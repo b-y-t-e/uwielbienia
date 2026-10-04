@@ -11,7 +11,7 @@
           <Button Grid.Column="1" Classes="quiet closeButton" Content="✕" ToolTip.Tip="Zamknij" Command="{Binding CloseCommand}" VerticalAlignment="Top" />
         </Grid>
         <TextBlock TextWrapping="Wrap" FontSize="15"
-                   Text="Zeskanuj kod aparatem telefonu. Otworzy się strona z pilotem: dalej, wstecz, czarny ekran i lista pieśni. Na komputerze otwórz ten sam adres i wybierz „Ekran”, żeby pokazywać tekst w przeglądarce." />
+                   Text="Zeskanuj kod aparatem telefonu. Otworzy się pilot: tekst z akordami, Dalej i Wstecz. Na komputerze otwórz ten sam adres i wybierz „Ekran”, żeby pokazywać tekst w przeglądarce." />
         <Border Background="White" CornerRadius="12" Padding="8" HorizontalAlignment="Center" Width="300" Height="300">
           <Panel>
             <Image Source="{Binding QrCode}" Stretch="Uniform" />
