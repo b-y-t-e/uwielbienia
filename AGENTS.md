@@ -253,7 +253,7 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   jeden prosty widok (`web/remote`, tokeny kolorów i kroje jak w aplikacji): bieżący slajd z akordami
   jak w śpiewniku (tekst Literatą, refren jej kursywą `fonts/Literata-Italic.ttf`, zawinięty wers wcięty;
   24 px, mniej tylko gdy slajd się nie mieści — cały widoczny bez przewijania, bo muzyk gra i nie dotyka
-  telefonu — i lekko zmniejszany, żeby wersy się nie zawijały; przełącznik „Akordy” zapamiętany w przeglądarce), początek następnego
+  telefonu — i lekko zmniejszany, żeby wersy się nie zawijały; przełączniki „Akordy” i jasny / ciemny wygląd telefonu zapamiętane w przeglądarce), początek następnego
   slajdu, Wstecz / Dalej; ekran telefonu się nie wygasza. Rozmiary jak w aplikacji: 13 / 15 / 18 / 24
   (`--fs-*`), tekst pieśni 24 px lub mniej, akordy i „×N” 0,6 tego rozmiaru. Bez planu, wyszukiwania, gaszenia ekranu i
   edycji — telefon można dać dziecku. Tryb „Ekran” (przeglądarka jako drugi ekran; przycisk tylko na

@@ -225,6 +225,20 @@ function showChords(on) {
 chordsToggle.onclick = () => showChords(ui.remote.classList.contains("no-chords"));
 showChords(localStorage.getItem("akordy") !== "0");
 
+// Jasny / ciemny wygląd samego telefonu (rzutnik bez zmian). Zapamiętany w tej przeglądarce.
+const themeToggle = $("themeToggle");
+function setTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  themeToggle.setAttribute("aria-label", theme === "light" ? "Ciemny wygląd" : "Jasny wygląd");
+  document.querySelector('meta[name="theme-color"]').content = theme === "light" ? "#F6F7FB" : "#161B2E";
+}
+themeToggle.onclick = () => {
+  const theme = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+  localStorage.setItem("wyglad", theme);
+  setTheme(theme);
+};
+setTheme(document.documentElement.dataset.theme);
+
 $("next").onclick = () => command("next");
 $("prev").onclick = () => command("prev");
 
