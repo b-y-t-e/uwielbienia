@@ -10,11 +10,11 @@ const $ = (id) => document.getElementById(id);
 const ui = {
   pairing: $("pairing"), remote: $("remote"), display: $("display"),
   status: $("status"), planName: $("planName"),
-  nowNumber: $("nowNumber"), nowTitle: $("nowTitle"), nowLabel: $("nowLabel"), nowLines: $("nowLines"),
+  nowNumber: $("nowNumber"), nowTitle: $("nowTitle"), nowLabel: $("nowLabel"), nowNext: $("nowNext"), nowScreen: $("nowScreen"),
   blankBadge: $("blankBadge"), slides: $("slides"),
   planList: $("planList"), planEmpty: $("planEmpty"),
   searchInput: $("searchInput"), searchList: $("searchList"),
-  displayLines: $("displayLines"),
+  displayScreen: $("displayScreen"),
 };
 
 let link = null;
@@ -81,21 +81,55 @@ function receive(message) {
 function setStatus(kind, text) {
   ui.status.dataset.state = kind;
   ui.status.textContent = text;
+  ui.status.title = text;
 }
 
-// Refren dołączony do zwrotki na tym samym slajdzie: odstęp nad nim i kursywa.
-function part(p, line) {
-  p.classList.toggle("chorus", !!line.chorus);
-  p.classList.toggle("part-start", !!line.partStart);
-  return p;
+// Slajd tak jak na rzutniku: tytuł z linią (tylko gdy coś wnosi), wersy tytułowe w kolorze tytułu,
+// refren dołączony do zwrotki kursywą z odstępem, „×N” przy powtarzanych wersach.
+function renderSlide(screen, s, { showImageNote = false } = {}) {
+  const text = screen.querySelector(".slide-text");
+  const content = [];
+  if (s && !s.isBlank) {
+    if (s.showTitle) content.push(Object.assign(document.createElement("div"), { className: "slide-title", textContent: s.title }));
+    for (const l of s.lines) {
+      const p = paragraph(l.text);
+      p.classList.toggle("chorus", !!l.chorus);
+      p.classList.toggle("part-start", !!l.partStart);
+      p.classList.toggle("is-title", !!l.title);
+      if (l.repeat > 1) p.append(Object.assign(document.createElement("span"), { className: "rep", textContent: `  ×${l.repeat}` }));
+      content.push(p);
+    }
+    // slajd prezentacji (obraz) — telefon nie dostaje obrazu, tylko jego nazwę
+    if (showImageNote && s.lines.length === 0 && s.label) content.push(Object.assign(paragraph(s.label), { className: "image-note" }));
+  }
+  text.replaceChildren(...content);
+  fit(screen);
+}
+
+// Jak Viewbox w aplikacji: tekst, który się nie mieści, zmniejsza się w całości.
+function fit(screen) {
+  const text = screen.querySelector(".slide-text");
+  const box = screen.querySelector(".slide-fit");
+  text.style.transform = "";
+  const style = getComputedStyle(box);
+  const room = box.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+  if (room > 0 && text.scrollHeight > room) text.style.transform = `scale(${room / text.scrollHeight})`;
+}
+// Ponownie, gdy zmieni się ekran albo sam tekst (np. po wczytaniu Literaty); transform nie zmienia wymiarów — bez pętli.
+const resized = new ResizeObserver((entries) => entries.forEach((e) => fit(e.target.closest(".slide-screen"))));
+for (const screen of document.querySelectorAll(".slide-screen")) {
+  resized.observe(screen);
+  resized.observe(screen.querySelector(".slide-text"));
 }
 
 function renderState() {
   const s = state;
-  ui.nowNumber.textContent = s.number ?? "";
+  setMarker(ui.nowNumber, s.number, s.itemId ? kindOf(s.itemId) : null);
   ui.nowTitle.textContent = s.title ?? "Ekran jest pusty";
-  ui.nowLabel.textContent = [s.label, s.next ? `dalej: ${s.next}` : null].filter(Boolean).join(", ");
-  ui.nowLines.replaceChildren(...s.lines.map((l) => part(paragraph(l.text), l)));
+  ui.nowLabel.textContent = s.label ?? "";
+  ui.nowNext.textContent = s.next ? `Dalej: ${s.next}` : "";
+  renderSlide(ui.nowScreen, s, { showImageNote: true });
+  ui.nowScreen.classList.toggle("blank", s.isBlank || !s.title);
   ui.blankBadge.hidden = !s.isBlank;
   $("blank").setAttribute("aria-pressed", String(s.isBlank));
 
@@ -114,9 +148,12 @@ function renderPlan() {
   ui.planName.textContent = plan.name ?? "";
   ui.planEmpty.hidden = plan.items.length > 0;
   ui.planList.replaceChildren(...plan.items.map((item) =>
-    listItem(item.number, item.title, null, () => command("showItem", { itemId: item.id }), item.id)));
+    listItem(item.number, item.kind, item.title, null, () => command("showItem", { itemId: item.id }), item.id)));
   markLive();
+  if (state) setMarker(ui.nowNumber, state.number, state.itemId ? kindOf(state.itemId) : null);
 }
+
+const kindOf = (itemId) => plan.items.find((i) => i.id === itemId)?.kind ?? "song";
 
 function markLive() {
   for (const b of ui.planList.querySelectorAll("button")) {
@@ -126,12 +163,7 @@ function markLive() {
 
 function renderDisplay() {
   if (ui.display.hidden) return;
-  const visible = state && !state.isBlank ? state.lines : [];
-  ui.displayLines.replaceChildren(...visible.map((l) => {
-    const p = part(paragraph(l.text), l);
-    if (l.repeat > 1) p.append(Object.assign(document.createElement("span"), { className: "rep", textContent: `  ×${l.repeat}` }));
-    return p;
-  }));
+  renderSlide(ui.displayScreen, state);
 }
 
 // ---------- wyszukiwanie ----------
@@ -144,7 +176,7 @@ ui.searchInput.addEventListener("input", () => {
     if (!query) { ui.searchList.replaceChildren(); return; }
     const reply = await command("search", { query });
     ui.searchList.replaceChildren(...(reply?.results ?? []).map((hit) =>
-      listItem(hit.number, hit.title, hit.firstLine !== hit.title ? hit.firstLine : null, async () => {
+      listItem(hit.number, hit.isText ? "text" : "song", hit.title, hit.firstLine !== hit.title ? hit.firstLine : null, async () => {
         await command("showSong", { songId: hit.songId });
         ui.searchInput.value = "";
         ui.searchList.replaceChildren();
@@ -222,14 +254,20 @@ function button(text, onClick) {
   return b;
 }
 
-function listItem(number, title, sub, onClick, id) {
+// Znacznik pozycji jak w aplikacji: numer pieśni, kropka (tekst), znak slajdu (prezentacja).
+function setMarker(el, number, kind) {
+  el.className = `marker ${number == null && kind ? kind : ""}`;
+  el.textContent = number ?? "";
+}
+
+function listItem(number, kind, title, sub, onClick, id) {
   const li = document.createElement("li");
   const b = button("", onClick);
+  b.classList.add(kind);
   if (id) b.dataset.id = id;
-  b.append(
-    Object.assign(document.createElement("span"), { className: "number", textContent: number }),
-    Object.assign(document.createElement("span"), { className: "title", textContent: title }),
-  );
+  const marker = document.createElement("span");
+  setMarker(marker, number, kind);
+  b.append(marker, Object.assign(document.createElement("span"), { className: "title", textContent: title }));
   if (sub) b.append(Object.assign(document.createElement("span"), { className: "sub", textContent: sub }));
   li.append(b);
   return li;

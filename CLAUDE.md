@@ -249,7 +249,12 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   dokładnie, Esc = koniec kalibracji. Kliknięcie bez przeciągania w trybie jednego ekranu = dalej /
   wstecz (prawa / lewa połowa). Zapis: `AppSettings.ProjectionCorners` (8 liczb 0..1).
 - **Telefon / przeglądarka.** `RemoteViewModel` paruje przez kod QR (tailcat-link, połączenie
-  szyfrowane); sparowane urządzenia łączą się same przy starcie.
+  szyfrowane); sparowane urządzenia łączą się same przy starcie. Strona (`web/remote`, te same tokeny
+  kolorów i kroje co aplikacja) pokazuje miniaturę ekranu rzutnika — ten sam kod rysuje tryb „Ekran”
+  (`renderSlide`: płótno 16:9 w jednostkach `cqw`, wymiary i kolory jak `SlideView`, za długi tekst
+  zmniejszany w całości) — oraz plan ze znacznikami jak w aplikacji (`PlanItemMessage.Kind`).
+  Stan niesie wszystko, co potrzebne do wyglądu slajdu: `ShowTitle`, wersy z `Title` / `Chorus` /
+  `PartStart`. Podgląd bez aplikacji: kopia strony z udawanym `lib/tailcat/index.js`.
 - **Aktualizacje.** `UpdateService` + `VelopackReleaseFeed`: tylko instalacja z
   `Uwielbienia-win-Setup.exe` sprawdza GitHub Releases, pobiera w tle i proponuje „Aktualizuj”.
 - **Start** (`App.OnFrameworkInitializationCompleted`): DI → otwarcie ostatniego planu →
@@ -280,7 +285,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 7. **Kolumna „Na ekranie” i telefon:** pokazują `Lines` — dla treści innej niż tekst dodać
    szablon w `MainWindow.axaml` (bieżący slajd / NASTĘPNA, wzorzec: obraz `ImageSlide`), a na rzutniku
    stronę (`ProjectedPage` → np. `ProjectedImage` z szablonem w `SlideView.axaml`, gdy treść ma
-   zająć cały ekran). Telefon i ekran w przeglądarce dostają tylko `Lines` i `Label` — obraz
+   zająć cały ekran). Telefon i ekran w przeglądarce dostają tylko wersy i `Label` — obraz
    wymagałby pola w `RemoteProtocol.cs` + `web/remote` (zmiana w obu miejscach).
 8. Testy w Core (rodzaj, zapis planu z nową pozycją) i zrzuty (`tools/Uwielbienia.Screenshots`).
 

@@ -37,7 +37,8 @@ public sealed record StateMessage(
     IReadOnlyList<LineMessage> Lines,
     IReadOnlyList<string> SlideLabels,
     bool IsBlank,
-    string? Next)
+    string? Next,
+    bool ShowTitle = false)
 {
     public string Type => "state";
 
@@ -50,27 +51,35 @@ public sealed record StateMessage(
         state.SlideIndex,
         state.Item?.Slides.Count ?? 0,
         state.Slide?.Label,
-        state.Slide?.Lines.Select(l => new LineMessage(l.Text, l.Repeat, l.IsChorus, l.StartsPart)).ToList() ?? [],
+        state.Slide?.Lines.Select(l => new LineMessage(l.Text, l.Repeat, l.IsChorus, l.StartsPart, l.IsTitle)).ToList() ?? [],
         state.Item?.Slides.Select(s => s.Label).ToList() ?? [],
         state.IsBlank,
-        state.Next);
+        state.Next,
+        state.Item is { ShowTitle: true } && state.SlideIndex == 0 && state.Slide is { Lines.Count: > 0 });
 }
 
 /// <param name="Chorus">Refren dołączony do zwrotki (kursywa).</param>
 /// <param name="PartStart">Początek dołączonej części (odstęp nad wersem).</param>
-public sealed record LineMessage(string Text, int Repeat, bool Chorus = false, bool PartStart = false);
+/// <param name="Title">Wers powtarza tytuł pieśni (kolor tytułu).</param>
+public sealed record LineMessage(string Text, int Repeat, bool Chorus = false, bool PartStart = false, bool Title = false);
 
 public sealed record PlanMessage(string? Name, IReadOnlyList<PlanItemMessage> Items)
 {
     public string Type => "plan";
 
     public static PlanMessage From(Plan? plan, IReadOnlyList<LiveItem> playlist) =>
-        new(plan?.Name, playlist.Select(i => new PlanItemMessage(i.PlanItemId!.Value, i.ContentId, i.Number, i.Title)).ToList());
+        new(plan?.Name, playlist.Select(i => new PlanItemMessage(i.PlanItemId!.Value, i.ContentId, i.Number, i.Title, Kind(plan, i))).ToList());
+
+    /// <summary>Znacznik na liście jak w aplikacji: <c>song</c> (numer), <c>text</c> (kropka), <c>presentation</c> (znak slajdu).</summary>
+    private static string Kind(Plan? plan, LiveItem item) =>
+        plan?.Items.FirstOrDefault(p => p.Id == item.PlanItemId) is PresentationPlanItem ? "presentation"
+        : item.Number is null ? "text"
+        : "song";
 }
 
-public sealed record PlanItemMessage(Guid Id, string SongId, int? Number, string Title);
+public sealed record PlanItemMessage(Guid Id, string SongId, int? Number, string Title, string Kind = "song");
 
-public sealed record SongHit(string SongId, int? Number, string Title, string FirstLine);
+public sealed record SongHit(string SongId, int? Number, string Title, string FirstLine, bool IsText = false);
 
 public static class RemoteJson
 {
