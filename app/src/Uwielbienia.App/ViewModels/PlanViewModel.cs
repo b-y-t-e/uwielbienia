@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Presentation;
+using Uwielbienia.Core.Slideshows;
 using Uwielbienia.Core.Songs;
 
 namespace Uwielbienia.App.ViewModels;
@@ -18,9 +19,23 @@ public sealed partial class PlanViewModel : ObservableObject
     private readonly ILiveControl _control;
     private readonly ILiveStateSource _live;
     private readonly PlanActions _actions;
+    private readonly ISongLibrary _library;
+    private readonly ISongEditor _editor;
+    private readonly ISlideshowLibrary _slideshows;
 
-    public PlanViewModel(ActivePlan plan, IPlanItemTypes itemTypes, ILiveControl control, ILiveStateSource live, PlanActions actions)
+    public PlanViewModel(
+        ActivePlan plan,
+        IPlanItemTypes itemTypes,
+        ILiveControl control,
+        ILiveStateSource live,
+        PlanActions actions,
+        ISongLibrary library,
+        ISongEditor editor,
+        ISlideshowLibrary slideshows)
     {
+        _library = library;
+        _editor = editor;
+        _slideshows = slideshows;
         _plan = plan;
         _itemTypes = itemTypes;
         _control = control;
@@ -77,10 +92,31 @@ public sealed partial class PlanViewModel : ObservableObject
     public void Reorder(PlanItemViewModel item, int newIndex) =>
         _plan.Update(p => p.Move(item.Id, newIndex));
 
-    /// <summary>Kopia pozycji zaraz za nią — ta sama pieśń (z jej układem części) drugi raz w planie.</summary>
+    /// <summary>
+    /// Kopia pozycji zaraz za nią — niezależna: pieśń lub tekst jako nowa własna pieśń (z tym samym układem
+    /// części w planie), prezentacja jako nowy folder. Zmiana kopii nie zmienia oryginału.
+    /// </summary>
     [RelayCommand]
-    private void Duplicate(PlanItemViewModel item) =>
-        _actions.Insert(item.Item.WithNewId(), Items.IndexOf(item) + 1);
+    private async Task Duplicate(PlanItemViewModel item)
+    {
+        var index = Items.IndexOf(item) + 1;
+        try
+        {
+            PlanItem copy = item.Item switch
+            {
+                SongPlanItem songItem when _library.Find(songItem.SongId) is { } song =>
+                    songItem with { Id = Guid.NewGuid(), SongId = _editor.Copy(song).Id },
+                PresentationPlanItem presentation =>
+                    presentation with { Id = Guid.NewGuid(), Folder = await _slideshows.CopyAsync(presentation.Folder) },
+                _ => item.Item.WithNewId(),
+            };
+            _actions.Insert(copy, index);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // brak miejsca albo dostępu — plan zostaje bez kopii
+        }
+    }
 
     [RelayCommand]
     private void RequestRemove(PlanItemViewModel item) => PendingRemoval = item;

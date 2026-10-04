@@ -109,10 +109,23 @@ public sealed class PresentationTests : IDisposable
         store.Save(Plan.Create("Test", null).Insert(0, item));
 
         Assert.Equal(PlanItemKind.Presentation, type.Describe(item)!.Kind);
-        Assert.False(live.HasOwnTitle);
+        Assert.False(live.ShowTitle);
         Assert.Equal([1, 2], live.Slides.Cast<ImageSlide>().Select(s => s.Number));
         Assert.Equal(item, Assert.Single(store.LoadAll()).Items.Single());
         Assert.Contains("\"presentation\"", File.ReadAllText(Directory.GetFiles(Path.Combine(_temp, "plany")).Single()));
+    }
+
+    [Fact]
+    public async Task Copy_is_an_independent_folder_with_the_same_slides()
+    {
+        var imported = await _library.ImportAsync([Source("a.png"), Source("b.png")]);
+
+        var copy = await _library.CopyAsync(imported.Folder);
+
+        Assert.NotEqual(imported.Folder, copy);
+        Assert.EndsWith(imported.Folder[8..], copy);
+        Assert.Equal(2, _library.Load(copy).Slides.Count);
+        Assert.Empty(_library.Load(copy).Slides.Intersect(_library.Load(imported.Folder).Slides));
     }
 
     [Fact]

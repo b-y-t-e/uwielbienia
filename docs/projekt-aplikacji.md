@@ -93,7 +93,7 @@ Trzy kolumny o regulowanej szerokości (zapamiętywanej): **Plan · Pieśń · N
 │              │ [Szukaj pieśni: numer albo słowa]│ 94 To On, nasz Pan  33% │
 │ 47 Jezus mój✕│ 30  Chcę wywyższać Imię Twe      │ ▬▬▬▬▬▬▬───────────────  │
 │▌94 To On... ✕│ ┌ Zwrotka 1 ─────────────── ☑ ┐  │ [ Wstecz ] [  Dalej  ]  │
-│ 30 Chcę ... ✕│ │ G C D                        │ │ ┌ TERAZ · Refren ─────┐ │
+│ 30 Chcę ... ✕│ │ G C D                        │ │ ┌ Refren ─────────────┐ │
 │ 36 Godzien  ✕│ │ Chcę wywyższać Imię Twe      │ │ │ G e                 │ │
 │              │ └──────────────────────────────┘ │ │ Jak wielki jest Bóg │ │
 │              │ ┌ Zwrotka 2 ─────────────── ☐ ┐  │ └─────────────────────┘ │

@@ -1,5 +1,6 @@
 using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Presentation;
+using Uwielbienia.Core.Songs;
 
 namespace Uwielbienia.Core.Tests;
 
@@ -162,12 +163,39 @@ public class LiveSessionTests
     {
         var session = new LiveSession();
         var id = Guid.NewGuid();
-        var preparing = new LiveItem(id, "p", null, "Prezentacja", [], HasOwnTitle: false, Note: "Przygotowywanie slajdów…");
+        var preparing = new LiveItem(id, "p", null, "Prezentacja", [], ShowTitle: false, Note: "Przygotowywanie slajdów…");
         session.SetPlaylist([preparing]);
         session.Show(preparing);
 
         session.SetPlaylist([preparing with { Note = "Brak PowerPointa" }]);
 
         Assert.Equal("Brak PowerPointa", session.State.Item!.Note);
+    }
+
+    [Theory]
+    [InlineData("Zaufałem Panu i już", "Zaufałem Panu i już|Niczego nie muszę się lękać", 1)]
+    [InlineData("Zaufałem Panu", "Zaufałem Panu i już,|Niczego", 1)]
+    [InlineData("Jezus mój Pan", "JEZUS, mój Pan!", 1)]
+    [InlineData("Jezus pokonał śmierć", "Jezus|pokonał śmierć, zmartwychwstał|Alleluja", 2)]
+    [InlineData("Jezus", "Jezusie mój", 0)]
+    [InlineData("Taki jesteś Ty", "Jesteś tu, jesteś pośród nas", 0)]
+    [InlineData("", "Ojcze nasz", 0)]
+    public void Lines_repeating_the_title_are_counted(string title, string firstLines, int count)
+    {
+        // wersy pierwszego slajdu rozdzielone „|”
+        Slide[] slides = [new("V1", "Zwrotka 1", [.. firstLines.Split('|').Select(l => new SlideLine(l, null, 1, false, false))])];
+        Assert.Equal(count, SongPlanItemType.TitleLineCount(title, slides));
+    }
+
+    [Fact]
+    public void Song_starting_with_its_title_shows_no_title_but_colors_the_first_line()
+    {
+        var library = new SongLibrary(new DirectorySongSource(RepositoryPaths.Songs), new MarkdownSongParser());
+        var song = library.Songs.First(s => s.Number == 47);
+        var live = new SongPlanItemType(library, new SectionSlideBuilder()).Present(song);
+
+        Assert.False(live.ShowTitle);
+        Assert.True(live.Slides[0].Lines[0].IsTitle);
+        Assert.DoesNotContain(live.Slides.Skip(1).SelectMany(sl => sl.Lines), l => l.IsTitle);
     }
 }

@@ -18,4 +18,5 @@ public sealed record ImageSlide(string ImageFile, int Number) : Slide($"S{Number
 /// <param name="Text">Tekst do wyświetlenia (bez znaczników).</param>
 /// <param name="Chords">Akordy (tylko dla operatora; nigdy na ekranie projekcji).</param>
 /// <param name="Repeat">Liczba powtórzeń wersu/fragmentu, 1 = bez powtórzeń.</param>
-public sealed record SlideLine(string Text, string? Chords, int Repeat, bool RepeatStart, bool RepeatEnd);
+/// <param name="IsTitle">Wers powtarza tytuł pieśni (początek pierwszego slajdu) — rzutnik pokazuje go w kolorze tytułu.</param>
+public sealed record SlideLine(string Text, string? Chords, int Repeat, bool RepeatStart, bool RepeatEnd, bool IsTitle = false);

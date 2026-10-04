@@ -28,6 +28,9 @@ public interface ISlideshowLibrary
 {
     Task<ImportedSlideshow> ImportAsync(IReadOnlyList<string> files);
 
+    /// <summary>Niezależna kopia prezentacji (plik i gotowe slajdy) — zwraca nowy folder.</summary>
+    Task<string> CopyAsync(string folder);
+
     /// <summary>Slajdy prezentacji; gdy jeszcze ich nie ma — zaczyna je przygotowywać w tle.</summary>
     SlideshowState Load(string folder);
 
@@ -89,6 +92,27 @@ public sealed class SlideshowLibrary(string root, ISlideExporter exporter, IUiDi
             }
         }).ConfigureAwait(false);
         return new ImportedSlideshow(folder, title);
+    }
+
+    public async Task<string> CopyAsync(string folder)
+    {
+        // nowy początek nazwy, reszta (slug tytułu) bez zmian
+        var dash = folder.IndexOf('-');
+        var copy = Guid.NewGuid().ToString("N")[..8] + (dash >= 0 ? folder[dash..] : "-" + folder);
+        var source = Path.Combine(root, folder);
+        var target = Path.Combine(root, copy);
+        await Task.Run(() => CopyDirectory(source, target)).ConfigureAwait(false);
+        return copy;
+    }
+
+    /// <summary>Bez niedokończonego eksportu (<c>slajdy.tmp</c>) — kopia przygotuje slajdy sama.</summary>
+    private static void CopyDirectory(string source, string target)
+    {
+        Directory.CreateDirectory(target);
+        foreach (var file in Directory.EnumerateFiles(source))
+            File.Copy(file, Path.Combine(target, Path.GetFileName(file)));
+        foreach (var directory in Directory.EnumerateDirectories(source).Where(d => !d.EndsWith(".tmp", StringComparison.Ordinal)))
+            CopyDirectory(directory, Path.Combine(target, Path.GetFileName(directory)));
     }
 
     public SlideshowState Load(string folder) => State(folder, prepare: true);

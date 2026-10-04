@@ -40,9 +40,16 @@
                         <ItemsControl ItemsSource="{Binding Lines}">
                           <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="p:SlideLine">
+                              <!-- Wers powtarzający tytuł pieśni (zamiast tytułu nad tekstem) — w kolorze tytułu. -->
                               <TextBlock TextAlignment="Center" TextWrapping="Wrap" FontFamily="{StaticResource TitleFont}"
-                                         FontSize="86" Margin="0,4"
-                                         Foreground="{Binding #Root.SlideForeground}">
+                                         FontSize="86" Margin="0,4">
+                                <TextBlock.Foreground>
+                                  <MultiBinding Converter="{x:Static v:SlideConverters.LineBrush}">
+                                    <Binding Path="IsTitle" />
+                                    <Binding Path="#Root.SlideTitle" />
+                                    <Binding Path="#Root.SlideForeground" />
+                                  </MultiBinding>
+                                </TextBlock.Foreground>
                                 <Run Text="{Binding Text}" /><Run Text="{Binding Repeat, Converter={x:Static v:SlideConverters.RepeatSuffix}}"
                                      FontSize="54" Foreground="{Binding #Root.SlideMuted}" />
                               </TextBlock>

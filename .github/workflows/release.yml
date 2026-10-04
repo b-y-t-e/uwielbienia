@@ -46,7 +46,7 @@ jobs:
       - name: Create Windows update package
         run: |
           dotnet publish app/src/Uwielbienia.Desktop/Uwielbienia.Desktop.csproj -c Release -r win-x64 --self-contained -p:Version=$env:VERSION -o ./velopack-publish
-          vpk pack --packId Uwielbienia --packVersion $env:VERSION --packDir ./velopack-publish --mainExe Uwielbienia.exe
+          vpk pack --packId Uwielbienia --packVersion $env:VERSION --packDir ./velopack-publish --mainExe Uwielbienia.exe --icon app/src/Uwielbienia.App/Assets/icon.ico
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

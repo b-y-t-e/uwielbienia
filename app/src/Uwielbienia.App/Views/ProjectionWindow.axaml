@@ -5,6 +5,7 @@
         x:Class="Uwielbienia.App.Views.ProjectionWindow"
         x:DataType="vm:ProjectionViewModel"
         Title="Uwielbienia — ekran"
+        Icon="avares://Uwielbienia.App/Assets/icon.ico"
         Background="{Binding Live.Appearance.Background}"
         WindowStartupLocation="Manual"
         WindowDecorations="None"

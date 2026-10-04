@@ -9,7 +9,9 @@ namespace Uwielbienia.Core.Presentation;
 /// <param name="ContentId">Identyfikator treści, np. pieśni (<c>Song.Id</c>).</param>
 /// <param name="Number">Numer w śpiewniku; <c>null</c> = bez numeru.</param>
 /// <param name="Title">Tytuł albo (tekst bez tytułu) pierwszy wers.</param>
-/// <param name="HasOwnTitle">Ma własny tytuł — tylko wtedy rzutnik pokazuje go nad pierwszym slajdem.</param>
+/// <param name="ShowTitle">
+/// Rzutnik pokazuje tytuł nad pierwszym slajdem — tylko własny tytuł, który nie powtarza początku pierwszego wersu.
+/// </param>
 /// <param name="Note">Dla operatora: dlaczego nie ma slajdów (np. „Przygotowywanie slajdów…”).</param>
 public sealed record LiveItem(
     Guid? PlanItemId,
@@ -17,7 +19,7 @@ public sealed record LiveItem(
     int? Number,
     string Title,
     IReadOnlyList<Slide> Slides,
-    bool HasOwnTitle = true,
+    bool ShowTitle = true,
     string? Note = null);
 
 /// <summary>Pieśń spoza planu na ekran (szybki wybór na projekcji, telefon).</summary>
@@ -56,9 +58,43 @@ public sealed class SongPlanItemType : IPlanItemType, ISongPresenter
 
     public LiveItem Present(Song song) => Create(null, song, song.Arrangement);
 
-    private LiveItem Create(Guid? planItemId, Song song, IReadOnlyList<string> arrangement) =>
-        new(planItemId, song.Id, song.Number, song.DisplayTitle, _slideBuilder.Build(song, arrangement), song.Title.Length > 0,
-            "Wszystkie części pominięte");
+    private LiveItem Create(Guid? planItemId, Song song, IReadOnlyList<string> arrangement)
+    {
+        var slides = _slideBuilder.Build(song, arrangement);
+        var titleLines = TitleLineCount(song.Title, slides);
+        if (titleLines > 0)
+            slides = [MarkTitle(slides[0], titleLines), .. slides.Skip(1)];
+        var showTitle = song.Title.Length > 0 && titleLines == 0;
+        return new(planItemId, song.Id, song.Number, song.DisplayTitle, slides, showTitle, "Wszystkie części pominięte");
+    }
+
+    /// <summary>
+    /// Ile pierwszych wersów pierwszego slajdu powtarza tytuł (np. „Zaufałem Panu i już”, także rozbity na
+    /// wersy „Jezus / pokonał śmierć”); 0 = tytuł jest inny niż początek tekstu. Wtedy rzutnik nie pokazuje
+    /// tytułu nad tekstem, tylko te wersy w kolorze tytułu. Porównanie bez wielkości liter, polskich znaków
+    /// i interpunkcji, całymi słowami („Jezus” nie jest początkiem „Jezusie mój”).
+    /// </summary>
+    internal static int TitleLineCount(string title, IReadOnlyList<Slide> slides)
+    {
+        var normalizedTitle = SongSearch.Normalize(title);
+        if (normalizedTitle.Length == 0 || slides.Count == 0)
+            return 0;
+        var text = "";
+        for (var i = 0; i < slides[0].Lines.Count; i++)
+        {
+            text = SongSearch.Normalize(text + " " + slides[0].Lines[i].Text);
+            if (text.Length == 0)
+                continue;
+            if (text == normalizedTitle || text.StartsWith(normalizedTitle + " ", StringComparison.Ordinal))
+                return i + 1;
+            if (!normalizedTitle.StartsWith(text + " ", StringComparison.Ordinal))
+                return 0;
+        }
+        return 0;
+    }
+
+    private static Slide MarkTitle(Slide slide, int count) =>
+        slide with { Lines = [.. slide.Lines.Select((line, i) => i < count ? line with { IsTitle = true } : line)] };
 }
 
 /// <summary>Rodzaj pozycji „prezentacja”: slajdy-obrazy przygotowane przez <see cref="ISlideshowLibrary"/>.</summary>
@@ -87,6 +123,6 @@ public sealed class PresentationPlanItemType : IPlanItemType
             return null;
         var state = _library.Load(presentation.Folder);
         var slides = state.Slides.Select((file, i) => (Slide)new ImageSlide(file, i + 1)).ToList();
-        return new LiveItem(item.Id, presentation.Folder, null, presentation.Title, slides, HasOwnTitle: false, state.Note);
+        return new LiveItem(item.Id, presentation.Folder, null, presentation.Title, slides, ShowTitle: false, state.Note);
     }
 }

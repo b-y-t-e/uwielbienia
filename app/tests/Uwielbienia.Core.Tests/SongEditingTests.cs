@@ -152,4 +152,34 @@ public class SongEditingTests : IDisposable
         Assert.NotNull((SongDraft.New(SongKind.Text) with { Title = "Pusty" }).Validate());
         Assert.NotNull(SongDraft.New(SongKind.Text).Validate());
     }
+
+    [Fact]
+    public void Copy_is_an_independent_local_song_with_the_same_content()
+    {
+        var original = _library.Songs.First(s => s.Number == 47);
+
+        var copy = _editor.Copy(original);
+        _editor.Save(SongDraft.From(copy) with { Title = "Zmieniona kopia" });
+
+        Assert.NotEqual(original.Id, copy.Id);
+        Assert.True(copy.Number >= LocalSongEditor.FirstLocalNumber);
+        Assert.Equal(SongOrigin.Local, copy.Origin);
+        Assert.Equal(original.Title, copy.Title);
+        Assert.Equal(original.Arrangement, copy.Arrangement);
+        Assert.Equal(original.Sections.Count, copy.Sections.Count);
+        Assert.Equal(original.Title, _library.Find(original.Id)!.Title);
+    }
+
+    [Fact]
+    public void Copy_of_untitled_text_stays_a_text()
+    {
+        var text = _editor.Save(SongDraft.New(SongKind.Text) with { Parts = [new DraftPart("O", "Część 1", "Ojcze nasz, który jesteś w niebie")] });
+
+        var copy = _editor.Copy(text);
+
+        Assert.True(copy.IsText);
+        Assert.Null(copy.Number);
+        Assert.NotEqual(text.Id, copy.Id);
+        Assert.Equal("Ojcze nasz, który jesteś w niebie", copy.DisplayTitle);
+    }
 }

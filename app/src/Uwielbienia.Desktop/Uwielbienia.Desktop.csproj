@@ -2,6 +2,8 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Ikona pliku .exe (Eksplorator, pasek zadań); okna mają ją z Assets/icon.ico w XAML. -->
+    <ApplicationIcon>..\Uwielbienia.App\Assets\icon.ico</ApplicationIcon>
     <AssemblyName>Uwielbienia</AssemblyName>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>

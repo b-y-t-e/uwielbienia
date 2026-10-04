@@ -181,8 +181,12 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   `SongSearch` (indeks bez polskich znaków), `ActivePlan` i kolumna „Pieśń”.
 - **Pieśń i tekst** to ten sam model `Song` (`Kind`): pieśń ma numer i akordy, tekst (część Mszy,
   modlitwa, ogłoszenie) nie ma numeru ani akordów (w planie kropka zamiast numeru i kolor `TextItemBrush`), a tytuł jest
-  opcjonalny — bez tytułu przedstawia go pierwszy wers (`Song.DisplayTitle`; rzutnik pokazuje
-  tytuł nad pierwszym slajdem tylko, gdy jest własny); ten sam format pliku.
+  opcjonalny — bez tytułu przedstawia go pierwszy wers (`Song.DisplayTitle`); ten sam format pliku.
+  Rzutnik pokazuje tytuł z linią nad pierwszym slajdem tylko, gdy coś wnosi (`LiveItem.ShowTitle`):
+  jest własny i nie jest początkiem tekstu pierwszego slajdu (porównanie bez wielkości liter, polskich
+  znaków i interpunkcji, całymi słowami — `SongPlanItemType.TitleLineCount`). W śpiewniku tytuł to
+  zwykle incipit — wtedy zamiast tytułu wersy, które go powtarzają, mają kolor tytułu
+  (`SlideLine.IsTitle`), co zaznacza początek pieśni.
 - **Zapis lokalny.** `LocalSongEditor` (`ISongEditor`) zapisuje własne pieśni (numery od 1000),
   teksty (`tekst-slug`) i poprawki pieśni śpiewnika w `%APPDATA%\Uwielbienia\teksty\{id}\piesn.md`
   (`MarkdownSongWriter` — odwrotność parsera, odtwarza pliki śpiewnika co do znaku). Plik o `id`
@@ -267,7 +271,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 6. **Dodawanie:** przycisk w oknie „Dodaj do planu” (`PlanAddViewModel`) tworzący pozycję i
    wstawiający ją przez `PlanActions.Insert(item, index)` (wzorzec: „+ Prezentacja”).
 7. **Kolumna „Na ekranie” i telefon:** pokazują `Lines` — dla treści innej niż tekst dodać
-   szablon w `MainWindow.axaml` (TERAZ / NASTĘPNA, wzorzec: obraz `ImageSlide`), a na rzutniku
+   szablon w `MainWindow.axaml` (bieżący slajd / NASTĘPNA, wzorzec: obraz `ImageSlide`), a na rzutniku
    stronę (`ProjectedPage` → np. `ProjectedImage` z szablonem w `SlideView.axaml`, gdy treść ma
    zająć cały ekran). Telefon i ekran w przeglądarce dostają tylko `Lines` i `Label` — obraz
    wymagałby pola w `RemoteProtocol.cs` + `web/remote` (zmiana w obu miejscach).
@@ -287,6 +291,9 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
     upuszczony na plan trafia za wiersz pod kursorem;
   - na ekran wyłącznie dwuklikiem albo prawym klikiem („Pokaż na ekranie”) w planie;
   - kolejność: przeciąganie w planie; usuwanie: ✕ / prawy klik (z potwierdzeniem);
+  - „Duplikuj” (prawy klik w planie): niezależna kopia zaraz za oryginałem — pieśń lub tekst jako nowa
+    własna (`ISongEditor.Copy`: cała treść, nowy numer / identyfikator, ten sam tytuł i układ części),
+    prezentacja jako nowy folder (`ISlideshowLibrary.CopyAsync`); zmiana kopii nie zmienia oryginału;
   - edycja: „Edytuj” w kolumnie „Pieśń”;
   - układ pieśni w tym planie (lista części w kolumnie „Pieśń”): przeciąganie za nagłówek części,
     „⋯” / prawy klik („Powtórz”, „Usuń”), „Przywróć usuniętą część”, pole wyboru = pominięcie.
@@ -313,6 +320,8 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
   `DangerBrush` = usuwanie i błędy. Typografia operatora: skala
   13/15/18/24 (`Themes/Controls.axaml`). Kroje: Atkinson Hyperlegible Next (interfejs), Literata
   (tytuły, tekst na rzutniku).
+- Ikona: płomień świecy na nocnym granacie — `Assets/icon.ico` / `icon.png` (okna w XAML, `ApplicationIcon`
+  w `Uwielbienia.Desktop.csproj`, `vpk pack --icon` w `release.yml`); generuje ją `python app/tools/make_icon.py`.
 - Rzutnik (`ProjectionAppearance`): ciemny = czerń i ciepła kość słoniowa, jasny = biel i granat;
   tytuł pieśni w delikatnym ciepłym odcieniu z linią pod spodem; bez stałej wysokości wiersza
   (Literata ma długie ogonki liter). Slajd prezentacji: obraz na cały ekran na czarnym tle.

@@ -17,6 +17,12 @@ public interface ISongEditor
 
     /// <summary>Usuwa własną pieśń lub tekst.</summary>
     void Delete(string id);
+
+    /// <summary>
+    /// Niezależna kopia pieśni lub tekstu (cała treść: części, akordy, kolejność, tonacja) jako własna —
+    /// pieśń dostaje nowy numer, tekst nowy identyfikator; tytuł bez zmian.
+    /// </summary>
+    Song Copy(Song song);
 }
 
 /// <summary>Pliki w układzie repozytorium: <c>{folder}/{id}/piesn.md</c>.</summary>
@@ -33,8 +39,20 @@ public sealed class LocalSongEditor(string directory, ISongLibrary library) : IS
                 ? (NewId("tekst", draft.DisplayTitle), (int?)null)
                 : NewSongIdentity(draft.Title);
 
-        var song = draft.Build(id, number);
-        var folder = Path.Combine(directory, id);
+        return Write(draft.Build(id, number));
+    }
+
+    public Song Copy(Song song)
+    {
+        var (id, number) = song.IsText
+            ? (NewId("tekst", song.DisplayTitle), (int?)null)
+            : NewSongIdentity(song.Title);
+        return Write(song with { Id = id, Number = number });
+    }
+
+    private Song Write(Song song)
+    {
+        var folder = Path.Combine(directory, song.Id);
         Directory.CreateDirectory(folder);
         var path = Path.Combine(folder, DirectorySongSource.FileName);
         var temp = path + ".tmp";
@@ -42,7 +60,7 @@ public sealed class LocalSongEditor(string directory, ISongLibrary library) : IS
         File.Move(temp, path, overwrite: true);
 
         library.Reload();
-        return library.Find(id) ?? song;
+        return library.Find(song.Id) ?? song;
     }
 
     public void RevertToShared(string id)

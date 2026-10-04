@@ -31,7 +31,7 @@ public sealed partial class LiveViewModel : ObservableObject
     public ProjectedPage? Page => State.VisibleSlide switch
     {
         ImageSlide image => new ProjectedImage(image),
-        { } slide when State.Item is { } item => new ProjectedPage(slide, State.SlideIndex == 0 && item.HasOwnTitle ? item.Title : null),
+        { } slide when State.Item is { } item => new ProjectedPage(slide, State.SlideIndex == 0 && item.ShowTitle ? item.Title : null),
         _ => null,
     };
 
