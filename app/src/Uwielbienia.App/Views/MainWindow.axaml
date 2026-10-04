@@ -62,19 +62,41 @@
         <!-- PLAN -->
         <Border Classes="panel" Padding="10,14">
           <DockPanel>
-            <TextBlock DockPanel.Dock="Top" Classes="heading" Text="Plan" Margin="8,0,0,10" />
-            <TextBlock DockPanel.Dock="Top" Classes="caption" TextWrapping="Wrap" Margin="8,0"
-                       IsVisible="{Binding Plan.IsEmpty}"
-                       Text="Plan jest pusty. Wpisz numer lub tytuł pieśni i wybierz „Na koniec planu”." />
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="8,0,0,10">
+              <TextBlock Classes="heading" Text="Plan" VerticalAlignment="Center" />
+              <Button Grid.Column="1" Classes="addSmall" Content="+" ToolTip.Tip="Dodaj pieśń lub tekst"
+                      Click="OnPlanAddClick" />
+            </Grid>
+            <Button DockPanel.Dock="Top" Classes="addEmpty" Content="+ Dodaj pieśń lub tekst" Margin="4,4,4,0"
+                    IsVisible="{Binding Plan.IsEmpty}" Click="OnPlanAddClick" />
             <ListBox x:Name="PlanList" ItemsSource="{Binding Plan.Items}" SelectedItem="{Binding Plan.Selected}">
+              <!-- Prawy klik w pustym miejscu listy. -->
+              <ListBox.ContextMenu>
+                <ContextMenu>
+                  <MenuItem Header="Dodaj pieśń lub tekst…" Click="OnPlanAddClick" />
+                </ContextMenu>
+              </ListBox.ContextMenu>
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:PlanItemViewModel">
                   <Grid ColumnDefinitions="*,Auto" Classes.dragged="{Binding IsDragged}">
+                    <!-- Prawy klik na pozycji planu. -->
+                    <Grid.ContextMenu>
+                      <ContextMenu>
+                        <MenuItem Header="Pokaż na ekranie" Click="OnPlanMenuShow" />
+                        <MenuItem Header="Dodaj przed…" Click="OnPlanMenuAddBefore" />
+                        <MenuItem Header="Dodaj po…" Click="OnPlanMenuAddAfter" />
+                        <Separator />
+                        <MenuItem Header="Usuń z planu" Click="OnPlanMenuRemove" />
+                      </ContextMenu>
+                    </Grid.ContextMenu>
                     <Button Classes="quiet planItem" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                             Click="OnPlanItemClick" DoubleTapped="OnPlanItemDoubleTapped">
                       <Grid ColumnDefinitions="4,32,*">
                         <Border Background="{DynamicResource CandleBrush}" CornerRadius="2" IsVisible="{Binding IsLive}" Margin="0,2" />
-                        <TextBlock Grid.Column="1" Classes="number" Text="{Binding Number}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0" />
+<Panel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0">
+                          <TextBlock Classes="number" Text="{Binding Number}" IsVisible="{Binding !IsText}" />
+                          <Ellipse Classes="textDot" IsVisible="{Binding IsText}" />
+                        </Panel>
                         <StackPanel Grid.Column="2" VerticalAlignment="Center">
                           <TextBlock Classes="bodyStrong" Text="{Binding Title}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
                         </StackPanel>
@@ -97,73 +119,74 @@
         <GridSplitter Grid.Column="1" Classes="paneDivider" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"
                       DragCompleted="OnColumnSplitterDragCompleted" />
 
-        <!-- PIEŚŃ: wyszukiwarka + tekst wybranej pieśni; nie zmienia ekranu (poza układem części granej pieśni). -->
+        <!-- PIEŚŃ: pozycja wybrana w planie — czytanie i edycja; nie zmienia ekranu (poza układem części granej pieśni). -->
         <Border Grid.Column="2" Classes="panel" Padding="18,16">
           <DockPanel>
             <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
-              <TextBlock Classes="heading" Text="Pieśń" VerticalAlignment="Top" />
-              <ToggleButton Grid.Column="1" Classes="chip liveHeaderAction" Content="Akordy" IsChecked="{Binding ShowChords, Mode=OneWay}"
-                            Command="{Binding ToggleChordsCommand}" />
+              <TextBlock Classes="heading" Text="{Binding Preview.ColumnTitle}" VerticalAlignment="Top" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" IsVisible="{Binding Preview.IsViewing}">
+                <Button Classes="quiet liveHeaderAction" Content="Edytuj" Command="{Binding Preview.EditCommand}"
+                        IsVisible="{Binding Preview.HasSong}" />
+                <ToggleButton Classes="chip liveHeaderAction" Content="Akordy" IsChecked="{Binding ShowChords, Mode=OneWay}"
+                              Command="{Binding ToggleChordsCommand}" IsVisible="{Binding !Preview.IsText}" />
+              </StackPanel>
             </Grid>
 
-            <Panel DockPanel.Dock="Top" Margin="0,0,0,16">
-              <TextBox x:Name="SearchBox" Classes="search" Text="{Binding Search.Query}"
-                       GotFocus="OnSearchFocus" TextChanged="OnSearchTextChanged"
-                       PlaceholderText="Szukaj pieśni: numer albo słowa" />
-
-              <!-- Pole tekstowe z dropdownem zamiast panelu zajmującego miejsce w głównym układzie. -->
-              <primitives:Popup x:Name="SearchPopup" PlacementTarget="{Binding #SearchBox}"
-                                Placement="BottomEdgeAlignedLeft" VerticalOffset="8"
-                                IsLightDismissEnabled="True">
-                <Border Classes="panel" Width="{Binding #SearchBox.Bounds.Width}" Padding="8" MaxHeight="360"
-                        Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource HairlineBrush}" BorderThickness="1">
-                  <DockPanel>
-                    <ListBox ItemsSource="{Binding Search.Results}" SelectedItem="{Binding Search.Selected}">
-                      <ListBox.ItemTemplate>
-                        <DataTemplate x:DataType="vm:SongResultViewModel">
-                          <Grid ColumnDefinitions="40,*" PointerReleased="OnSearchResultPointerReleased">
-                            <TextBlock Classes="number" Text="{Binding Number}" VerticalAlignment="Center" />
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                              <TextBlock Classes="bodyStrong" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
-                              <TextBlock Classes="caption" Text="{Binding FirstLine}" TextTrimming="CharacterEllipsis"
-                                         IsVisible="{Binding FirstLine, Converter={x:Static ObjectConverters.IsNotNull}}" />
-                            </StackPanel>
-                          </Grid>
-                        </DataTemplate>
-                      </ListBox.ItemTemplate>
-                    </ListBox>
-                  </DockPanel>
-                </Border>
-              </primitives:Popup>
-            </Panel>
 
             <Panel>
+              <!-- Edycja pieśni lub tekstu zamiast podglądu. -->
+              <ContentControl Content="{Binding Preview.Editor}" IsVisible="{Binding Preview.IsEditing}">
+                <ContentControl.ContentTemplate>
+                  <DataTemplate x:DataType="vm:SongEditorViewModel">
+                    <v:SongEditorView />
+                  </DataTemplate>
+                </ContentControl.ContentTemplate>
+              </ContentControl>
+
+              <Panel IsVisible="{Binding Preview.IsViewing}">
               <TextBlock Classes="bodyMuted" TextWrapping="Wrap" HorizontalAlignment="Center" VerticalAlignment="Center"
                          IsVisible="{Binding !Preview.HasSong}" TextAlignment="Center"
-                         Text="Wybierz pieśń z planu albo wpisz jej numer lub tytuł." />
+                         Text="Wybierz pieśń w planie." />
               <DockPanel IsVisible="{Binding Preview.HasSong}">
                 <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*">
-                  <TextBlock Classes="displayNumber" Text="{Binding Preview.Number}" Margin="0,2,14,0" VerticalAlignment="Top" />
+                  <TextBlock Classes="displayNumber" Text="{Binding Preview.Number}" Margin="0,2,14,0" VerticalAlignment="Top"
+                             IsVisible="{Binding Preview.Number, Converter={x:Static ObjectConverters.IsNotNull}}" />
                   <StackPanel Grid.Column="1">
                     <TextBlock Classes="songTitle" Text="{Binding Preview.Title}" TextWrapping="Wrap" TextTrimming="None" />
-                    <TextBlock Classes="caption" Text="{Binding Preview.Category}" />
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                      <TextBlock Classes="caption" Text="{Binding Preview.Category}" />
+                      <TextBlock Classes="caption" Foreground="{DynamicResource CandleBrush}" Text="{Binding Preview.OriginText}"
+                                 IsVisible="{Binding Preview.OriginText, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    </StackPanel>
                   </StackPanel>
                 </Grid>
-                <WrapPanel DockPanel.Dock="Top" Margin="0,14,0,0" IsVisible="{Binding !Preview.IsFromPlan}">
-                  <Button Content="Jako następna" Margin="0,0,8,0" Command="{Binding Preview.AddAsNextCommand}" IsVisible="{Binding !Preview.IsFromPlan}" />
-                  <Button Content="Na koniec planu" Command="{Binding Preview.AddToEndCommand}" IsVisible="{Binding !Preview.IsFromPlan}" />
-                </WrapPanel>
 
+                <!-- Układ pieśni w tym planie: kolejność (przeciąganie za nagłówek), powtórzenie, usunięcie, pominięcie. -->
                 <ScrollViewer Margin="0,14,0,0">
-                  <ItemsControl ItemsSource="{Binding Preview.Parts}">
+                  <StackPanel Margin="0,0,12,0">
+                  <ItemsControl x:Name="PartsList" ItemsSource="{Binding Preview.Parts}">
                     <ItemsControl.ItemTemplate>
                       <DataTemplate x:DataType="vm:SongPartViewModel">
+                        <Panel Classes.dragged="{Binding IsDragged}">
                         <Border Classes="slideTile" Classes.excluded="{Binding !IsIncluded}"
-                                HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="0,0,12,8" Padding="14,10">
+                                HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="0,0,0,8" Padding="14,10">
+                          <Border.ContextMenu>
+                            <ContextMenu>
+                              <MenuItem Header="Powtórz" Click="OnPartDuplicate" />
+                              <MenuItem Header="Usuń" Click="OnPartRemove" />
+                            </ContextMenu>
+                          </Border.ContextMenu>
                           <StackPanel Spacing="6">
-                            <Grid ColumnDefinitions="*,Auto">
-                              <TextBlock Classes="caption" FontWeight="SemiBold" Text="{Binding Name}" VerticalAlignment="Center" />
-                              <CheckBox Grid.Column="1" IsChecked="{Binding IsIncluded}" MinWidth="0" Padding="0"
+                            <Grid ColumnDefinitions="*,Auto,Auto">
+                              <!-- Nagłówek części jest uchwytem do przeciągania. -->
+                              <StackPanel Classes="partHandle" Orientation="Horizontal" Spacing="8" Background="Transparent"
+                                          Cursor="SizeNorthSouth" VerticalAlignment="Center">
+                                <TextBlock Classes="caption" Text="⠿" VerticalAlignment="Center" />
+                                <TextBlock Classes="caption" FontWeight="SemiBold" Text="{Binding Name}" VerticalAlignment="Center" />
+                              </StackPanel>
+                              <Button Grid.Column="1" Classes="quiet partMenu" Content="⋯" ToolTip.Tip="Powtórz albo usuń"
+                                      Click="OnPartMenuClick" Margin="0,0,6,0" />
+                              <CheckBox Grid.Column="2" IsChecked="{Binding IsIncluded}" MinWidth="0" Padding="0"
                                         ToolTip.Tip="Śpiewamy tę część" />
                             </Grid>
                             <ItemsControl Classes="partLines" ItemsSource="{Binding Lines}">
@@ -179,11 +202,18 @@
                             </ItemsControl>
                           </StackPanel>
                         </Border>
+                        <Border Classes="dropMarker" VerticalAlignment="Top" Margin="0,-6,0,0" IsVisible="{Binding IsDropBefore}" />
+                        <Border Classes="dropMarker" VerticalAlignment="Bottom" Margin="0,0,0,2" IsVisible="{Binding IsDropAfter}" />
+                        </Panel>
                       </DataTemplate>
                     </ItemsControl.ItemTemplate>
                   </ItemsControl>
+                  <Button Classes="addEmpty" Content="+ Przywróć usuniętą część" Click="OnAddPartClick" Margin="0,2,0,0"
+                          IsVisible="{Binding Preview.HasRemovedSections}" />
+                  </StackPanel>
                 </ScrollViewer>
               </DockPanel>
+              </Panel>
             </Panel>
           </DockPanel>
         </Border>
@@ -282,6 +312,45 @@
     <v:PlansOverlay DataContext="{Binding Plans}" IsVisible="{Binding IsOpen}" />
     <v:RemoteOverlay DataContext="{Binding Remote}" IsVisible="{Binding IsOpen}" />
 
+    <!-- Dodaj do planu: wyszukiwarka pieśni i tekstów; wybór od razu wstawia w miejsce wskazane w planie. -->
+    <Border x:Name="PlanAddScrim" ZIndex="90" Background="{DynamicResource ScrimBrush}" IsVisible="{Binding PlanAdd.IsOpen}"
+            PointerPressed="OnPlanAddScrimPressed">
+      <Border Classes="panel dialog" Width="560" MaxHeight="640" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,96,0,24">
+        <DockPanel>
+          <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+            <TextBlock Classes="heading" Text="Dodaj do planu" VerticalAlignment="Center" />
+            <Button Grid.Column="1" Classes="quiet closeButton" Content="✕" ToolTip.Tip="Zamknij" Command="{Binding PlanAdd.CloseCommand}" />
+          </Grid>
+          <TextBox x:Name="PlanAddBox" DockPanel.Dock="Top" Classes="search" Text="{Binding PlanAdd.Query}" Margin="0,0,0,10"
+                   PlaceholderText="Szukaj pieśni lub tekstu: numer albo słowa" />
+          <Grid DockPanel.Dock="Bottom" ColumnDefinitions="Auto,8,Auto,*,Auto" Margin="0,12,0,0">
+            <Button Content="+ Nowa pieśń" Command="{Binding PlanAdd.NewSongCommand}" />
+            <Button Grid.Column="2" Content="+ Nowy tekst" Command="{Binding PlanAdd.NewTextCommand}" />
+            <Button Grid.Column="4" Classes="primary" Content="Wybierz" Command="{Binding PlanAdd.AddCommand}"
+                    CommandParameter="{x:Null}" IsEnabled="{Binding PlanAdd.HasSelection}" />
+          </Grid>
+          <!-- Klik zaznacza; dodaje „Wybierz”, Enter albo dwuklik. -->
+          <ListBox ItemsSource="{Binding PlanAdd.Results}" SelectedItem="{Binding PlanAdd.Selected}">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:SongResultViewModel">
+                <Grid ColumnDefinitions="40,*" Background="Transparent" DoubleTapped="OnPlanAddResultDoubleTapped">
+                  <Panel VerticalAlignment="Center" HorizontalAlignment="Left">
+                    <TextBlock Classes="number" Text="{Binding Number}" IsVisible="{Binding !IsText}" />
+                    <Ellipse Classes="textDot" IsVisible="{Binding IsText}" Margin="6,0,0,0" />
+                  </Panel>
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Classes="bodyStrong" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Classes="caption" Text="{Binding FirstLine}" TextTrimming="CharacterEllipsis"
+                               IsVisible="{Binding FirstLine, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                  </StackPanel>
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+    </Border>
+
     <Border ZIndex="100" Background="{DynamicResource ScrimBrush}" IsVisible="{Binding Plan.IsRemoveConfirmationOpen}">
       <Border Classes="panel dialog" Width="400" VerticalAlignment="Center" HorizontalAlignment="Center">
         <StackPanel Spacing="6">
@@ -312,6 +381,44 @@
     <Style Selector="TextBlock.chords.hidden, TextBlock.chords.empty">
       <Setter Property="IsVisible" Value="False" />
     </Style>
+    <!-- Tekst nie ma numeru: w jego miejscu kropka. -->
+    <Style Selector="Ellipse.textDot">
+      <Setter Property="Width" Value="8" />
+      <Setter Property="Height" Value="8" />
+      <Setter Property="Fill" Value="{DynamicResource MutedBrush}" />
+    </Style>
+    <Style Selector="Button.addSmall">
+      <Setter Property="FontSize" Value="20" />
+      <Setter Property="Width" Value="34" />
+      <Setter Property="Height" Value="34" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.addEmpty">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="Padding" Value="12,12" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="{DynamicResource HairlineBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    </Style>
+    <Style Selector="Button.partMenu">
+      <Setter Property="Padding" Value="8,0" />
+      <Setter Property="FontSize" Value="18" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    </Style>
+    <Style Selector="Button.addButton">
+      <Setter Property="FontSize" Value="24" />
+      <Setter Property="Width" Value="46" />
+      <Setter Property="Height" Value="46" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="12" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
     <Style Selector="Button.planItem">
       <Setter Property="Padding" Value="0" />
       <Setter Property="Background" Value="Transparent" />
@@ -333,7 +440,7 @@
     <Style Selector="Button.removeItem">
       <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
     </Style>
-    <Style Selector="Grid.dragged">
+    <Style Selector="Grid.dragged, Panel.dragged">
       <Setter Property="Opacity" Value="0.45" />
     </Style>
     <Style Selector="Border.dropMarker">

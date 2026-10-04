@@ -5,7 +5,8 @@ namespace Uwielbienia.Core.Presentation;
 
 /// <summary>Coś, co można wyświetlić: pieśń z planu albo dobrana „na szybko”.</summary>
 /// <param name="PlanItemId">Pozycja planu, z której pochodzi; <c>null</c> = spoza planu.</param>
-public sealed record LiveItem(Guid? PlanItemId, string SongId, int Number, string Title, IReadOnlyList<Slide> Slides);
+/// <param name="Number">Numer w śpiewniku; <c>null</c> dla tekstu.</param>
+public sealed record LiveItem(Guid? PlanItemId, string SongId, int? Number, string Title, IReadOnlyList<Slide> Slides);
 
 public interface ILiveItemFactory
 {

@@ -78,7 +78,7 @@ Tekst linii refrenu {x2} `G C G`
 ostatnia linia fragmentu :| {x2} `D`
 ```
 
-### Nagłówek YAML (front matter) — wszystkie klucze obowiązkowe
+### Nagłówek YAML (front matter) — klucze obowiązkowe (poza `rodzaj`)
 
 | Klucz            | Typ             | Znaczenie |
 |------------------|-----------------|-----------|
@@ -89,6 +89,7 @@ ostatnia linia fragmentu :| {x2} `D`
 | `tonacja`        | string \| `null`| Pierwszy akord pieśni (przybliżenie tonacji) |
 | `kolejnosc`      | lista kodów     | Kolejność wykonania (arrangement); kody muszą istnieć jako sekcje |
 | `zrodlo`         | string          | Plik źródłowy (PDF, z którego pochodzi pieśń) |
+| `rodzaj`         | `"tekst"`       | Opcjonalny, tylko w plikach lokalnych aplikacji: **tekst** (część Mszy, modlitwa, ogłoszenie…) — bez akordów, `numer: null`, części `[O1] Część 1`, `[O2] Część 2`… |
 
 ### Treść
 
@@ -152,19 +153,108 @@ ostatnia linia fragmentu :| {x2} `D`
 
 ## Aplikacja (`app/`)
 
-- .NET 10 + Avalonia 12, MVVM (CommunityToolkit.Mvvm), DI w `AppComposition`. Clean Code i SOLID:
-  logika w `Uwielbienia.Core` (bez UI), wszystkie źródła poleceń idą przez `ILiveControl`,
-  wszyscy odbiorcy obrazu słuchają `ILiveStateSource`.
-- Parser pieśni w aplikacji (`MarkdownSongParser`) implementuje reguły z tego pliku — zmiana
-  formatu wymaga zmiany parsera i testów (`dotnet test app`).
-- Pieśni są wbudowane w aplikację przy budowaniu (`Teksty/**/piesn.md`).
-- Okno operatora ma trzy kolumny i tak je nazywamy wszędzie (UI, komentarze, dokumentacja):
-  **Plan** (`PlanViewModel`) · **Pieśń** (wyszukiwarka + wybrana pieśń, `SearchViewModel`,
-  `PreviewViewModel`; tu będzie edycja) · **Na ekranie** (to, co widzi sala, `LiveViewModel`).
-  Nie używamy nazw „Podgląd”, „Prowadzenie”, „Zarządzanie”. W oknie operatora pieśń trafia na ekran
-  wyłącznie dwuklikiem w planie. Kolumna „Pieśń” i wyszukiwarka nie zmieniają projekcji — wyjątek:
-  zmiana układu części granej pieśni działa na żywo (`LiveSession.SetPlaylist`).
-- Nazwa planu nie zawiera daty — data to osobne pole. Nazwę wpisuje operator (wymagana, bez wartości domyślnej).
+Rzutnik tekstów pieśni: okno operatora + ekran projekcji (drugi monitor, ten sam ekran albo
+przeglądarka) + pilot w telefonie. Opis scenariuszy i wyglądu: `docs/projekt-aplikacji.md`,
+uruchamianie, budowanie i wydanie: `app/README.md`.
+
+### Projekty
+
+| Projekt | Rola |
+|---|---|
+| `src/Uwielbienia.Core` | logika bez UI: pieśni (`Songs/`), plany (`Plans/`), ekran (`Presentation/`), aktualizacje (`Updates/`) |
+| `src/Uwielbienia.Link` | tailcat-link: protokół JSON (`RemoteProtocol`), polecenia z telefonu (`RemoteCommandHandler`), serwer (`LinkRemoteServer`) |
+| `src/Uwielbienia.App` | Avalonia: widoki (`Views/`), modele widoków (`ViewModels/`), usługi okienkowe (`Services/`), motywy (`Themes/`), czcionki, korzeń DI `AppComposition` |
+| `src/Uwielbienia.Desktop` | program Windows/Linux (`Program.cs`, Velopack) |
+| `tests/Uwielbienia.Core.Tests` | testy rdzenia i protokołu (m.in. parsowanie i zapis wszystkich pieśni z `Teksty/`) |
+| `tools/Uwielbienia.Screenshots` | renderuje okna do PNG bez wyświetlania (scenariusz w `Program.cs`) |
+| `web/remote` | strona pilota i ekranu w przeglądarce (`greysource.eu/uwielbienie`), bez kroku budowania |
+
+.NET 10, Avalonia 12, CommunityToolkit.Mvvm, DI (`Microsoft.Extensions.DependencyInjection`),
+`TreatWarningsAsErrors`. Clean Code i SOLID: logika w Core, UI tylko wyświetla i deleguje.
+
+### Jak to działa (przepływ danych)
+
+- **Pieśni.** `SongSourceFactory` wybiera śpiewnik wspólny (`FallbackSongSource`: folder z ustawień
+  → `Teksty/` nad katalogiem programu, gdy uruchomiono z repozytorium → zasoby wbudowane przy
+  budowaniu), `LayeredSongSource` nakłada na niego pliki lokalne. `SongLibrary` parsuje
+  (`MarkdownSongParser` — reguły z tego pliku) i po `Reload()` wysyła `Changed`; nasłuchują go
+  `SongSearch` (indeks bez polskich znaków), `ActivePlan` i kolumna „Pieśń”.
+- **Pieśń i tekst** to ten sam model `Song` (`Kind`): pieśń ma numer i akordy, tekst (część Mszy,
+  modlitwa, ogłoszenie) nie ma numeru ani akordów (w planie kropka zamiast numeru); ten sam format pliku.
+- **Zapis lokalny.** `LocalSongEditor` (`ISongEditor`) zapisuje własne pieśni (numery od 1000),
+  teksty (`tekst-slug`) i poprawki pieśni śpiewnika w `%APPDATA%\Uwielbienia\teksty\{id}\piesn.md`
+  (`MarkdownSongWriter` — odwrotność parsera, odtwarza pliki śpiewnika co do znaku). Plik o `id`
+  pieśni śpiewnika ją zastępuje (`SongOrigin.Modified`, „Przywróć oryginał” usuwa plik). Śpiewnik
+  wspólny (`Teksty/`) aplikacja nigdy nie zmienia; `id` jest stały, bo odwołują się do niego plany.
+  `SongDraft` zamienia formularz edytora na `Song`: kody części (`V1`, `C`, `C2`, tekst `O1`…),
+  kolejność (edycja: dotychczasowa; nowa pieśń: refren po każdej zwrotce), tonacja.
+- **Slajdy.** `SectionSlideBuilder`: jedno wystąpienie części z `kolejnosc` = slajd, dłuższe niż
+  `MaxLinesPerSlide` dzielone równo; `ChordResolver` realizuje dziedziczenie akordów.
+- **Plany.** `Plan` (rekord: nazwa, osobna data, rodzaj wydarzenie/szablon, pozycje
+  `SongPlanItem` z `Arrangement` / `Layout` — `null` = układ z pliku pieśni) w `JsonPlanStore`
+  (`%APPDATA%\Uwielbienia\plany\{id}.json`). `ActivePlan` trzyma otwarty plan, zapisuje każdą
+  zmianę, buduje `Playlist` (`LiveItem`) i wysyła `Changed` / `Opened` (po otwarciu innego planu
+  widoki zaczynają od początku). Dodawanie do planu: `PlanActions` (`InsertAt`, `ItemAdded`).
+- **Przeciąganie** (plan, części pieśni): `ListReorderDrag` — zwykłe przeciąganie myszą ze
+  znacznikiem miejsca i przewijaniem przy krawędzi; wiersze implementują `IReorderableItem`.
+- **Ekran.** `LiveSession` to jedyne źródło prawdy: polecenia przez `ILiveControl` (klawiatura —
+  `LiveKeyboard`, przyciski, telefon), stan przez `ILiveStateSource` (`LiveState` — niezmienna
+  migawka). Odbiorcy: kolumna „Na ekranie” (`LiveViewModel`), okno projekcji (`ProjectionWindow` +
+  `SlideView`: płótno 1920×1080, Literata, tytuł z linią na pierwszym slajdzie — `ProjectedPage`),
+  telefon i przeglądarka (`LinkRemoteServer`). `SetPlaylist` podmienia graną pieśń, gdy zmienił
+  się jej układ części lub tekst (te same slajdy = ta sama migawka, bez przenikania).
+- **Projekcja.** `ProjectionController` (F5): pełny ekran na innym monitorze, przenosi się przy
+  podłączeniu/odłączeniu; bez drugiego ekranu tryb jednego ekranu z szybkim wyborem pieśni.
+- **Telefon / przeglądarka.** `RemoteViewModel` paruje przez kod QR (tailcat-link, połączenie
+  szyfrowane); sparowane urządzenia łączą się same przy starcie.
+- **Aktualizacje.** `UpdateService` + `VelopackReleaseFeed`: tylko instalacja z
+  `Uwielbienia-win-Setup.exe` sprawdza GitHub Releases, pobiera w tle i proponuje „Aktualizuj”.
+- **Start** (`App.OnFrameworkInitializationCompleted`): DI → otwarcie ostatniego planu →
+  okno operatora (maksymalizowane, F11 = pełny ekran) → projekcja → telefon → aktualizacje.
+
+### Okno operatora
+
+- Trzy kolumny o regulowanej i zapamiętywanej szerokości; nagłówek środkowej pokazuje, co jest
+  wybrane („Pieśń” / „Tekst”, w edycji „Edycja pieśni”, „Nowy tekst”…). Tak je nazywamy wszędzie (UI,
+  komentarze, dokumentacja): **Plan** (`PlanViewModel`) · **Pieśń** (pozycja zaznaczona w planie:
+  czytanie i edycja — `PreviewViewModel`, `SongEditorViewModel`) · **Na ekranie** (to, co widzi
+  sala — `LiveViewModel`). Nie używamy nazw „Podgląd”, „Prowadzenie”, „Zarządzanie”.
+- Każda czynność ma jedno miejsce:
+  - dodawanie do planu tylko z planu: „+”, prawy klik („Dodaj przed… / po…”) albo pisanie
+    gdziekolwiek w oknie → okno „Dodaj do planu” (`PlanAddViewModel`: zaznacz + „Wybierz”, Enter,
+    dwuklik; „+ Nowa pieśń / + Nowy tekst”);
+  - na ekran wyłącznie dwuklikiem albo prawym klikiem („Pokaż na ekranie”) w planie;
+  - kolejność: przeciąganie w planie; usuwanie: ✕ / prawy klik (z potwierdzeniem);
+  - edycja: „Edytuj” w kolumnie „Pieśń”;
+  - układ pieśni w tym planie (lista części w kolumnie „Pieśń”): przeciąganie za nagłówek części,
+    „⋯” / prawy klik („Powtórz”, „Usuń”), „Przywróć usuniętą część”, pole wyboru = pominięcie.
+    Zapis: `SongPlanItem.Layout` (pełny układ z pominięciami) i `Arrangement` (śpiewana część) —
+    `WithLayout` wraca do `null`, gdy układ jest taki jak w pliku pieśni.
+- Kolumna „Pieśń” nie zmienia projekcji — wyjątek: zmiana układu części granej pieśni działa na
+  żywo. Pusty ekran: kolumna „Na ekranie” bez przycisków.
+- Nakładki: „Plany” (`PlansViewModel` — zakładki Wydarzenia/Szablony, lista + formularz; nazwa
+  wymagana, bez daty w nazwie), „Dodaj do planu”, „Telefon”, potwierdzenia usuwania. Esc zamyka;
+  w edytorze klawisze globalne (spacja, pisanie) nie działają.
+
+### Dane i ustawienia (`AppPaths`, `%APPDATA%\Uwielbienia`, Linux `~/.config/Uwielbienia`)
+
+`ustawienia.json` (`AppSettings`: motyw okna i ekranu, akordy, szerokości kolumn, ostatni plan,
+`MaxLinesPerSlide`, opcjonalny folder pieśni), `plany/`, `teksty/`, `polaczenia/` (tailcat-link),
+`aktualizacje.log`.
+
+### Wygląd
+
+- Paleta „nocny granat + świeca” (`Themes/Palette.axaml`, jasny i ciemny); świeca (`CandleBrush`)
+  to jedyny akcent i oznacza to, co jest na ekranie. Typografia operatora: skala 13/15/18/24
+  (`Themes/Controls.axaml`). Kroje: Atkinson Hyperlegible Next (interfejs), Literata (tytuły,
+  tekst na rzutniku).
+- Bez zbędnych objaśnień i podpisów: pusty stan, krótka podpowiedź w polu, ostrzeżenie przy
+  usuwaniu — tak; opisy pod nagłówkami — nie. Teksty interfejsu po polsku.
+
+### Zasady pracy
+
+- Zmiana formatu `piesn.md` = zmiana parsera, writera i testów (`dotnet test app`).
 - Po zmianach w UI sprawdzić wygląd: `dotnet run --project app/tools/Uwielbienia.Screenshots`.
 - Strona pilota `app/web/remote` mówi protokołem z `Uwielbienia.Link/RemoteProtocol.cs`;
   zmiana protokołu = zmiana w obu miejscach.
+- Wydanie: `python deploy.py` (wersja w `version.txt`, tag → `.github/workflows/release.yml`).

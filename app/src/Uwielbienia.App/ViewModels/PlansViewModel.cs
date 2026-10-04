@@ -71,7 +71,7 @@ public sealed partial class PlansViewModel : ObservableObject
     public IReadOnlyList<string> SelectedSongs => Selected is null
         ? []
         : Selected.Plan.Items.OfType<SongPlanItem>()
-            .Select(i => _library.Find(i.SongId) is { } song ? $"{song.Number}. {song.Title}" : "Nieznana pieśń")
+            .Select(i => _library.Find(i.SongId) is { } song ? song.Number is { } n ? $"{n}. {song.Title}" : song.Title : "Nieznana pieśń")
             .ToList();
 
     public string SelectedSongsHeader => Selected?.Plan.Items.Count switch

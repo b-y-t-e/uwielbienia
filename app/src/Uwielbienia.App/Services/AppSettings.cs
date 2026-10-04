@@ -33,6 +33,9 @@ public sealed class AppPaths
 
     public string Plans => Path.Combine(Root, "plany");
 
+    /// <summary>Własne pieśni i teksty oraz lokalne poprawki śpiewnika (<c>{id}/piesn.md</c>).</summary>
+    public string Texts => Path.Combine(Root, "teksty");
+
     public string LinkState => Path.Combine(Root, "polaczenia");
 
     public string SettingsFile => Path.Combine(Root, "ustawienia.json");

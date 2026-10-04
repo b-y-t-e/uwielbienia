@@ -21,7 +21,7 @@ public sealed class RemoteCommandHandlerTests : IDisposable
     public RemoteCommandHandlerTests()
     {
         var factory = new LiveItemFactory(Library, new SectionSlideBuilder());
-        _plan = new ActivePlan(new JsonPlanStore(_plans), factory, _session);
+        _plan = new ActivePlan(new JsonPlanStore(_plans), factory, _session, Library);
         _plan.Open(Plan.Create("Test", null)
             .Insert(0, SongPlanItem.For(Library.Songs.First(s => s.Number == 47).Id))
             .Insert(1, SongPlanItem.For(Library.Songs.First(s => s.Number == 94).Id)));

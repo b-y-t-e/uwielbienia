@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Uwielbienia.Core.Songs;
 
 namespace Uwielbienia.Core.Plans;
 
@@ -63,8 +64,37 @@ public abstract record PlanItem(Guid Id)
 
 /// <summary>Pieśń w planie z wybranymi częściami w wybranej kolejności.</summary>
 /// <param name="Arrangement">Kody sekcji do zaśpiewania; <c>null</c> = kolejność z pliku pieśni.</param>
-public sealed record SongPlanItem(Guid Id, string SongId, IReadOnlyList<string>? Arrangement) : PlanItem(Id)
+/// <param name="Layout">
+/// Pełny układ pieśni w tym planie (kolejność, powtórzenia, części pominięte); <c>null</c> = wynika z
+/// <paramref name="Arrangement"/> i kolejności z pliku. <paramref name="Arrangement"/> to zawsze jego śpiewana część.
+/// </param>
+/// <summary>Część w układzie pieśni: kod sekcji i czy jest śpiewana (odznaczona = pominięta).</summary>
+public sealed record LayoutEntry(string Code, bool Sung = true);
+
+public sealed record SongPlanItem(Guid Id, string SongId, IReadOnlyList<string>? Arrangement, IReadOnlyList<LayoutEntry>? Layout = null)
+    : PlanItem(Id)
 {
+    /// <summary>Układ do wyświetlenia w kolumnie „Pieśń” — także dla planów sprzed zapisywania układu.</summary>
+    public IReadOnlyList<LayoutEntry> LayoutFor(Song song)
+    {
+        if (Layout is not null)
+            return Layout;
+        if (Arrangement is null)
+            return song.Arrangement.Select(code => new LayoutEntry(code)).ToList();
+        // Dawniej zapisywano tylko śpiewane części w kolejności pliku — pozostałe są pominięte.
+        var remaining = Arrangement.ToList();
+        return song.Arrangement.Select(code => new LayoutEntry(code, remaining.Remove(code))).ToList();
+    }
+
+    /// <summary>Nowy układ; gdy jest taki jak w pliku pieśni, pozycja znowu podąża za plikiem.</summary>
+    public SongPlanItem WithLayout(Song song, IReadOnlyList<LayoutEntry> layout)
+    {
+        var isDefault = layout.All(e => e.Sung) && layout.Select(e => e.Code).SequenceEqual(song.Arrangement);
+        return isDefault
+            ? this with { Arrangement = null, Layout = null }
+            : this with { Arrangement = layout.Where(e => e.Sung).Select(e => e.Code).ToList(), Layout = layout };
+    }
+
     public static SongPlanItem For(string songId) => new(Guid.NewGuid(), songId, null);
 
     public override PlanItem WithNewId() => this with { Id = Guid.NewGuid() };

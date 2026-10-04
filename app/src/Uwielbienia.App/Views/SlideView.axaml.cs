@@ -2,15 +2,15 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
-using Uwielbienia.Core.Presentation;
+using Uwielbienia.App.ViewModels;
 
 namespace Uwielbienia.App.Views;
 
 /// <summary>Slajd tak, jak widzi go sala. Używany w oknie projekcji i w kolumnie „Na ekranie”.</summary>
 public partial class SlideView : UserControl
 {
-    public static readonly StyledProperty<Slide?> SlideProperty =
-        AvaloniaProperty.Register<SlideView, Slide?>(nameof(Slide));
+    public static readonly StyledProperty<ProjectedPage?> PageProperty =
+        AvaloniaProperty.Register<SlideView, ProjectedPage?>(nameof(Page));
 
     public static readonly StyledProperty<IBrush?> SlideBackgroundProperty =
         AvaloniaProperty.Register<SlideView, IBrush?>(nameof(SlideBackground), Brushes.Black);
@@ -21,12 +21,18 @@ public partial class SlideView : UserControl
     public static readonly StyledProperty<IBrush?> SlideMutedProperty =
         AvaloniaProperty.Register<SlideView, IBrush?>(nameof(SlideMuted), Brushes.Gray);
 
+    public static readonly StyledProperty<IBrush?> SlideTitleProperty =
+        AvaloniaProperty.Register<SlideView, IBrush?>(nameof(SlideTitle), Brushes.Goldenrod);
+
+    public static readonly StyledProperty<IBrush?> SlideAccentProperty =
+        AvaloniaProperty.Register<SlideView, IBrush?>(nameof(SlideAccent), Brushes.Goldenrod);
+
     public SlideView() => InitializeComponent();
 
-    public Slide? Slide
+    public ProjectedPage? Page
     {
-        get => GetValue(SlideProperty);
-        set => SetValue(SlideProperty, value);
+        get => GetValue(PageProperty);
+        set => SetValue(PageProperty, value);
     }
 
     public IBrush? SlideBackground
@@ -45,6 +51,18 @@ public partial class SlideView : UserControl
     {
         get => GetValue(SlideMutedProperty);
         set => SetValue(SlideMutedProperty, value);
+    }
+
+    public IBrush? SlideTitle
+    {
+        get => GetValue(SlideTitleProperty);
+        set => SetValue(SlideTitleProperty, value);
+    }
+
+    public IBrush? SlideAccent
+    {
+        get => GetValue(SlideAccentProperty);
+        set => SetValue(SlideAccentProperty, value);
     }
 }
 

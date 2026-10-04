@@ -11,8 +11,14 @@ dotnet run --project app/src/Uwielbienia.Desktop
 Wymaga .NET 10 SDK. Pieśni są wbudowane w aplikację; uruchomiona z repozytorium czyta od razu
 folder `Teksty/`, więc poprawki tekstów widać bez przebudowy.
 
-Dane użytkownika (plany, ustawienia, sparowane urządzenia): `%APPDATA%\Uwielbienia`
-(Linux: `~/.config/Uwielbienia`).
+Dane użytkownika (plany, ustawienia, sparowane urządzenia, własne pieśni i teksty w `teksty/`):
+`%APPDATA%\Uwielbienia` (Linux: `~/.config/Uwielbienia`).
+
+**Plan, pieśni i teksty:** do planu dodaje się z planu — „+” w nagłówku albo prawy klik na pozycji
+(„Dodaj przed… / po…”, „Pokaż na ekranie”, „Usuń z planu”). Okno „Dodaj do planu” wyszukuje
+pieśni i teksty i pozwala utworzyć nową pieśń albo tekst (część Mszy, modlitwa, ogłoszenie — bez
+akordów). „Edytuj” w kolumnie „Pieśń” zmienia wybraną. Zapis jest tylko na tym komputerze; zmieniona pieśń
+śpiewnika ma „Przywróć oryginał”.
 
 ## Okno operatora
 
@@ -21,7 +27,7 @@ Trzy kolumny (szerokość regulowana przeciąganiem, zapamiętywana):
 | Kolumna | Zawartość | Kod |
 |---|---|---|
 | **Plan** | kolejność pieśni: klik wybiera, dwuklik pokazuje, przeciąganie zmienia kolejność | `PlanViewModel` |
-| **Pieśń** | wyszukiwarka i tekst wybranej pieśni; pola wyboru części działają na żywo dla granej pieśni | `SearchViewModel`, `PreviewViewModel` |
+| **Pieśń** | pozycja zaznaczona w planie: tekst, akordy, pola wyboru części (na żywo dla granej), edycja | `PreviewViewModel`, `SongEditorViewModel` |
 | **Na ekranie** | to, co widzi sala: postęp, bieżąca i następna część z akordami, Wstecz / Dalej | `LiveViewModel` |
 
 Plany (wydarzenia i szablony) zarządza się w oknie „Plany” po kliknięciu nazwy planu.
@@ -34,7 +40,7 @@ Plany (wydarzenia i szablony) zarządza się w oknie „Plany” po kliknięciu 
 | Backspace, ←, PageUp | poprzedni slajd |
 | B lub . | czarny ekran |
 | F5 | włącz/wyłącz projekcję (drugi ekran albo ten sam) |
-| pisanie cyfr/liter | szybkie wyszukiwanie; Enter wybiera do kolumny „Pieśń”, Ctrl+Enter dodaje jako następną |
+| pisanie cyfr/liter | „Dodaj do planu” z tym tekstem; Enter dodaje zaraz za pieśnią na ekranie |
 | dwuklik w planie | pokaż pieśń na ekranie (jedyny sposób w oknie operatora) |
 | Shift+1…9 | skok do slajdu bieżącej pieśni |
 | Esc | zamyka nakładkę; w trybie jednego ekranu wraca do okna operatora |

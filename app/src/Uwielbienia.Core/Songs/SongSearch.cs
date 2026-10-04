@@ -14,15 +14,19 @@ public interface ISongSearch
 
 public sealed class SongSearch : ISongSearch
 {
-    private readonly IReadOnlyList<(Song Song, string Title, string FirstLine, string Text)> _index;
+    private IReadOnlyList<(Song Song, string Title, string FirstLine, string Text)> _index = [];
 
     public SongSearch(ISongLibrary library)
     {
+        Index(library);
+        library.Changed += (_, _) => Index(library);
+    }
+
+    private void Index(ISongLibrary library) =>
         _index = library.Songs
             .Select(s => (s, Normalize(s.Title), Normalize(s.FirstLine),
                 Normalize(string.Join(' ', s.Sections.SelectMany(x => x.Lines).Where(l => l.IsSung).Select(l => l.Text)))))
             .ToList();
-    }
 
     public IReadOnlyList<Song> Search(string query, int limit = 50)
     {
@@ -33,7 +37,7 @@ public sealed class SongSearch : ISongSearch
         if (int.TryParse(q, NumberStyles.None, CultureInfo.InvariantCulture, out var number))
         {
             return _index
-                .Where(x => x.Song.Number.ToString(CultureInfo.InvariantCulture).StartsWith(q, StringComparison.Ordinal))
+                .Where(x => x.Song.Number?.ToString(CultureInfo.InvariantCulture).StartsWith(q, StringComparison.Ordinal) == true)
                 .OrderBy(x => x.Song.Number != number)
                 .ThenBy(x => x.Song.Number)
                 .Select(x => x.Song)
@@ -46,7 +50,7 @@ public sealed class SongSearch : ISongSearch
             .Select(x => (x.Song, Score: Score(x.Title, x.FirstLine, x.Text, q, words)))
             .Where(x => x.Score > 0)
             .OrderByDescending(x => x.Score)
-            .ThenBy(x => x.Song.Number)
+            .ThenBy(x => x.Song.Number ?? int.MaxValue)
             .Select(x => x.Song)
             .Take(limit)
             .ToList();

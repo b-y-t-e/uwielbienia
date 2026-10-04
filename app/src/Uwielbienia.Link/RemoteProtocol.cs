@@ -66,9 +66,9 @@ public sealed record PlanMessage(string? Name, IReadOnlyList<PlanItemMessage> It
         new(plan?.Name, playlist.Select(i => new PlanItemMessage(i.PlanItemId!.Value, i.SongId, i.Number, i.Title)).ToList());
 }
 
-public sealed record PlanItemMessage(Guid Id, string SongId, int Number, string Title);
+public sealed record PlanItemMessage(Guid Id, string SongId, int? Number, string Title);
 
-public sealed record SongHit(string SongId, int Number, string Title, string FirstLine);
+public sealed record SongHit(string SongId, int? Number, string Title, string FirstLine);
 
 public static class RemoteJson
 {

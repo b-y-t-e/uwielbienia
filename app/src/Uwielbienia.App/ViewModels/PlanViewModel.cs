@@ -131,7 +131,7 @@ public sealed partial class PlanViewModel : ObservableObject
     }
 }
 
-public sealed partial class PlanItemViewModel(SongPlanItem item, Song song, int position) : ObservableObject
+public sealed partial class PlanItemViewModel(SongPlanItem item, Song song, int position) : ObservableObject, IReorderableItem
 {
     public Guid Id => Item.Id;
 
@@ -141,7 +141,9 @@ public sealed partial class PlanItemViewModel(SongPlanItem item, Song song, int 
 
     public int Position { get; } = position;
 
-    public int Number => Song.Number;
+    public int? Number => Song.Number;
+
+    public bool IsText => Song.IsText;
 
     public string Title => Song.Title;
 

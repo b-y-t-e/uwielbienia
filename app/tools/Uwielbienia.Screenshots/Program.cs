@@ -56,9 +56,22 @@ Save(window, "operator-waskie");
 window.Width = 1600;
 window.Height = 960;
 
-main.Search.Query = "duch";
-Save(window, "operator-szukaj");
-main.Search.Clear();
+main.Preview.EditCommand.Execute(null);
+Save(window, "piesn-edycja");
+main.Preview.Editor!.CancelCommand.Execute(null);
+main.PlanAdd.Open(2);
+Save(window, "plan-dodaj");
+main.PlanAdd.NewTextCommand.Execute(null);
+main.Preview.Editor!.Title = "Ojcze nasz";
+main.Preview.Editor!.Parts[0].Text = "Ojcze nasz, któryś jest w niebie,\nświęć się imię Twoje";
+Save(window, "tekst-nowy");
+main.Preview.Editor!.SaveCommand.Execute(null);
+Save(window, "tekst-zapisany");
+main.Plan.Selected = main.Plan.Items[2];
+
+main.PlanAdd.Open(main.Plan.Items.Count, "duch");
+Save(window, "plan-dodaj-szukaj");
+main.PlanAdd.CloseCommand.Execute(null);
 
 services.GetRequiredService<IPlanStore>().Save(plan.CloneAs("Próba z dziećmi", null, PlanKind.Template));
 services.GetRequiredService<IPlanStore>().Save(plan.CloneAs("Uwielbienie młodzieżowe", new DateOnly(2026, 9, 18), PlanKind.Event));
@@ -78,6 +91,9 @@ var projection = services.GetRequiredService<Func<ProjectionWindow>>()();
 projection.Width = 1920;
 projection.Height = 1080;
 projection.Show();
+control.Show(active.Playlist[1], 0);
+Save(projection, "projekcja-poczatek");
+control.Show(active.Playlist[1], 1);
 Save(projection, "projekcja");
 projection.IsSameScreen = true;
 ((ProjectionViewModel)projection.DataContext!).OpenQuickPick("jez");

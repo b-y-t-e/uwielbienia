@@ -1,6 +1,6 @@
 # Projekt aplikacji „Uwielbienia” — rzutnik tekstów pieśni
 
-Status: etap 1 i strona pilota zrobione (2026-09-25); dalsze etapy w p. 7.
+Status: etap 1 i strona pilota zrobione (2026-09-25); dalsze etapy w p. 8.
 
 ## 1. Idea w jednym zdaniu
 
@@ -26,7 +26,10 @@ wyświetla. Dzięki temu nowe odbiorniki nie wymagają zmian w logice.
 
 ## 3. Pojęcia w aplikacji
 
-- **Pieśń** — plik `Teksty/NNN-*/piesn.md`.
+- **Pieśń** — plik `Teksty/NNN-*/piesn.md` (śpiewnik wspólny) albo własna (numer od 1000).
+- **Tekst** — wszystko, co nie jest pieśnią ze śpiewnika: część Mszy, modlitwa, psalm,
+  ogłoszenie. Bez numeru i akordów, części to kolejne slajdy. Ten sam format pliku (`rodzaj: "tekst"`).
+  Własne pieśni, teksty i poprawki pieśni śpiewnika zapisują się tylko na tym komputerze.
 - **Plan** — uporządkowana lista pozycji na wydarzenie. Ma nazwę, opcjonalną datę i
   rodzaj: *wydarzenie* („Uwielbienie”, „Msza” — data jest osobnym polem, nie częścią
   nazwy) albo *szablon* („Próba z dziećmi”). Plany można przeglądać (historia wg daty),
@@ -40,7 +43,22 @@ wyświetla. Dzięki temu nowe odbiorniki nie wymagają zmian w logice.
 - **Pieśń** vs **Na ekranie** — dwa niezależne wskaźniki. Pieśń = to, co operator
   ogląda (i edytuje). Na ekranie = to, co widzi sala.
 
-## 4. Obsługa (sterowanie)
+## 4. Scenariusze pracy w oknie operatora
+
+Zasada: **Plan** decyduje, co i w jakiej kolejności, **Pieśń** służy do czytania i edycji,
+**Na ekranie** pokazuje to, co widzi sala. Każda czynność ma jedno miejsce.
+
+| Chcę… | Jak |
+|---|---|
+| ułożyć plan | „+” w nagłówku planu (na koniec) albo prawy klik na pozycji → „Dodaj przed… / po…”; w oknie „Dodaj do planu” wyszukać pieśń lub tekst, zaznaczyć i „Wybierz” (Enter, dwuklik) |
+| szybko dobrać pieśń w trakcie | zacząć pisać numer lub słowa gdziekolwiek w oknie — otwiera się „Dodaj do planu”; wybrana trafia zaraz za pieśń na ekranie |
+| dodać coś, czego jeszcze nie ma | w oknie „Dodaj do planu”: „+ Nowa pieśń” / „+ Nowy tekst” → edytor w kolumnie „Pieśń” → „Zapisz” wstawia w wybrane miejsce |
+| zmienić kolejność / usunąć | przeciągnąć pozycję; ✕ albo prawy klik → „Usuń z planu” |
+| pokazać na ekranie | dwuklik na pozycji planu albo prawy klik → „Pokaż na ekranie”; dalej Dalej / Wstecz |
+| zmienić układ pieśni w tym planie | w kolumnie „Pieśń”: przeciągnąć część za nagłówek, „⋯” → „Powtórz” / „Usuń”, „Przywróć usuniętą część”; pole wyboru pomija część (wszystko działa też na żywo) |
+| poprawić tekst lub akordy | zaznaczyć w planie, „Edytuj” w kolumnie „Pieśń” |
+
+## 5. Obsługa (sterowanie)
 
 | Klawisz / gest | Działanie |
 |---|---|
@@ -49,7 +67,7 @@ wyświetla. Dzięki temu nowe odbiorniki nie wymagają zmian w logice.
 | Dwuklik w planie | pokaż pieśń na ekranie — jedyny sposób w oknie operatora |
 | `B` lub `.` | czarny ekran (włącz/wyłącz), jak w PowerPoint |
 | `Shift`+`1`–`9` | skok do n-tego slajdu bieżącej pieśni (same cyfry zaczynają wyszukiwanie numeru) |
-| Pisanie cyfr lub liter | **szybki wybór**: `47` albo `jezus mój` → lista wyników, `Enter` = wybierz do kolumny „Pieśń”, `Ctrl+Enter` = dodaj jako następną w planie. W trybie jednego ekranu (nakładka na projekcji) `Enter` pokazuje od razu, a pieśń trafia do planu zaraz za bieżącą |
+| Pisanie cyfr lub liter | **szybki wybór**: `47` albo `jezus mój` → okno „Dodaj do planu”, `Enter` = dodaj zaraz za pieśnią na ekranie. W trybie jednego ekranu (nakładka na projekcji) `Enter` pokazuje od razu, a pieśń trafia do planu zaraz za bieżącą; `Ctrl+Enter` = dodaj jako następną |
 | `F5` | włącz/wyłącz okno projekcji |
 | Pilot do prezentacji | działa od razu — wysyła `PageUp` / `PageDown` |
 
@@ -61,7 +79,7 @@ Szybki wybór to odpowiedź na sytuację „alarmową” i uwielbienie bez planu
 - przeciągnięcie od dolnej krawędzi = szuflada z planem i wyszukiwarką; tekst na
   ekranie zostaje, dopóki nie wybierzesz nowej pieśni.
 
-## 5. Wygląd
+## 6. Wygląd
 
 ### Okno operatora
 
@@ -84,8 +102,7 @@ Trzy kolumny o regulowanej szerokości (zapamiętywanej): **Plan · Pieśń · N
 - **Plan** (lewo): kolejność pieśni. Klik wybiera pieśń do kolumny „Pieśń”, dwuklik pokazuje
   ją na ekranie, przeciąganie zmienia kolejność, ✕ usuwa (z potwierdzeniem). Pozycja na
   ekranie ma znacznik świecy (bursztynowy pasek).
-- **Pieśń** (środek): wyszukiwarka (wyniki w liście rozwijanej) i tekst wybranej pieśni z
-  akordami, części jedna pod drugą; pole wyboru w rogu części decyduje, czy jest śpiewana.
+- **Pieśń** (środek): pozycja zaznaczona w planie — tekst z akordami, części jedna pod drugą; pole wyboru w rogu części decyduje, czy jest śpiewana.
   Pole wyboru przy części decyduje, czy jest śpiewana; dla pieśni, która jest na ekranie,
   działa na żywo (odznaczenie wyświetlanej części przenosi ekran do najbliższej zachowanej).
   Poza tym nic tu nie zmienia tego, co widzi sala. Pieśń spoza planu można dodać „Jako następna” albo
@@ -114,19 +131,23 @@ kremowo-terakotowa. Opiera się na nocnym granacie i ciepłym świetle świecy.
 Wariant jasny (biały ekran, czarny tekst) jest do sal zalanych słońcem.
 
 **Kroje** (wbudowane w aplikację, pełne polskie znaki, licencja OFL):
-- **Atkinson Hyperlegible Next** — tekst na ekranie i interfejs. Krój projektowany dla
-  czytelności (Braille Institute), rozróżnia `I l 1` i `O 0` i dobrze się czyta z
-  daleka.
-- **Literata** — tylko tytuły pieśni w operatorze. Szeryf książkowy daje wrażenie
-  śpiewnika.
+- **Atkinson Hyperlegible Next** — interfejs operatora. Krój projektowany dla
+  czytelności (Braille Institute), rozróżnia `I l 1` i `O 0`.
+- **Literata** — tekst pieśni na rzutniku i tytuły pieśni w operatorze. Szeryf
+  zaprojektowany do czytania na ekranie, z dużymi literami bazowymi — z daleka spokojny
+  i czytelny, daje wrażenie śpiewnika.
+
+Kolory rzutnika: wariant ciemny to czysta czerń i ciepła kość słoniowa `#F4ECDD` zamiast
+ostrej bieli; linia pod tytułem pieśni w kolorze świecy.
 
 Tekst na ekranie jest wyśrodkowany, a rozmiar czcionki dobiera się automatycznie, żeby
 najdłuższy wers zmieścił się na szerokość. Ma przy tym minimum, żeby rozmiar nie skakał
-między slajdami jednej pieśni. Nazwy części („Refren”) nigdy nie pojawiają się na
-ekranie. Przejście między slajdami to krótkie przenikanie (150 ms, wyłączalne) — jedyna
+między slajdami jednej pieśni. Na pierwszym slajdzie pieśni nad tekstem jest jej tytuł —
+tej samej wielkości co tekst, oddzielony linią w kolorze świecy.
+Nazwy części („Refren”) nigdy nie pojawiają się na ekranie. Przejście między slajdami to krótkie przenikanie (150 ms, wyłączalne) — jedyna
 animacja w aplikacji.
 
-## 6. Architektura (Clean Code + SOLID)
+## 7. Architektura (Clean Code + SOLID)
 
 ```
 app/
@@ -175,7 +196,7 @@ Najważniejsze decyzje:
   prev, show, blank, search). Stan niesie gotowy tekst slajdu, więc strona www nie musi
   mieć pieśni ani parsera.
 
-## 7. Etapy (roadmapa)
+## 8. Etapy (roadmapa)
 
 1. **Zrobione — rdzeń i S1/S2 (desktop Windows/Linux):** parser, biblioteka (138 pieśni wbudowanych),
    wyszukiwanie, plany (wydarzenia, szablony, historia, klonowanie), okno operatora (Plan · Pieśń ·
@@ -184,10 +205,10 @@ Najważniejsze decyzje:
 2. **Zrobione — S4 i S3 przez przeglądarkę:** tailcat-link w aplikacji (host), strona
    `greysource.eu/uwielbienie` — pilot (dalej, wstecz, czarny ekran, plan, wyszukiwarka)
    i tryb „Ekran” (przeglądarka na drugim komputerze jako ekran projekcji).
-3. **Nowe pieśni w aplikacji:** edytor pieśni (tytuł, kategoria, sekcje z kodami, akordy przy
-   wersach, `kolejnosc`) zapisujący plik `piesn.md` w formacie z CLAUDE.md, z walidacją jak
-   `tools/validate.py`; pieśni użytkownika w osobnym folderze, numeracja od 1000, żeby nie
-   kolidowały ze śpiewnikiem.
+3. **Zrobione — pieśni i teksty w aplikacji:** edytor w kolumnie „Pieśń” (tytuł, kategoria,
+   części z rodzajem, akordy na końcu wersu w nawiasie `[G C D]`), nowe pieśni (numery od 1000)
+   i teksty, lokalne poprawki śpiewnika z „Przywróć oryginał”. Zapis tylko lokalny; wysyłanie
+   poprawek do śpiewnika wspólnego — później.
 4. **Szukanie pieśni w internecie:** wyszukiwanie tekstu i akordów (np. giszowiec.org,
    budowniczy.net, otworzcieserca.pl, spiewnik.wywrota.pl), podgląd wyniku i import do edytora
    z rozpoznaniem zwrotek/refrenu i transpozycją akordów do wybranej tonacji; operator zawsze
@@ -196,7 +217,7 @@ Najważniejsze decyzje:
 6. **Później:** stałe elementy w planie (ogłoszenie, modlitwa, obraz — nowy typ `PlanItem`),
    telefon jako ekran (S5), edycja pieśni w kolumnie „Pieśń”.
 
-## 8. Wymagania środowiska
+## 9. Wymagania środowiska
 
 - .NET 10 SDK (jest), Avalonia 12.1, CommunityToolkit.Mvvm 8.4, Tailcat.Link 0.5.
 - Android: `dotnet workload install android` + Android SDK/JDK (obecnie niezainstalowane).

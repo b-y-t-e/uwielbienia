@@ -1,12 +1,26 @@
 using Uwielbienia.Core.Presentation;
+using Uwielbienia.Core.Songs;
 
 namespace Uwielbienia.Core.Plans;
 
 /// <summary>
 /// Plan otwarty w aplikacji: zapisuje każdą zmianę i utrzymuje zgodną z nim kolejkę pieśni w <see cref="LiveSession"/>.
 /// </summary>
-public sealed class ActivePlan(IPlanStore store, ILiveItemFactory itemFactory, LiveSession session)
+public sealed class ActivePlan
 {
+    private readonly IPlanStore _store;
+    private readonly ILiveItemFactory _itemFactory;
+    private readonly LiveSession _session;
+
+    public ActivePlan(IPlanStore store, ILiveItemFactory itemFactory, LiveSession session, ISongLibrary library)
+    {
+        _store = store;
+        _itemFactory = itemFactory;
+        _session = session;
+        // Zmieniona pieśń (edycja) trafia od razu do planu i — jeśli jest grana — na ekran.
+        library.Changed += (_, _) => Refresh();
+    }
+
     public Plan? Plan { get; private set; }
 
     public IReadOnlyList<LiveItem> Playlist { get; private set; } = [];
@@ -28,7 +42,7 @@ public sealed class ActivePlan(IPlanStore store, ILiveItemFactory itemFactory, L
         if (Plan is null)
             return;
         Plan = change(Plan);
-        store.Save(Plan);
+        _store.Save(Plan);
         Refresh();
     }
 
@@ -37,10 +51,10 @@ public sealed class ActivePlan(IPlanStore store, ILiveItemFactory itemFactory, L
     private void Refresh()
     {
         Playlist = (Plan?.Items ?? []).OfType<SongPlanItem>()
-            .Select(itemFactory.Create)
+            .Select(_itemFactory.Create)
             .OfType<LiveItem>()
             .ToList();
-        session.SetPlaylist(Playlist);
+        _session.SetPlaylist(Playlist);
         Changed?.Invoke(this, EventArgs.Empty);
     }
 }

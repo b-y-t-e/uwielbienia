@@ -28,8 +28,12 @@ public static class AppComposition
 
         // pieśni
         services.AddSingleton<ISongParser, MarkdownSongParser>();
-        services.AddSingleton<ISongSource>(sp => SongSourceFactory.Create(sp.GetRequiredService<ISettingsStore>().Current));
+        services.AddSingleton<ISongSource>(sp => new LayeredSongSource(
+            SongSourceFactory.Create(sp.GetRequiredService<ISettingsStore>().Current),
+            new DirectorySongSource(sp.GetRequiredService<AppPaths>().Texts)));
         services.AddSingleton<ISongLibrary, SongLibrary>();
+        services.AddSingleton<ISongEditor>(sp => new LocalSongEditor(
+            sp.GetRequiredService<AppPaths>().Texts, sp.GetRequiredService<ISongLibrary>()));
         services.AddSingleton<ISongSearch, SongSearch>();
 
         // plany i ekran
@@ -55,6 +59,7 @@ public static class AppComposition
         services.AddSingleton<ProjectionAppearance>();
         services.AddSingleton<LiveViewModel>();
         services.AddSingleton<PlanViewModel>();
+        services.AddSingleton<PlanAddViewModel>();
         services.AddSingleton<SearchViewModel>();
         services.AddSingleton<PreviewViewModel>();
         services.AddSingleton<PlansViewModel>();

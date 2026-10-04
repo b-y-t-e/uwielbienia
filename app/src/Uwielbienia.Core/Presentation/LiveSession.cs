@@ -63,8 +63,8 @@ public sealed class LiveSession : ILiveControl, ILiveStateSource
         _playlist = playlist;
         var current = State.Item;
         var slideIndex = State.SlideIndex;
-        // Ta sama struktura slajdów (np. zmiana kolejności planu) = ta sama migawka — bez ponownego
-        // przejścia (CrossFade) na rzutniku.
+        // Te same slajdy (np. zmiana kolejności planu) = ta sama migawka — bez ponownego
+        // przejścia (CrossFade) na rzutniku. Zmieniony układ części albo poprawiony tekst — podmiana.
         if (current?.PlanItemId is { } id && playlist.FirstOrDefault(i => i.PlanItemId == id) is { } updated &&
             !SameSlides(current.Slides, updated.Slides))
         {
@@ -75,11 +75,20 @@ public sealed class LiveSession : ILiveControl, ILiveStateSource
     }
 
     /// <summary>
-    /// Odpowiednik slajdu <paramref name="index"/> po zmianie układu części. Oba układy powstają
-    /// z kolejności pieśni przez pominięcie części, więc krótszy jest podciągiem dłuższego.
+    /// Odpowiednik slajdu <paramref name="index"/> po zmianie układu części: najpierw to samo wystąpienie
+    /// tej samej części (np. drugi refren — działa też po zmianie kolejności i powtórzeniu), a gdy go już nie ma,
+    /// najbliższy zachowany slajd (krótszy układ jest wtedy podciągiem dłuższego).
     /// </summary>
     private static int MapSlide(IReadOnlyList<Slide> before, IReadOnlyList<Slide> after, int index)
     {
+        if (index < before.Count)
+        {
+            var occurrence = before.Take(index).Count(s => SameSlide(s, before[index]));
+            var match = after.Select((s, i) => (s, i)).Where(x => SameSlide(x.s, before[index])).Skip(occurrence).FirstOrDefault();
+            if (match.s is not null)
+                return match.i;
+        }
+
         var map = new int?[before.Count];
         if (after.Count <= before.Count)
         {
@@ -110,7 +119,7 @@ public sealed class LiveSession : ILiveControl, ILiveStateSource
     private static bool SameSlide(Slide a, Slide b) => a.SectionCode == b.SectionCode && a.Label == b.Label;
 
     private static bool SameSlides(IReadOnlyList<Slide> a, IReadOnlyList<Slide> b) =>
-        a.Count == b.Count && a.Zip(b).All(pair => SameSlide(pair.First, pair.Second));
+        a.Count == b.Count && a.Zip(b).All(pair => SameSlide(pair.First, pair.Second) && pair.First.Lines.SequenceEqual(pair.Second.Lines));
 
     public void Show(LiveItem item, int slideIndex = 0) =>
         Publish(item, Math.Clamp(slideIndex, 0, Math.Max(0, item.Slides.Count - 1)), isBlank: false);

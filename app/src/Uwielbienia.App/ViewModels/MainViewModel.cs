@@ -18,7 +18,6 @@ public sealed partial class MainViewModel : ObservableObject
     public MainViewModel(
         LiveViewModel live,
         PlanViewModel plan,
-        SearchViewModel search,
         PreviewViewModel preview,
         PlansViewModel plans,
         RemoteViewModel remote,
@@ -26,11 +25,13 @@ public sealed partial class MainViewModel : ObservableObject
         IUpdateService updates,
         IProjectionController projection,
         ILiveControl control,
-        ISongLibrary library)
+        ISongLibrary library,
+        PlanAddViewModel planAdd,
+        PlanActions planActions)
     {
+        PlanAdd = planAdd;
         Live = live;
         Plan = plan;
-        Search = search;
         Preview = preview;
         Plans = plans;
         Remote = remote;
@@ -42,7 +43,9 @@ public sealed partial class MainViewModel : ObservableObject
 
         plan.ItemSelected += (_, item) => preview.ShowPlanItem(item);
         plan.SelectionCleared += (_, _) => preview.Clear();
-        search.SongSelected += (_, song) => preview.ShowSong(song);
+        // „Nowa pieśń / Nowy tekst” z okna dodawania: edytor w kolumnie „Pieśń”, po zapisie — w wybrane miejsce planu.
+        planAdd.NewRequested += (_, request) =>
+            preview.StartNew(request.Kind, song => planActions.InsertAt(song, request.Index));
         projection.Changed += (_, _) => OnPropertyChanged(nameof(ProjectionStatus));
         settings.Changed += (_, _) => OnSettingsChanged();
         _updates.UpdateAvailable += OnUpdateAvailable;
@@ -53,7 +56,7 @@ public sealed partial class MainViewModel : ObservableObject
 
     public PlanViewModel Plan { get; }
 
-    public SearchViewModel Search { get; }
+    public PlanAddViewModel PlanAdd { get; }
 
     public PreviewViewModel Preview { get; }
 

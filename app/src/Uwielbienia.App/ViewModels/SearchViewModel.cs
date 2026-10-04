@@ -104,7 +104,9 @@ public sealed class SongResultViewModel(Song song)
 {
     public Song Song { get; } = song;
 
-    public int Number => Song.Number;
+    public int? Number => Song.Number;
+
+    public bool IsText => Song.IsText;
 
     public string Title => Song.Title;
 
@@ -130,6 +132,15 @@ public sealed class PlanActions(ActivePlan plan, ILiveStateSource live)
             var liveIndex = live.State.Item?.PlanItemId is { } id ? p.IndexOf(id) : -1;
             return p.Insert(liveIndex >= 0 ? liveIndex + 1 : p.Items.Count, item);
         });
+        ItemAdded?.Invoke(this, item);
+        return item;
+    }
+
+    /// <summary>Wstawia pieśń lub tekst w podane miejsce planu („Dodaj przed / po” w planie).</summary>
+    public SongPlanItem InsertAt(Song song, int index)
+    {
+        var item = SongPlanItem.For(song.Id);
+        plan.Update(p => p.Insert(index, item));
         ItemAdded?.Invoke(this, item);
         return item;
     }

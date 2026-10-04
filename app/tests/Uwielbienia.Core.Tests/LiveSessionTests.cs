@@ -122,6 +122,16 @@ public class LiveSessionTests
     }
 
     [Fact]
+    public void Reordering_parts_keeps_the_same_part_on_screen()
+    {
+        _session.Show(_second, 0);
+        var reordered = _second with { Slides = [_second.Slides[2], _second.Slides[0], _second.Slides[1]] };
+        _session.SetPlaylist([_first, reordered]);
+        Assert.Equal("V1", _session.State.Slide!.SectionCode);
+        Assert.Equal(1, _session.State.SlideIndex);
+    }
+
+    [Fact]
     public void Song_shown_outside_the_plan_is_not_replaced()
     {
         var outside = _second with { PlanItemId = null };

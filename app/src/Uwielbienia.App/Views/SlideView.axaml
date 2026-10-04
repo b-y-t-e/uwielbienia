@@ -2,32 +2,45 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:p="using:Uwielbienia.Core.Presentation"
              xmlns:v="using:Uwielbienia.App.Views"
+             xmlns:vm="using:Uwielbienia.App.ViewModels"
              x:Class="Uwielbienia.App.Views.SlideView"
              x:Name="Root">
-  <!-- Slajd renderowany na wirtualnym płótnie 1920×1080 i skalowany w całości:
-       miniatura u operatora wygląda dokładnie jak ekran projekcji, tylko mniejszy. -->
+  <!-- Slajd renderowany na wirtualnym płótnie 1920×1080 i skalowany w całości, więc wygląda
+       tak samo na każdym rzutniku. Tekst: Literata (szeryfowa, do czytania na ekranie, pełne
+       polskie znaki) — spokojniejsza z daleka niż krój interfejsu. -->
   <Viewbox Stretch="Uniform">
     <Border Width="1920" Height="1080" Background="{Binding #Root.SlideBackground}">
-      <TransitioningContentControl Content="{Binding #Root.Slide}">
+      <TransitioningContentControl Content="{Binding #Root.Page}">
         <TransitioningContentControl.PageTransition>
           <CrossFade Duration="0:0:0.15" />
         </TransitioningContentControl.PageTransition>
         <TransitioningContentControl.ContentTemplate>
-          <DataTemplate x:DataType="p:Slide">
-            <Viewbox StretchDirection="DownOnly" Margin="140,90" VerticalAlignment="Center">
-              <ItemsControl ItemsSource="{Binding Lines}" Width="1640">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="p:SlideLine">
-                    <TextBlock TextAlignment="Center" TextWrapping="Wrap" FontSize="84" FontWeight="Medium"
-                               LineHeight="104" Margin="0,4"
-                               Foreground="{Binding #Root.SlideForeground}">
-                      <Run Text="{Binding Text}" /><Run Text="{Binding Repeat, Converter={x:Static v:SlideConverters.RepeatSuffix}}"
-                           FontSize="54" Foreground="{Binding #Root.SlideMuted}" />
-                    </TextBlock>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </Viewbox>
+          <DataTemplate x:DataType="vm:ProjectedPage">
+            <Panel>
+              <Viewbox StretchDirection="DownOnly" Margin="140,90" VerticalAlignment="Center">
+                <StackPanel Width="1640">
+                  <!-- Początek pieśni: tytuł tej samej wielkości co tekst, oddzielony linią w kolorze świecy. -->
+                  <StackPanel IsVisible="{Binding HasTitle}" HorizontalAlignment="Center" Margin="0,0,0,40">
+                    <TextBlock Text="{Binding Title}" TextAlignment="Center" TextWrapping="Wrap"
+                               FontFamily="{StaticResource TitleFont}" FontSize="86"
+                               Foreground="{Binding #Root.SlideTitle}" />
+                    <Border Height="4" CornerRadius="2" Margin="0,14,0,0" Background="{Binding #Root.SlideAccent}" />
+                  </StackPanel>
+                  <ItemsControl ItemsSource="{Binding Slide.Lines}">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="p:SlideLine">
+                        <TextBlock TextAlignment="Center" TextWrapping="Wrap" FontFamily="{StaticResource TitleFont}"
+                                   FontSize="86" Margin="0,4"
+                                   Foreground="{Binding #Root.SlideForeground}">
+                          <Run Text="{Binding Text}" /><Run Text="{Binding Repeat, Converter={x:Static v:SlideConverters.RepeatSuffix}}"
+                               FontSize="54" Foreground="{Binding #Root.SlideMuted}" />
+                        </TextBlock>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Viewbox>
+            </Panel>
           </DataTemplate>
         </TransitioningContentControl.ContentTemplate>
       </TransitioningContentControl>

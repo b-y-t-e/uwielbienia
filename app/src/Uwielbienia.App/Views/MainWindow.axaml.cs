@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
@@ -11,29 +12,17 @@ namespace Uwielbienia.App.Views;
 
 public partial class MainWindow : Window
 {
-    private const double PlanDragThreshold = 6;
-    private static readonly Cursor PlanDragCursor = new(StandardCursorType.SizeNorthSouth);
-    private const double PlanAutoScrollEdge = 48;
-    private const double PlanAutoScrollStep = 14;
-    private readonly DispatcherTimer _planAutoScroll = new() { Interval = TimeSpan.FromMilliseconds(30) };
-    private Point _planDragPosition;
-    private PlanItemViewModel? _planDragCandidate;
-    private Point _planDragStart;
-    private bool _planDragStarted;
-    private int _planDropIndex = -1;
-
     public MainWindow()
     {
         InitializeComponent();
         AddHandler(KeyDownEvent, OnKeyDownTunnel, RoutingStrategies.Tunnel);
         AddHandler(KeyUpEvent, OnKeyUpTunnel, RoutingStrategies.Tunnel);
         AddHandler(TextInputEvent, OnTextInputTunnel, RoutingStrategies.Tunnel);
-        // Wiersz planu to Button, który sam oznacza wciśnięcie jako obsłużone — przeciąganie musi słuchać mimo to.
-        PlanList.AddHandler(PointerPressedEvent, OnPlanItemPointerPressed, RoutingStrategies.Tunnel, handledEventsToo: true);
-        PlanList.AddHandler(PointerMovedEvent, OnPlanItemPointerMoved, RoutingStrategies.Tunnel, handledEventsToo: true);
-        PlanList.AddHandler(PointerReleasedEvent, OnPlanItemPointerReleased, RoutingStrategies.Tunnel, handledEventsToo: true);
-        PlanList.AddHandler(PointerCaptureLostEvent, (_, _) => EndPlanDrag(), RoutingStrategies.Bubble, handledEventsToo: true);
-        _planAutoScroll.Tick += (_, _) => AutoScrollPlan();
+        // Kolejność przeciąganiem: pozycje planu (cały wiersz poza ✕) i części pieśni (za nagłówek części).
+        _ = new ListReorderDrag(PlanList, source => FindRow<PlanItemViewModel>(source, "planItem"),
+            (item, index) => ViewModel.Plan.Reorder((PlanItemViewModel)item, index));
+        _ = new ListReorderDrag(PartsList, source => FindRow<SongPartViewModel>(source, "partHandle"),
+            (item, index) => ViewModel.Preview.MovePart((SongPartViewModel)item, index));
         PropertyChanged += (_, e) =>
         {
             if (e.Property == WindowStateProperty && e.OldValue is WindowState.FullScreen && WindowState == WindowState.Normal)
@@ -45,12 +34,21 @@ public partial class MainWindow : Window
     {
         DataContext = viewModel;
         ApplySavedColumnWidths();
+        viewModel.PlanAdd.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(PlanAddViewModel.IsOpen) && viewModel.PlanAdd.IsOpen)
+                Dispatcher.UIThread.Post(() =>
+                {
+                    PlanAddBox.Focus();
+                    PlanAddBox.CaretIndex = PlanAddBox.Text?.Length ?? 0;
+                });
+        };
     }
 
     private MainViewModel ViewModel => (MainViewModel)DataContext!;
 
     private bool IsOverlayOpen =>
-        ViewModel.Plans.IsOpen || ViewModel.Remote.IsOpen || ViewModel.Plan.IsRemoveConfirmationOpen;
+        ViewModel.Plans.IsOpen || ViewModel.Remote.IsOpen || ViewModel.Plan.IsRemoveConfirmationOpen || ViewModel.PlanAdd.IsOpen;
 
     private void OnKeyDownTunnel(object? sender, KeyEventArgs e)
     {
@@ -63,6 +61,8 @@ public partial class MainWindow : Window
             e.Handled = true;
             return;
         }
+        if (vm.PlanAdd.IsOpen && HandlePlanAddKey(vm.PlanAdd, e))
+            return;
         if (e.Key == Key.Escape && vm.Plans.IsDeleteConfirmationOpen)
         {
             vm.Plans.CancelDeleteCommand.Execute(null);
@@ -80,12 +80,7 @@ public partial class MainWindow : Window
         if (IsOverlayOpen)
             return;
 
-        if (e.Source is TextBox box && ReferenceEquals(box, SearchBox))
-        {
-            HandleSearchKey(vm, e);
-            return;
-        }
-        if (e.Source is TextBox)
+        if (e.Source is TextBox || IsInEditor(e.Source))
             return;
 
         e.Handled = LiveKeyboard.Handle(e, vm.Control, vm.Projection);
@@ -100,47 +95,71 @@ public partial class MainWindow : Window
             e.Handled = true;
     }
 
-    private void HandleSearchKey(MainViewModel vm, KeyEventArgs e)
+    /// <summary>Klawiatura w oknie „Dodaj do planu”: strzałki wybierają, Enter dodaje, Esc zamyka.</summary>
+    private bool HandlePlanAddKey(PlanAddViewModel add, KeyEventArgs e)
     {
         switch (e.Key)
         {
-            case Key.Enter when e.KeyModifiers == KeyModifiers.Control:
-                vm.Search.AddAsNextCommand.Execute(null);
-                e.Handled = true;
+            case Key.PageDown or Key.PageUp or Key.F5:
+                // piloty do prezentacji działają także przy otwartym oknie
+                return e.Handled = LiveKeyboard.Handle(e, ViewModel.Control, ViewModel.Projection);
+            case Key.Escape:
+                add.CloseCommand.Execute(null);
                 break;
             case Key.Enter:
-                // Enter tylko wybiera pieśń do kolumny „Pieśń” — na ekran trafia wyłącznie dwuklikiem w planie.
-                SearchPopup.IsOpen = false;
-                Focus();
-                e.Handled = true;
-                break;
-            case Key.Escape:
-                vm.Search.Clear();
-                Focus();
-                e.Handled = true;
+                add.AddCommand.Execute(null);
                 break;
             case Key.Down or Key.Up:
-                vm.Search.MoveSelection(e.Key == Key.Down ? 1 : -1);
-                e.Handled = true;
+                add.MoveSelection(e.Key == Key.Down ? 1 : -1);
                 break;
-            case Key.PageDown or Key.PageUp or Key.F5:
-                // piloty do prezentacji działają także wtedy, gdy kursor stoi w wyszukiwarce
-                e.Handled = LiveKeyboard.Handle(e, vm.Control, vm.Projection);
-                break;
+            default:
+                return false;
         }
+        e.Handled = true;
+        return true;
     }
 
-    private void OnSearchFocus(object? sender, FocusChangedEventArgs e) => UpdateSearchPopup();
+    // Dodawanie do planu: „+” w nagłówku, przycisk w pustym planie i menu pod prawym przyciskiem.
+    private void OnPlanAddClick(object? sender, RoutedEventArgs e) =>
+        ViewModel.PlanAdd.Open(ViewModel.Plan.Items.Count);
 
-    private void OnSearchTextChanged(object? sender, TextChangedEventArgs e) => UpdateSearchPopup();
-
-    private void UpdateSearchPopup() =>
-        SearchPopup.IsOpen = !string.IsNullOrWhiteSpace(SearchBox.Text);
-
-    private void OnSearchResultPointerReleased(object? sender, PointerReleasedEventArgs e)
+    private void OnPlanMenuShow(object? sender, RoutedEventArgs e)
     {
-        SearchPopup.IsOpen = false;
-        Focus();
+        if (MenuItemTarget(sender) is { } item)
+            ViewModel.Plan.ShowLiveCommand.Execute(item);
+    }
+
+    private void OnPlanMenuAddBefore(object? sender, RoutedEventArgs e)
+    {
+        if (MenuItemTarget(sender) is { } item)
+            ViewModel.PlanAdd.Open(ViewModel.Plan.Items.IndexOf(item));
+    }
+
+    private void OnPlanMenuAddAfter(object? sender, RoutedEventArgs e)
+    {
+        if (MenuItemTarget(sender) is { } item)
+            ViewModel.PlanAdd.Open(ViewModel.Plan.Items.IndexOf(item) + 1);
+    }
+
+    private void OnPlanMenuRemove(object? sender, RoutedEventArgs e)
+    {
+        if (MenuItemTarget(sender) is { } item)
+            ViewModel.Plan.RequestRemoveCommand.Execute(item);
+    }
+
+    private static PlanItemViewModel? MenuItemTarget(object? sender) => (sender as Control)?.DataContext as PlanItemViewModel;
+
+    private void OnPlanAddResultDoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (sender is Control { DataContext: SongResultViewModel result })
+            ViewModel.PlanAdd.AddCommand.Execute(result);
+    }
+
+    /// <summary>Klik obok okna „Dodaj do planu” zamyka je.</summary>
+    private void OnPlanAddScrimPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (ReferenceEquals(e.Source, PlanAddScrim))
+            ViewModel.PlanAdd.CloseCommand.Execute(null);
     }
 
     private void OnPlanItemClick(object? sender, RoutedEventArgs e)
@@ -157,135 +176,66 @@ public partial class MainWindow : Window
         e.Handled = true;
     }
 
-    // Zmiana kolejności w planie: zwykłe przeciąganie myszą wewnątrz listy (bez systemowego drag & drop),
-    // ze znacznikiem miejsca upuszczenia między wierszami.
-    private void OnPlanItemPointerPressed(object? sender, PointerPressedEventArgs e)
+    // Układ części pieśni w planie: „⋯” / prawy klik na części i „+ Dodaj część”.
+    private void OnPartMenuClick(object? sender, RoutedEventArgs e)
     {
-        if (DraggablePlanItem(e.Source) is not { } item || !e.GetCurrentPoint(PlanList).Properties.IsLeftButtonPressed)
+        if (sender is not Control { DataContext: SongPartViewModel part } button)
             return;
-
-        _planDragCandidate = item;
-        _planDragStart = e.GetPosition(PlanList);
-        _planDragStarted = false;
+        var menu = new MenuFlyout { Placement = PlacementMode.BottomEdgeAlignedRight };
+        menu.Items.Add(new MenuItem { Header = "Powtórz", Command = ViewModel.Preview.DuplicatePartCommand, CommandParameter = part });
+        menu.Items.Add(new MenuItem { Header = "Usuń", Command = ViewModel.Preview.RemovePartCommand, CommandParameter = part });
+        menu.ShowAt(button);
     }
 
-    private void OnPlanItemPointerMoved(object? sender, PointerEventArgs e)
+    private void OnPartDuplicate(object? sender, RoutedEventArgs e)
     {
-        if (_planDragCandidate is not { } item || !e.GetCurrentPoint(PlanList).Properties.IsLeftButtonPressed)
+        if ((sender as Control)?.DataContext is SongPartViewModel part)
+            ViewModel.Preview.DuplicatePartCommand.Execute(part);
+    }
+
+    private void OnPartRemove(object? sender, RoutedEventArgs e)
+    {
+        if ((sender as Control)?.DataContext is SongPartViewModel part)
+            ViewModel.Preview.RemovePartCommand.Execute(part);
+    }
+
+    /// <summary>Części usunięte z układu (z pierwszym wersem) — wybrana wraca na koniec układu.</summary>
+    private void OnAddPartClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Control button)
             return;
-
-        var position = e.GetPosition(PlanList);
-        if (!_planDragStarted)
+        var menu = new MenuFlyout { Placement = PlacementMode.TopEdgeAlignedLeft };
+        foreach (var section in ViewModel.Preview.RemovedSections)
         {
-            if (Math.Abs(position.Y - _planDragStart.Y) < PlanDragThreshold &&
-                Math.Abs(position.X - _planDragStart.X) < PlanDragThreshold)
-                return;
-            _planDragStarted = true;
-            item.IsDragged = true;
-            PlanList.Cursor = PlanDragCursor;
-            _planAutoScroll.Start();
+            var code = section.Code;
+            var firstLine = section.Lines.FirstOrDefault(l => l.IsSung)?.Text;
+            var item = new MenuItem { Header = firstLine is null ? section.Name : $"{section.Name} — {firstLine}" };
+            item.Click += (_, _) => ViewModel.Preview.AddPart(code);
+            menu.Items.Add(item);
         }
-
-        _planDragPosition = position;
-        ShowPlanDropMarker(PlanInsertionIndex(position.Y));
-        AutoScrollPlan();
-        e.Handled = true;
+        menu.ShowAt(button);
     }
 
-    private void OnPlanItemPointerReleased(object? sender, PointerReleasedEventArgs e)
-    {
-        if (_planDragStarted && _planDragCandidate is { } item)
-        {
-            var source = ViewModel.Plan.Items.IndexOf(item);
-            var target = _planDropIndex > source ? _planDropIndex - 1 : _planDropIndex;
-            EndPlanDrag();
-            if (source >= 0 && target >= 0 && target != source)
-                ViewModel.Plan.Reorder(item, target);
-            // Upuszczenie nie jest kliknięciem — nie wybieraj wiersza.
-            e.Handled = true;
-            return;
-        }
-        EndPlanDrag();
-    }
+    /// <summary>Wiersz listy pod wskaźnikiem — tylko z elementu oznaczonego klasą (np. bez przycisku ✕).</summary>
+    private static T? FindRow<T>(object? source, string handleClass) where T : class =>
+        (source as Visual)?.GetSelfAndVisualAncestors().OfType<Control>().FirstOrDefault(c => c.Classes.Contains(handleClass))
+            ?.DataContext as T;
 
-    /// <summary>Przeciąganie przy górnej/dolnej krawędzi listy przewija plan (także bez ruchu myszą).</summary>
-    private void AutoScrollPlan()
-    {
-        if (!_planDragStarted || PlanList.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault() is not { } scroll)
-            return;
-        var y = _planDragPosition.Y;
-        var height = PlanList.Bounds.Height;
-        var step = y < PlanAutoScrollEdge ? -PlanAutoScrollStep
-            : y > height - PlanAutoScrollEdge ? PlanAutoScrollStep
-            : 0;
-        var maxOffset = Math.Max(0, scroll.Extent.Height - scroll.Viewport.Height);
-        var offset = Math.Clamp(scroll.Offset.Y + step, 0, maxOffset);
-        if (step == 0 || offset == scroll.Offset.Y)
-            return;
-        scroll.Offset = scroll.Offset.WithY(offset);
-        ShowPlanDropMarker(PlanInsertionIndex(y));
-    }
+    /// <summary>W edytorze pieśni klawisze (spacja, litery) należą do edytora, a nie do sterowania ekranem.</summary>
+    private static bool IsInEditor(object? source) =>
+        (source as Visual)?.FindAncestorOfType<SongEditorView>(includeSelf: true) is not null;
 
-    /// <summary>Indeks, przed którym wstawić przeciągany wiersz (liczba wierszy = na koniec).</summary>
-    private int PlanInsertionIndex(double y)
-    {
-        // Lista tworzy tylko widoczne wiersze — poza nimi wynik nie może „przeskoczyć” niewidocznych pieśni.
-        var items = ViewModel.Plan.Items;
-        var afterLastVisible = 0;
-        for (var i = 0; i < items.Count; i++)
-        {
-            if (PlanList.ContainerFromIndex(i) is not Control row || row.TranslatePoint(default, PlanList) is not { } top)
-                continue;
-            if (y < top.Y + row.Bounds.Height / 2)
-                return i;
-            afterLastVisible = i + 1;
-        }
-        return afterLastVisible;
-    }
-
-    private void ShowPlanDropMarker(int insertionIndex)
-    {
-        var items = ViewModel.Plan.Items;
-        var source = _planDragCandidate is { } dragged ? items.IndexOf(dragged) : -1;
-        // Upuszczenie tuż nad albo tuż pod sobą niczego nie zmienia — bez znacznika.
-        var noOp = insertionIndex == source || insertionIndex == source + 1;
-        _planDropIndex = insertionIndex;
-        for (var i = 0; i < items.Count; i++)
-        {
-            items[i].IsDropBefore = !noOp && i == insertionIndex;
-            items[i].IsDropAfter = !noOp && i == items.Count - 1 && insertionIndex == items.Count;
-        }
-    }
-
-    private void EndPlanDrag()
-    {
-        foreach (var item in ViewModel.Plan.Items)
-        {
-            item.IsDragged = false;
-            item.IsDropBefore = false;
-            item.IsDropAfter = false;
-        }
-        _planAutoScroll.Stop();
-        _planDragCandidate = null;
-        _planDragStarted = false;
-        _planDropIndex = -1;
-        PlanList.Cursor = null;
-    }
-
-    /// <summary>Pozycja planu pod wskaźnikiem — tylko z obszaru wiersza, nie z przycisku usuwania.</summary>
-    private static PlanItemViewModel? DraggablePlanItem(object? source) =>
-        (source as Visual)?.FindAncestorOfType<Button>(includeSelf: true) is { } button && button.Classes.Contains("planItem")
-            ? button.DataContext as PlanItemViewModel
-            : null;
-
-    /// <summary>Pisanie gdziekolwiek w oknie zaczyna wyszukiwanie pieśni.</summary>
+    /// <summary>
+    /// Pisanie gdziekolwiek w oknie (np. „47”) otwiera „Dodaj do planu” z tym tekstem; wybrana pieśń
+    /// trafia zaraz za tę, która jest na ekranie (albo na koniec planu).
+    /// </summary>
     private void OnTextInputTunnel(object? sender, TextInputEventArgs e)
     {
-        if (IsOverlayOpen || e.Source is TextBox || LiveKeyboard.SearchStart(e) is not { } start)
+        if (IsOverlayOpen || e.Source is TextBox || IsInEditor(e.Source) || LiveKeyboard.SearchStart(e) is not { } start)
             return;
-        ViewModel.Search.Query = start;
-        SearchBox.Focus();
-        SearchBox.CaretIndex = start.Length;
+        var plan = ViewModel.Plan.Items;
+        var live = plan.FirstOrDefault(i => i.IsLive);
+        ViewModel.PlanAdd.Open(live is null ? plan.Count : plan.IndexOf(live) + 1, start);
         e.Handled = true;
     }
 

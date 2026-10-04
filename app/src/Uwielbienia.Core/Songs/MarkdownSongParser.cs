@@ -24,16 +24,23 @@ public sealed partial class MarkdownSongParser : ISongParser
         var (meta, bodyStart) = ReadFrontMatter(id, lines);
         var sections = ReadSections(id, lines.AsSpan(bodyStart));
 
-        var arrangement = ParseList(Required(id, meta, "kolejnosc"));
+        var kind = meta.GetValueOrDefault("rodzaj") is { } rodzaj && Unquote(rodzaj) == "tekst" ? SongKind.Text : SongKind.Song;
+        var arrangement = ParseList(meta.GetValueOrDefault("kolejnosc") ?? (kind == SongKind.Text ? "" : Required(id, meta, "kolejnosc")));
         return new Song(
             Id: id,
-            Number: int.Parse(Required(id, meta, "numer"), CultureInfo.InvariantCulture),
+            Number: kind == SongKind.Text
+                ? ParseNullableInt(meta.GetValueOrDefault("numer"))
+                : int.Parse(Required(id, meta, "numer"), CultureInfo.InvariantCulture),
             Title: Unquote(Required(id, meta, "tytul")),
-            Category: Unquote(Required(id, meta, "kategoria")),
+            Category: Unquote(meta.GetValueOrDefault("kategoria") ?? (kind == SongKind.Text ? "" : Required(id, meta, "kategoria"))),
             SourceNumber: ParseNullableInt(meta.GetValueOrDefault("numer_zrodlowy")),
             Key: ParseNullableString(meta.GetValueOrDefault("tonacja")),
             Arrangement: arrangement.Count > 0 ? arrangement : sections.Select(s => s.Code).ToList(),
-            Sections: sections);
+            Sections: sections,
+            Kind: kind)
+        {
+            Source = ParseNullableString(meta.GetValueOrDefault("zrodlo")),
+        };
     }
 
     private static (Dictionary<string, string> Meta, int BodyStart) ReadFrontMatter(string id, string[] lines)
@@ -82,7 +89,8 @@ public sealed partial class MarkdownSongParser : ISongParser
         return sections;
     }
 
-    internal static SongLine ParseLine(string line)
+    /// <summary>Jeden wiersz treści w gramatyce z CLAUDE.md: <c>[|: ]tekst[ :|][ {xN}][ `akordy`]</c>.</summary>
+    public static SongLine ParseLine(string line)
     {
         if (line.StartsWith('>'))
             return new SongLine(line.TrimStart('>').Trim(), null, 1, false, false, LineKind.Note);

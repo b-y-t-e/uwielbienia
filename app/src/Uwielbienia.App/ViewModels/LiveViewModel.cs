@@ -25,9 +25,14 @@ public sealed partial class LiveViewModel : ObservableObject
 
     public Slide? VisibleSlide => State.VisibleSlide;
 
+    /// <summary>Strona rzutnika: slajd i — na pierwszym slajdzie pieśni — jej tytuł.</summary>
+    public ProjectedPage? Page => State.VisibleSlide is { } slide && State.Item is { } item
+        ? new ProjectedPage(slide, State.SlideIndex == 0 ? item.Title : null)
+        : null;
+
     public string Title => State.Item is { } item ? item.Title : "Ekran jest pusty";
 
-    public string? Number => State.Item?.Number.ToString();
+    public string? Number => State.Item?.Number?.ToString();
 
     public bool IsBlank => State.IsBlank;
 
@@ -89,6 +94,7 @@ public sealed partial class LiveViewModel : ObservableObject
             tab.IsCurrent = tab.Index == state.SlideIndex;
 
         OnPropertyChanged(nameof(VisibleSlide));
+        OnPropertyChanged(nameof(Page));
         OnPropertyChanged(nameof(Title));
         OnPropertyChanged(nameof(Number));
         OnPropertyChanged(nameof(IsBlank));
@@ -104,6 +110,15 @@ public sealed partial class LiveViewModel : ObservableObject
         OnPropertyChanged(nameof(ProgressValue));
         OnPropertyChanged(nameof(ProgressText));
     }
+}
+
+/// <summary>
+/// To, co rysuje rzutnik. Jeden obiekt (a nie osobne właściwości), żeby tytuł pojawiał się
+/// i znikał w tym samym przejściu co tekst slajdu.
+/// </summary>
+public sealed record ProjectedPage(Slide Slide, string? Title)
+{
+    public bool HasTitle => Title is not null;
 }
 
 public sealed partial class SlideTabViewModel(int index, Slide slide) : ObservableObject

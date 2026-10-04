@@ -12,10 +12,12 @@
         ShowInTaskbar="False">
   <Panel>
     <v:SlideView x:Name="Slide"
-                 Slide="{Binding Live.VisibleSlide}"
+                 Page="{Binding Live.Page}"
                  SlideBackground="{Binding Live.Appearance.Background}"
                  SlideForeground="{Binding Live.Appearance.Foreground}"
-                 SlideMuted="{Binding Live.Appearance.Muted}" />
+                 SlideMuted="{Binding Live.Appearance.Muted}"
+                 SlideAccent="{Binding Live.Appearance.Accent}"
+                 SlideTitle="{Binding Live.Appearance.Title}" />
 
     <!-- Tryb jednego urządzenia: dyskretne sterowanie na dole (także dotykiem). -->
     <StackPanel x:Name="SameScreenBar" IsVisible="False" Orientation="Horizontal" Spacing="8"
