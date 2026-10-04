@@ -3,10 +3,12 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Uwielbienia.App.Services;
 using Uwielbienia.App.ViewModels;
+using Uwielbienia.Core.Slideshows;
 
 namespace Uwielbienia.App.Views;
 
@@ -23,6 +25,8 @@ public partial class MainWindow : Window
             (item, index) => ViewModel.Plan.Reorder((PlanItemViewModel)item, index));
         _ = new ListReorderDrag(PartsList, source => FindRow<SongPartViewModel>(source, "partHandle"),
             (item, index) => ViewModel.Preview.MovePart((SongPartViewModel)item, index));
+        PlanList.AddHandler(DragDrop.DragOverEvent, OnPlanDragOver);
+        PlanList.AddHandler(DragDrop.DropEvent, OnPlanDrop);
         PropertyChanged += (_, e) =>
         {
             if (e.Property == WindowStateProperty && e.OldValue is WindowState.FullScreen && WindowState == WindowState.Normal)
@@ -148,6 +152,45 @@ public partial class MainWindow : Window
     }
 
     private static PlanItemViewModel? MenuItemTarget(object? sender) => (sender as Control)?.DataContext as PlanItemViewModel;
+
+    /// <summary>„+ Prezentacja”: plik PowerPoint albo obrazy slajdów (kilka naraz = jedna prezentacja).</summary>
+    private async void OnAddPresentationClick(object? sender, RoutedEventArgs e)
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Prezentacja albo obrazy slajdów",
+            AllowMultiple = true,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("Prezentacje i obrazy")
+                {
+                    Patterns = [.. SlideshowLibrary.PresentationExtensions.Concat(SlideshowLibrary.ImageExtensions).Select(ext => "*" + ext)],
+                },
+            ],
+        });
+        var paths = files.Select(f => f.TryGetLocalPath()).OfType<string>().ToList();
+        if (paths.Count > 0)
+            await ViewModel.PlanAdd.AddPresentationAsync(paths);
+    }
+
+    private static List<string> DroppedFiles(DragEventArgs e) =>
+        (e.DataTransfer.TryGetFiles() ?? []).Select(f => f.TryGetLocalPath()).OfType<string>()
+            .Where(SlideshowLibrary.IsSupported).ToList();
+
+    private void OnPlanDragOver(object? sender, DragEventArgs e) =>
+        e.DragEffects = DroppedFiles(e).Count > 0 ? DragDropEffects.Copy : DragDropEffects.None;
+
+    /// <summary>Upuszczona prezentacja (albo obrazy) trafia za wiersz pod kursorem albo na koniec planu.</summary>
+    private async void OnPlanDrop(object? sender, DragEventArgs e)
+    {
+        var files = DroppedFiles(e);
+        if (files.Count == 0)
+            return;
+        var plan = ViewModel.Plan.Items;
+        var row = (e.Source as Visual)?.GetSelfAndVisualAncestors().OfType<Control>()
+            .Select(c => c.DataContext).OfType<PlanItemViewModel>().FirstOrDefault();
+        await ViewModel.PlanAdd.AddFilesAsync(files, row is null ? plan.Count : plan.IndexOf(row) + 1);
+    }
 
     private void OnPlanAddResultDoubleTapped(object? sender, TappedEventArgs e)
     {

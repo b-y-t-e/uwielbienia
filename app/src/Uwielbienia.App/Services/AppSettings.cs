@@ -10,6 +10,7 @@ public enum AppTheme
 }
 
 /// <param name="SongsFolder">Folder <c>Teksty/</c> z repozytorium; <c>null</c> = wykryj automatycznie / wbudowane.</param>
+/// <param name="ProjectionCorners">Dopasowanie obrazu do rzutnika: x, y 4 narożników (0..1); <c>null</c> = pełny ekran.</param>
 public sealed record AppSettings(
     AppTheme Theme = AppTheme.Dark,
     AppTheme ProjectionTheme = AppTheme.Dark,
@@ -19,7 +20,8 @@ public sealed record AppSettings(
     bool ShowChords = true,
     double PlanColumnRatio = 0.16,
     double PreviewColumnRatio = 0.42,
-    double LiveColumnRatio = 0.42);
+    double LiveColumnRatio = 0.42,
+    double[]? ProjectionCorners = null);
 
 public sealed class AppPaths
 {
@@ -35,6 +37,9 @@ public sealed class AppPaths
 
     /// <summary>Własne pieśni i teksty oraz lokalne poprawki śpiewnika (<c>{id}/piesn.md</c>).</summary>
     public string Texts => Path.Combine(Root, "teksty");
+
+    /// <summary>Prezentacje w planach: kopie plików i slajdy jako obrazy (<c>{folder}/</c>).</summary>
+    public string Presentations => Path.Combine(Root, "prezentacje");
 
     public string LinkState => Path.Combine(Root, "polaczenia");
 

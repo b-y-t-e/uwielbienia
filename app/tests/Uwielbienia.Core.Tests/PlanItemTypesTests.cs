@@ -21,6 +21,7 @@ public class PlanItemTypesTests
 
         public LiveItem? Present(PlanItem item) =>
             new(item.Id, "ogloszenie", null, "Ogłoszenie", [new NoticeSlide(((NoticeItem)item).Message)]);
+        public event EventHandler? Changed { add { } remove { } }
     }
 
     private sealed class MemoryPlanStore : IPlanStore
@@ -38,7 +39,7 @@ public class PlanItemTypesTests
         var session = new LiveSession();
         var library = new Songs.SongLibrary(new Songs.DirectorySongSource(RepositoryPaths.Songs), new Songs.MarkdownSongParser());
         var types = new PlanItemTypes([new SongPlanItemType(library, new SectionSlideBuilder()), new NoticeType()]);
-        var plan = new ActivePlan(new MemoryPlanStore(), types, session, library);
+        var plan = new ActivePlan(new MemoryPlanStore(), types, session);
         var notice = new NoticeItem(Guid.NewGuid(), "Kawa po Mszy");
 
         plan.Open(Plan.Create("Test", null).Insert(0, notice));

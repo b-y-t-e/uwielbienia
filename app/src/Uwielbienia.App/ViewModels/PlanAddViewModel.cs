@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Uwielbienia.Core.Plans;
+using Uwielbienia.Core.Slideshows;
 using Uwielbienia.Core.Songs;
 
 namespace Uwielbienia.App.ViewModels;
@@ -9,7 +11,11 @@ namespace Uwielbienia.App.ViewModels;
 /// „Dodaj do planu” — okno z wyszukiwarką pieśni i tekstów otwierane z planu („+”, „Dodaj przed / po”).
 /// Wybrana pozycja trafia w zapamiętane miejsce; „Nowa pieśń / Nowy tekst” tworzy ją i wstawia tam samo.
 /// </summary>
-public sealed partial class PlanAddViewModel(ISongSearch search, ISongLibrary library, PlanActions actions) : ObservableObject
+public sealed partial class PlanAddViewModel(
+    ISongSearch search,
+    ISongLibrary library,
+    PlanActions actions,
+    ISlideshowLibrary slideshows) : ObservableObject
 {
     private int _index;
 
@@ -22,6 +28,10 @@ public sealed partial class PlanAddViewModel(ISongSearch search, ISongLibrary li
     [ObservableProperty]
     public partial SongResultViewModel? Selected { get; set; }
 
+    /// <summary>Nie udało się dodać prezentacji (np. nieobsługiwany plik).</summary>
+    [ObservableProperty]
+    public partial string? Error { get; private set; }
+
     public ObservableCollection<SongResultViewModel> Results { get; } = [];
 
     /// <summary>Utworzenie nowej pozycji — obsługuje kolumna „Pieśń” (edytor), potem wstawienie w <c>Index</c>.</summary>
@@ -33,8 +43,35 @@ public sealed partial class PlanAddViewModel(ISongSearch search, ISongLibrary li
     {
         _index = index;
         Query = query;
+        Error = null;
         Fill();
         IsOpen = true;
+    }
+
+    /// <summary>„+ Prezentacja”: wybrane pliki (PowerPoint albo obrazy) w zapamiętane miejsce planu.</summary>
+    public async Task AddPresentationAsync(IReadOnlyList<string> files)
+    {
+        if (await AddFilesAsync(files, _index))
+            IsOpen = false;
+    }
+
+    /// <summary>
+    /// Prezentacja z plików (także upuszczonych na plan) — kopiowana do folderu aplikacji, slajdy przygotowują się w tle.
+    /// </summary>
+    public async Task<bool> AddFilesAsync(IReadOnlyList<string> files, int index)
+    {
+        try
+        {
+            var imported = await slideshows.ImportAsync(files);
+            actions.Insert(new PresentationPlanItem(Guid.NewGuid(), imported.Folder, imported.Title), index);
+            Error = null;
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or NotSupportedException or UnauthorizedAccessException)
+        {
+            Error = ex.Message;
+            return false;
+        }
     }
 
     public bool HasSelection => Selected is not null;

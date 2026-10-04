@@ -10,14 +10,21 @@
         WindowDecorations="None"
         Topmost="True"
         ShowInTaskbar="False">
-  <Panel>
-    <v:SlideView x:Name="Slide"
-                 Page="{Binding Live.Page}"
-                 SlideBackground="{Binding Live.Appearance.Background}"
-                 SlideForeground="{Binding Live.Appearance.Foreground}"
-                 SlideMuted="{Binding Live.Appearance.Muted}"
-                 SlideAccent="{Binding Live.Appearance.Accent}"
-                 SlideTitle="{Binding Live.Appearance.Title}" />
+  <Panel x:Name="Screen">
+    <!-- Obraz projekcji rozpięty na narożnikach z „Dopasuj obraz” (przekształcenie ustawia kod). -->
+    <Panel x:Name="Warped" RenderTransformOrigin="0,0">
+      <v:SlideView x:Name="Slide"
+                   Page="{Binding Live.Page}"
+                   SlideBackground="{Binding Live.Appearance.Background}"
+                   SlideForeground="{Binding Live.Appearance.Foreground}"
+                   SlideMuted="{Binding Live.Appearance.Muted}"
+                   SlideAccent="{Binding Live.Appearance.Accent}"
+                   SlideTitle="{Binding Live.Appearance.Title}" />
+      <v:CalibrationGrid IsVisible="{Binding Calibration.IsGridVisible}" />
+    </Panel>
+    <!-- Uchwyty dopasowania: po ruchu myszą (3 s) albo w trybie kalibracji — widoczność ustawia kod. -->
+    <v:CalibrationHandles x:Name="Handles" IsVisible="False"
+                          Corners="{Binding Calibration.Corners}" SelectedCorner="{Binding Calibration.SelectedCorner}" />
 
     <!-- Tryb jednego urządzenia: dyskretne sterowanie na dole (także dotykiem). -->
     <StackPanel x:Name="SameScreenBar" IsVisible="False" Orientation="Horizontal" Spacing="8"

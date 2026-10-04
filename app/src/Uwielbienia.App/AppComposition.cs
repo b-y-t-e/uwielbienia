@@ -5,6 +5,7 @@ using Uwielbienia.App.Views;
 using Uwielbienia.Core;
 using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Presentation;
+using Uwielbienia.Core.Slideshows;
 using Uwielbienia.Core.Songs;
 using Uwielbienia.Core.Updates;
 using Uwielbienia.Link;
@@ -43,6 +44,12 @@ public static class AppComposition
         services.AddSingleton<SongPlanItemType>();
         services.AddSingleton<IPlanItemType>(sp => sp.GetRequiredService<SongPlanItemType>());
         services.AddSingleton<ISongPresenter>(sp => sp.GetRequiredService<SongPlanItemType>());
+        services.AddSingleton<ISlideExporter, PowerPointExporter>();
+        services.AddSingleton<ISlideshowLibrary>(sp => new SlideshowLibrary(
+            sp.GetRequiredService<AppPaths>().Presentations,
+            sp.GetRequiredService<ISlideExporter>(),
+            sp.GetRequiredService<IUiDispatcher>()));
+        services.AddSingleton<IPlanItemType, PresentationPlanItemType>();
         services.AddSingleton<IPlanItemTypes, PlanItemTypes>();
         services.AddSingleton<LiveSession>();
         services.AddSingleton<ILiveControl>(sp => sp.GetRequiredService<LiveSession>());
@@ -61,6 +68,7 @@ public static class AppComposition
 
         // okna i modele widoków
         services.AddSingleton<ProjectionAppearance>();
+        services.AddSingleton<ProjectionCalibration>();
         services.AddSingleton<LiveViewModel>();
         services.AddSingleton<PlanViewModel>();
         services.AddSingleton<PlanAddViewModel>();
@@ -76,7 +84,8 @@ public static class AppComposition
             sp.GetRequiredService<LiveViewModel>(),
             ActivatorUtilities.CreateInstance<SearchViewModel>(sp),
             sp.GetRequiredService<ILiveControl>(),
-            sp.GetRequiredService<IProjectionController>())));
+            sp.GetRequiredService<IProjectionController>(),
+            sp.GetRequiredService<ProjectionCalibration>())));
 
         return services.BuildServiceProvider();
     }

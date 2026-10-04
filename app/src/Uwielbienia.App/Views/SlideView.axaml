@@ -14,8 +14,14 @@
         <TransitioningContentControl.PageTransition>
           <CrossFade Duration="0:0:0.15" />
         </TransitioningContentControl.PageTransition>
-        <TransitioningContentControl.ContentTemplate>
-          <DataTemplate x:DataType="vm:ProjectedPage">
+        <!-- Strona wybierana wg rodzaju: slajd prezentacji (obraz na cały ekran) przed stroną z tekstem. -->
+        <TransitioningContentControl.DataTemplates>
+          <DataTemplate DataType="vm:ProjectedImage">
+            <Panel Background="Black">
+              <Image Source="{Binding Picture^}" Stretch="Uniform" />
+            </Panel>
+          </DataTemplate>
+          <DataTemplate DataType="vm:ProjectedPage">
             <Panel>
               <Viewbox StretchDirection="DownOnly" Margin="140,90" VerticalAlignment="Center">
                 <StackPanel Width="1640">
@@ -50,7 +56,7 @@
               </Viewbox>
             </Panel>
           </DataTemplate>
-        </TransitioningContentControl.ContentTemplate>
+        </TransitioningContentControl.DataTemplates>
       </TransitioningContentControl>
     </Border>
   </Viewbox>

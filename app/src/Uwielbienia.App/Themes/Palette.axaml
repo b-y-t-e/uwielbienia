@@ -15,6 +15,7 @@
       <SolidColorBrush x:Key="OnCandleBrush" Color="#1B1608" />
       <SolidColorBrush x:Key="ChordBrush" Color="#7FB6E8" />
       <SolidColorBrush x:Key="TextItemBrush" Color="#A8D5B5" />
+      <SolidColorBrush x:Key="PresentationItemBrush" Color="#C4B5F0" />
       <SolidColorBrush x:Key="SelectionBrush" Color="#2E3861" />
       <SolidColorBrush x:Key="ScrimBrush" Color="#B30B0E1A" />
       <SolidColorBrush x:Key="DangerBrush" Color="#EE8A8A" />
@@ -33,6 +34,7 @@
       <SolidColorBrush x:Key="OnCandleBrush" Color="#FFFFFF" />
       <SolidColorBrush x:Key="ChordBrush" Color="#2F6DB5" />
       <SolidColorBrush x:Key="TextItemBrush" Color="#2E7D4F" />
+      <SolidColorBrush x:Key="PresentationItemBrush" Color="#5B45A8" />
       <SolidColorBrush x:Key="SelectionBrush" Color="#E3E7F4" />
       <SolidColorBrush x:Key="ScrimBrush" Color="#991B2138" />
       <SolidColorBrush x:Key="DangerBrush" Color="#B42318" />

@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Presentation;
+using Uwielbienia.Core.Slideshows;
 using Uwielbienia.Core.Songs;
 
 namespace Uwielbienia.App.ViewModels;
@@ -19,11 +20,19 @@ public sealed partial class PreviewViewModel : ObservableObject
     private readonly PlanActions _planActions;
     private readonly ISongLibrary _library;
     private readonly ISongEditor _editor;
+    private readonly ISlideshowLibrary _slideshows;
     private SongPlanItem? _planItem;
     private Action<Song>? _created;
 
-    public PreviewViewModel(ISlideBuilder slides, ActivePlan plan, PlanActions planActions, ISongLibrary library, ISongEditor editor)
+    public PreviewViewModel(
+        ISlideBuilder slides,
+        ActivePlan plan,
+        PlanActions planActions,
+        ISongLibrary library,
+        ISongEditor editor,
+        ISlideshowLibrary slideshows)
     {
+        _slideshows = slideshows;
         Parts.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasRemovedSections));
         _slides = slides;
         _plan = plan;
@@ -40,7 +49,23 @@ public sealed partial class PreviewViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasSong), nameof(Title), nameof(Number), nameof(Category), nameof(OriginText), nameof(IsText), nameof(ColumnTitle))]
+    [NotifyPropertyChangedFor(nameof(IsEmpty), nameof(HasChordsToggle))]
     public partial Song? Song { get; private set; }
+
+    /// <summary>Wybrana w planie prezentacja (zamiast pieśni).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPresentation), nameof(ColumnTitle), nameof(IsEmpty), nameof(HasChordsToggle))]
+    public partial PresentationViewModel? Presentation { get; private set; }
+
+    partial void OnPresentationChanged(PresentationViewModel? oldValue, PresentationViewModel? newValue) => oldValue?.Dispose();
+
+    public bool HasPresentation => Presentation is not null;
+
+    /// <summary>Nic nie jest wybrane w planie.</summary>
+    public bool IsEmpty => Song is null && Presentation is null;
+
+    /// <summary>Przełącznik akordów ma sens tylko przy pieśni.</summary>
+    public bool HasChordsToggle => Presentation is null && !IsText;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsEditing), nameof(IsViewing), nameof(ColumnTitle))]
@@ -49,7 +74,7 @@ public sealed partial class PreviewViewModel : ObservableObject
     public bool IsEditing => Editor is not null;
 
     /// <summary>Nagłówek kolumny: rodzaj wybranej pozycji, a w trakcie edycji — co jest edytowane.</summary>
-    public string ColumnTitle => Editor?.Heading ?? (IsText ? "Tekst" : "Pieśń");
+    public string ColumnTitle => Editor?.Heading ?? (Presentation is not null ? "Prezentacja" : IsText ? "Tekst" : "Pieśń");
 
     public bool IsViewing => Editor is null;
 
@@ -93,11 +118,22 @@ public sealed partial class PreviewViewModel : ObservableObject
         }
         _planItem = planItem;
         IsFromPlan = true;
+        Presentation = null;
         Load(song, planItem);
+    }
+
+    public void ShowPresentation(PresentationPlanItem item)
+    {
+        if (Presentation?.Item == item)
+            return;
+        Clear();
+        IsFromPlan = true;
+        Presentation = new PresentationViewModel(item, _slideshows);
     }
 
     public void ShowSong(Song song)
     {
+        Presentation = null;
         _planItem = null;
         IsFromPlan = false;
         Load(song, null);
@@ -189,6 +225,7 @@ public sealed partial class PreviewViewModel : ObservableObject
         _planItem = null;
         IsFromPlan = false;
         Song = null;
+        Presentation = null;
         Parts.Clear();
     }
 

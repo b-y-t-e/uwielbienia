@@ -161,7 +161,7 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
 
 | Projekt | Rola |
 |---|---|
-| `src/Uwielbienia.Core` | logika bez UI: pieśni (`Songs/`), plany (`Plans/`), ekran (`Presentation/`), aktualizacje (`Updates/`) |
+| `src/Uwielbienia.Core` | logika bez UI: pieśni (`Songs/`), plany (`Plans/`), ekran (`Presentation/`), prezentacje (`Slideshows/`), aktualizacje (`Updates/`) |
 | `src/Uwielbienia.Link` | tailcat-link: protokół JSON (`RemoteProtocol`), polecenia z telefonu (`RemoteCommandHandler`), serwer (`LinkRemoteServer`) |
 | `src/Uwielbienia.App` | Avalonia: widoki (`Views/`), modele widoków (`ViewModels/`), usługi okienkowe (`Services/`), motywy (`Themes/`), czcionki, korzeń DI `AppComposition` |
 | `src/Uwielbienia.Desktop` | program Windows/Linux (`Program.cs`, Velopack) |
@@ -199,8 +199,19 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   widoki zaczynają od początku). Dodawanie do planu: `PlanActions` (`Insert`, `InsertAt`, `ItemAdded`).
 - **Rodzaje pozycji planu.** Plan nie zakłada, że pozycja to pieśń: `IPlanItemTypes`
   (`PlanItemTypes` — rejestr wszystkich `IPlanItemType`) daje opis na liście (`PlanItemInfo`:
-  tytuł, numer, `PlanItemKind`) i slajdy (`LiveItem`). Dziś jeden rodzaj: `SongPlanItemType`
-  (pieśń i tekst; jest też `ISongPresenter` — pieśń spoza planu na ekran).
+  tytuł, numer, `PlanItemKind`, uwaga) i slajdy (`LiveItem`), a jego `Changed` (zmieniona treść)
+  przebudowuje plan. Rodzaje: `SongPlanItemType` (pieśń i tekst; też `ISongPresenter` — pieśń
+  spoza planu na ekran) i `PresentationPlanItemType` (prezentacja).
+- **Prezentacje** (`PresentationPlanItem`: folder + tytuł). `SlideshowLibrary` kopiuje plik
+  PowerPoint (`.pptx .ppt .pps .ppsx .pptm .ppsm .odp`) albo obrazy (`.png .jpg .jpeg .bmp .webp`,
+  kilka = jedna prezentacja) do `prezentacje/{id8}-{slug}/` — plan działa po wyjęciu pendrive'a.
+  Slajdy prezentacji eksportuje raz, w tle, `PowerPointExporter` (`ISlideExporter`, App/Services —
+  jak w pps_viewer: automatyzacja COM PowerPointa na wątku STA, PNG 1920 px, bez slajdów ukrytych)
+  do `slajdy/` (najpierw `slajdy.tmp`, potem znacznik `.complete`). Do tego czasu pozycja nie ma
+  slajdów, a plan pokazuje uwagę („Slajd 3 z 20…”, błąd + „Spróbuj ponownie”); `Changed` po
+  zakończeniu podmienia ją na ekranie. Bez PowerPointa — dziś tylko obrazy (TODO niżej). Slajd to
+  `ImageSlide` (plik obrazu); obrazy wczytuje w tle `SlideImages` (pamięć podręczna, następny
+  slajd zawczasu, miniatury dla operatora).
 - **Przeciąganie** (plan, części pieśni): `ListReorderDrag` — zwykłe przeciąganie myszą ze
   znacznikiem miejsca i przewijaniem przy krawędzi; wiersze implementują `IReorderableItem`.
 - **Ekran.** `LiveSession` to jedyne źródło prawdy: polecenia przez `ILiveControl` (klawiatura —
@@ -211,6 +222,21 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   się jej układ części lub tekst (te same slajdy = ta sama migawka, bez przenikania).
 - **Projekcja.** `ProjectionController` (F5): pełny ekran na innym monitorze, przenosi się przy
   podłączeniu/odłączeniu; bez drugiego ekranu tryb jednego ekranu z szybkim wyborem pieśni.
+- **Dopasuj obraz** (jak w pps_viewer): `ProjectionCalibration` — 4 narożniki obrazu projekcji
+  (korekcja trapezu rzutnika, zmniejszenie, przesunięcie) dla wszystkiego, co pokazuje projekcja.
+  `Keystone` (Core) liczy macierz perspektywy prostokąt → czworokąt; `ProjectionWindow` nakłada ją
+  jako `RenderTransform` na panel `Warped` (tekst zostaje wektorowy), poza obrazem czerń. Obsługa
+  tylko na ekranie projekcji, bez przycisków w oknie operatora (jak w pps_viewer): ruch myszy nad
+  obrazem pokazuje kursor, ramkę i narożniki (`CalibrationHandles`, bez napisów) na 3 s;
+  K (na drugim ekranie, przy widocznych uchwytach) = tryb kalibracji: uchwyty i siatka
+  (`CalibrationGrid`) stale, G = siatka, R = pełny obraz, Tab / Ctrl+strzałki = narożnik; poza tym
+  trybem litery służą szukaniu pieśni (żeby np. „R” nie kasowało dopasowania).
+  Rzutnik zwykle świeci szerzej niż ekran w sali — narożniki są wtedy poza ekranem i nie da się
+  w nie trafić, dlatego przeciąganie **w dowolnym miejscu przesuwa najbliższy narożnik** (wypełniony
+  punkt; przesuwa się o tyle, o ile kursor), z Shift — cały obraz. Kółko myszy =
+  wielkość, Shift+kółko = szerokość, Ctrl+kółko = wysokość, Tab + Ctrl(+Shift)+strzałki = narożnik
+  dokładnie, Esc = koniec kalibracji. Kliknięcie bez przeciągania w trybie jednego ekranu = dalej /
+  wstecz (prawa / lewa połowa). Zapis: `AppSettings.ProjectionCorners` (8 liczb 0..1).
 - **Telefon / przeglądarka.** `RemoteViewModel` paruje przez kod QR (tailcat-link, połączenie
   szyfrowane); sparowane urządzenia łączą się same przy starcie.
 - **Aktualizacje.** `UpdateService` + `VelopackReleaseFeed`: tylko instalacja z
@@ -234,14 +260,17 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
    `Views/SlideView.axaml` **przed** szablonem `p:Slide`. Porównanie slajdów w `LiveSession`
    (podmiana na żywo) działa dla pól rekordu; kolekcje porównuje tylko `Lines`.
 4. **Lista planu** (`MainWindow.axaml`, wiersz planu i „Dodaj do planu”): znacznik i kolor wg
-   `PlanItemKind` (dziś: numer albo kropka + `TextItemBrush` dla `Text`).
+   `PlanItemKind` (numer; kropka + `TextItemBrush` dla `Text`; znak slajdu + `PresentationItemBrush`
+   dla `Presentation`). `PlanItemInfo.Note` = uwaga pod tytułem.
 5. **Kolumna „Pieśń”:** `MainViewModel.ShowDetails` wybiera widok dla zaznaczonej pozycji;
-   nowy rodzaj dostaje własny model widoku i szablon (np. podgląd obrazu, edycja).
+   nowy rodzaj dostaje własny model widoku i szablon (wzorzec: `PresentationViewModel`).
 6. **Dodawanie:** przycisk w oknie „Dodaj do planu” (`PlanAddViewModel`) tworzący pozycję i
-   wstawiający ją przez `PlanActions.Insert(item, index)`.
+   wstawiający ją przez `PlanActions.Insert(item, index)` (wzorzec: „+ Prezentacja”).
 7. **Kolumna „Na ekranie” i telefon:** pokazują `Lines` — dla treści innej niż tekst dodać
-   szablon w `MainWindow.axaml` (TERAZ / NASTĘPNA) i ewentualnie pole w `RemoteProtocol.cs`
-   + `web/remote` (zmiana protokołu = zmiana w obu miejscach).
+   szablon w `MainWindow.axaml` (TERAZ / NASTĘPNA, wzorzec: obraz `ImageSlide`), a na rzutniku
+   stronę (`ProjectedPage` → np. `ProjectedImage` z szablonem w `SlideView.axaml`, gdy treść ma
+   zająć cały ekran). Telefon i ekran w przeglądarce dostają tylko `Lines` i `Label` — obraz
+   wymagałby pola w `RemoteProtocol.cs` + `web/remote` (zmiana w obu miejscach).
 8. Testy w Core (rodzaj, zapis planu z nową pozycją) i zrzuty (`tools/Uwielbienia.Screenshots`).
 
 ### Okno operatora
@@ -254,7 +283,8 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 - Każda czynność ma jedno miejsce:
   - dodawanie do planu tylko z planu: „+”, prawy klik („Dodaj przed… / po…”) albo pisanie
     gdziekolwiek w oknie → okno „Dodaj do planu” (`PlanAddViewModel`: zaznacz + „Wybierz”, Enter,
-    dwuklik; „+ Nowa pieśń / + Nowy tekst”);
+    dwuklik; „+ Nowa pieśń / + Nowy tekst / + Prezentacja”); plik prezentacji (lub obrazy)
+    upuszczony na plan trafia za wiersz pod kursorem;
   - na ekran wyłącznie dwuklikiem albo prawym klikiem („Pokaż na ekranie”) w planie;
   - kolejność: przeciąganie w planie; usuwanie: ✕ / prawy klik (z potwierdzeniem);
   - edycja: „Edytuj” w kolumnie „Pieśń”;
@@ -263,7 +293,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
     Zapis: `SongPlanItem.Layout` (pełny układ z pominięciami) i `Arrangement` (śpiewana część) —
     `WithLayout` wraca do `null`, gdy układ jest taki jak w pliku pieśni.
 - Kolumna „Pieśń” nie zmienia projekcji — wyjątek: zmiana układu części granej pieśni działa na
-  żywo. Pusty ekran: kolumna „Na ekranie” bez przycisków.
+  żywo. Dla prezentacji pokazuje miniatury slajdów. Pusty ekran: kolumna „Na ekranie” bez przycisków.
 - Nakładki: „Plany” (`PlansViewModel` — zakładki Wydarzenia/Szablony, lista + formularz; nazwa
   wymagana, bez daty w nazwie), „Dodaj do planu”, „Telefon”, potwierdzenia usuwania. Esc zamyka;
   w edytorze klawisze globalne (spacja, pisanie) nie działają.
@@ -271,19 +301,21 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 ### Dane i ustawienia (`AppPaths`, `%APPDATA%\Uwielbienia`, Linux `~/.config/Uwielbienia`)
 
 `ustawienia.json` (`AppSettings`: motyw okna i ekranu, akordy, szerokości kolumn, ostatni plan,
-`MaxLinesPerSlide`, opcjonalny folder pieśni), `plany/`, `teksty/`, `polaczenia/` (tailcat-link),
-`aktualizacje.log`.
+`MaxLinesPerSlide`, opcjonalny folder pieśni, narożniki „Dopasuj obraz”), `plany/`, `teksty/`,
+`prezentacje/` (kopie prezentacji i ich slajdy; nieużywane nie są dziś usuwane), `polaczenia/`
+(tailcat-link), `aktualizacje.log`.
 
 ### Wygląd
 
 - Paleta „nocny granat + świeca” (`Themes/Palette.axaml`, jasny i ciemny). Akcenty mają stałe
   znaczenie: świeca (`CandleBrush`) = to, co jest na ekranie; `ChordBrush` = akordy;
-  `TextItemBrush` = teksty w planie; `DangerBrush` = usuwanie. Typografia operatora: skala
+  `TextItemBrush` = teksty w planie; `PresentationItemBrush` = prezentacje w planie;
+  `DangerBrush` = usuwanie i błędy. Typografia operatora: skala
   13/15/18/24 (`Themes/Controls.axaml`). Kroje: Atkinson Hyperlegible Next (interfejs), Literata
   (tytuły, tekst na rzutniku).
 - Rzutnik (`ProjectionAppearance`): ciemny = czerń i ciepła kość słoniowa, jasny = biel i granat;
   tytuł pieśni w delikatnym ciepłym odcieniu z linią pod spodem; bez stałej wysokości wiersza
-  (Literata ma długie ogonki liter).
+  (Literata ma długie ogonki liter). Slajd prezentacji: obraz na cały ekran na czarnym tle.
 - Bez zbędnych objaśnień i podpisów: pusty stan, krótka podpowiedź w polu, ostrzeżenie przy
   usuwaniu — tak; opisy pod nagłówkami — nie. Teksty interfejsu po polsku.
 
@@ -294,3 +326,18 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 - Strona pilota `app/web/remote` mówi protokołem z `Uwielbienia.Link/RemoteProtocol.cs`;
   zmiana protokołu = zmiana w obu miejscach.
 - Wydanie: `python deploy.py` (wersja w `version.txt`, tag → `.github/workflows/release.yml`).
+
+### Do zrobienia (TODO)
+
+- **Prezentacje bez Microsoft Office (Linux i Windows bez PowerPointa):** eksport slajdów przez
+  LibreOffice w trybie headless — druga implementacja `ISlideExporter` (np. `LibreOfficeExporter`),
+  wybierana, gdy PowerPoint jest niedostępny (`Type.GetTypeFromProgID("PowerPoint.Application")`
+  zwraca `null`; na Linuksie zawsze). Szukać `soffice` w `PATH` i typowych miejscach
+  (`C:\Program Files\LibreOffice\program\soffice.exe`, `/usr/bin/soffice`, `/usr/lib/libreoffice/program/soffice`,
+  flatpak/snap). Konwersja `soffice --headless --convert-to pdf --outdir <tmp> <plik>` (osobny
+  profil `-env:UserInstallation=file:///<tmp>/profil`, żeby nie kolidować z otwartym LibreOffice),
+  potem PDF → PNG 1920 px na slajd (biblioteka do renderowania PDF, np. PDFium/Docnet — ta sama
+  posłuży do dodawania PDF jako prezentacji). Postęp przez `IProgress` jak w `PowerPointExporter`;
+  gdy nie ma ani PowerPointa, ani LibreOffice — czytelny komunikat w planie („Zainstaluj
+  LibreOffice albo dodaj slajdy jako obrazy”). Test z fałszywym `ISlideExporter` + ręczna próba na
+  Linuksie.

@@ -9,6 +9,11 @@ namespace Uwielbienia.Core.Presentation;
 /// <param name="Label">Etykieta dla operatora, np. „Refren” albo „Zwrotka 1 (2/2)”.</param>
 public record Slide(string SectionCode, string Label, IReadOnlyList<SlideLine> Lines);
 
+/// <summary>Slajd prezentacji: obraz na cały ekran.</summary>
+/// <param name="ImageFile">Pełna ścieżka pliku obrazu.</param>
+/// <param name="Number">Numer slajdu od 1.</param>
+public sealed record ImageSlide(string ImageFile, int Number) : Slide($"S{Number}", $"Slajd {Number}", []);
+
 /// <summary>Wers slajdu.</summary>
 /// <param name="Text">Tekst do wyświetlenia (bez znaczników).</param>
 /// <param name="Chords">Akordy (tylko dla operatora; nigdy na ekranie projekcji).</param>

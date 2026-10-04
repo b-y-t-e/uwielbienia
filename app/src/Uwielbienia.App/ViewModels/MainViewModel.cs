@@ -28,7 +28,8 @@ public sealed partial class MainViewModel : ObservableObject
         ILiveControl control,
         ISongLibrary library,
         PlanAddViewModel planAdd,
-        PlanActions planActions)
+        PlanActions planActions,
+        ProjectionCalibration calibration)
     {
         PlanAdd = planAdd;
         Live = live;
@@ -51,6 +52,9 @@ public sealed partial class MainViewModel : ObservableObject
         {
             OnPropertyChanged(nameof(ProjectionStatus));
             OnPropertyChanged(nameof(ProjectionHint));
+            // po zamknięciu projekcji tryb kalibracji się kończy
+            if (projection.Mode == ProjectionMode.Off)
+                calibration.IsActive = false;
         };
         settings.Changed += (_, _) => OnSettingsChanged();
         _updates.UpdateAvailable += OnUpdateAvailable;
@@ -65,10 +69,18 @@ public sealed partial class MainViewModel : ObservableObject
     /// </summary>
     private static void ShowDetails(PlanItemViewModel item, ISongLibrary library, PreviewViewModel preview)
     {
-        if (item.Item is SongPlanItem songItem && library.Find(songItem.SongId) is { } song)
-            preview.ShowPlanItem(songItem, song);
-        else
-            preview.Clear();
+        switch (item.Item)
+        {
+            case SongPlanItem songItem when library.Find(songItem.SongId) is { } song:
+                preview.ShowPlanItem(songItem, song);
+                break;
+            case PresentationPlanItem presentation:
+                preview.ShowPresentation(presentation);
+                break;
+            default:
+                preview.Clear();
+                break;
+        }
     }
 
     public PlanViewModel Plan { get; }

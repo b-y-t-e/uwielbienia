@@ -65,11 +65,18 @@ public sealed class LiveSession : ILiveControl, ILiveStateSource
         var slideIndex = State.SlideIndex;
         // Te same slajdy (np. zmiana kolejności planu) = ta sama migawka — bez ponownego
         // przejścia (CrossFade) na rzutniku. Zmieniony układ części albo poprawiony tekst — podmiana.
-        if (current?.PlanItemId is { } id && playlist.FirstOrDefault(i => i.PlanItemId == id) is { } updated &&
-            !SameSlides(current.Slides, updated.Slides))
+        if (current?.PlanItemId is { } id && playlist.FirstOrDefault(i => i.PlanItemId == id) is { } updated)
         {
-            slideIndex = MapSlide(current.Slides, updated.Slides, slideIndex);
-            current = updated;
+            if (!SameSlides(current.Slides, updated.Slides))
+            {
+                slideIndex = MapSlide(current.Slides, updated.Slides, slideIndex);
+                current = updated;
+            }
+            else if (current.Note != updated.Note)
+            {
+                // np. prezentacja bez slajdów: „Przygotowywanie…” → komunikat błędu (slajdy te same — bez przejścia)
+                current = current with { Note = updated.Note };
+            }
         }
         Publish(current, slideIndex, State.IsBlank);
     }

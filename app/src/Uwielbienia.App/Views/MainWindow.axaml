@@ -64,16 +64,19 @@
           <DockPanel>
             <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="8,0,0,10" MinHeight="34">
               <TextBlock Classes="heading" Text="Plan" VerticalAlignment="Center" />
-              <Button Grid.Column="1" Classes="addSmall" Content="+" ToolTip.Tip="Dodaj pieśń lub tekst"
+              <Button Grid.Column="1" Classes="addSmall" Content="+" ToolTip.Tip="Dodaj pieśń, tekst albo prezentację"
                       Click="OnPlanAddClick" IsVisible="{Binding !Plan.IsEmpty}" />
             </Grid>
-            <Button DockPanel.Dock="Top" Classes="addEmpty" Content="+ Dodaj pieśń lub tekst" Margin="4,4,4,0"
+            <Button DockPanel.Dock="Top" Classes="addEmpty" Content="+ Dodaj do planu" Margin="4,4,4,0"
+                    ToolTip.Tip="Pieśń, tekst albo prezentację (można też upuścić plik prezentacji na plan)"
                     IsVisible="{Binding Plan.IsEmpty}" Click="OnPlanAddClick" />
-            <ListBox x:Name="PlanList" ItemsSource="{Binding Plan.Items}" SelectedItem="{Binding Plan.Selected}">
+            <!-- Upuszczony plik prezentacji albo obrazy = nowa prezentacja w planie. -->
+            <ListBox x:Name="PlanList" ItemsSource="{Binding Plan.Items}" SelectedItem="{Binding Plan.Selected}"
+                     DragDrop.AllowDrop="True">
               <!-- Prawy klik w pustym miejscu listy. -->
               <ListBox.ContextMenu>
                 <ContextMenu>
-                  <MenuItem Header="Dodaj pieśń lub tekst…" Click="OnPlanAddClick" />
+                  <MenuItem Header="Dodaj…" Click="OnPlanAddClick" />
                 </ContextMenu>
               </ListBox.ContextMenu>
               <ListBox.ItemTemplate>
@@ -94,11 +97,15 @@
                       <Grid ColumnDefinitions="4,32,*">
                         <Border Background="{DynamicResource CandleBrush}" CornerRadius="2" IsVisible="{Binding IsLive}" Margin="0,2" />
 <Panel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,8,0">
-                          <TextBlock Classes="number" Text="{Binding Number}" IsVisible="{Binding !IsText}" />
+                          <TextBlock Classes="number" Text="{Binding Number}" IsVisible="{Binding IsSong}" />
                           <Ellipse Classes="textDot" IsVisible="{Binding IsText}" />
+                          <Border Classes="slideMark" IsVisible="{Binding IsPresentation}" />
                         </Panel>
                         <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                          <TextBlock Classes="bodyStrong" Classes.textItem="{Binding IsText}" Text="{Binding Title}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Classes="bodyStrong" Classes.textItem="{Binding IsText}" Classes.presentationItem="{Binding IsPresentation}"
+                                     Text="{Binding Title}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Classes="caption" Text="{Binding Note}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Note}"
+                                     IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}" />
                         </StackPanel>
                       </Grid>
                     </Button>
@@ -128,7 +135,7 @@
                 <Button Classes="quiet liveHeaderAction" Content="Edytuj" Command="{Binding Preview.EditCommand}"
                         IsVisible="{Binding Preview.HasSong}" />
                 <ToggleButton Classes="chip liveHeaderAction" Content="Akordy" IsChecked="{Binding ShowChords, Mode=OneWay}"
-                              Command="{Binding ToggleChordsCommand}" IsVisible="{Binding !Preview.IsText}" />
+                              Command="{Binding ToggleChordsCommand}" IsVisible="{Binding Preview.HasChordsToggle}" />
               </StackPanel>
             </Grid>
 
@@ -145,8 +152,47 @@
 
               <Panel IsVisible="{Binding Preview.IsViewing}">
               <TextBlock Classes="bodyMuted" TextWrapping="Wrap" HorizontalAlignment="Center" VerticalAlignment="Center"
-                         IsVisible="{Binding !Preview.HasSong}" TextAlignment="Center"
-                         Text="Wybierz pieśń w planie." />
+                         IsVisible="{Binding Preview.IsEmpty}" TextAlignment="Center"
+                         Text="Wybierz pozycję w planie." />
+
+              <!-- Prezentacja: slajdy jako miniatury; przygotowanie (PowerPoint) trwa w tle. -->
+              <ContentControl Content="{Binding Preview.Presentation}" IsVisible="{Binding Preview.HasPresentation}">
+                <ContentControl.ContentTemplate>
+                  <DataTemplate x:DataType="vm:PresentationViewModel">
+                    <DockPanel>
+                      <StackPanel DockPanel.Dock="Top">
+                        <TextBlock Classes="songTitle" Text="{Binding Title}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Title}" />
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                          <TextBlock Classes="caption" Text="{Binding Summary}" VerticalAlignment="Center"
+                                     IsVisible="{Binding Summary, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                          <TextBlock Classes="caption" Classes.failed="{Binding IsFailed}" Text="{Binding Note}" TextWrapping="Wrap"
+                                     VerticalAlignment="Center" IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                          <Button Classes="quiet" Content="Spróbuj ponownie" Command="{Binding RetryCommand}" IsVisible="{Binding IsFailed}" />
+                        </StackPanel>
+                      </StackPanel>
+                      <ScrollViewer Margin="0,14,0,0">
+                        <ItemsControl ItemsSource="{Binding Slides}" Margin="0,0,2,0">
+                          <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                              <UniformGrid Columns="2" />
+                            </ItemsPanelTemplate>
+                          </ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:PresentationSlideViewModel">
+                              <StackPanel Margin="0,0,10,12">
+                                <Border Classes="slideThumb">
+                                  <Image Source="{Binding Thumbnail^}" Stretch="Uniform" />
+                                </Border>
+                                <TextBlock Classes="caption" Text="{Binding Label}" Margin="2,4,0,0" />
+                              </StackPanel>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </ScrollViewer>
+                    </DockPanel>
+                  </DataTemplate>
+                </ContentControl.ContentTemplate>
+              </ContentControl>
               <DockPanel IsVisible="{Binding Preview.HasSong}">
                 <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*">
                   <TextBlock Classes="displayNumber" Text="{Binding Preview.Number}" Margin="0,2,14,0" VerticalAlignment="Top"
@@ -267,6 +313,9 @@
                         <TextBlock Grid.Column="1" Classes="caption" FontWeight="SemiBold" Text="{Binding Live.CurrentLabel}"
                                    HorizontalAlignment="Right" />
                       </Grid>
+                      <Border Classes="slideThumb" IsVisible="{Binding Live.HasCurrentImage}" Margin="0,0,0,4">
+                        <Image Source="{Binding Live.CurrentImage^}" Stretch="Uniform" />
+                      </Border>
                       <ItemsControl ItemsSource="{Binding Live.CurrentLines}">
                         <ItemsControl.ItemTemplate>
                           <DataTemplate x:DataType="p:SlideLine">
@@ -289,6 +338,9 @@
                         <TextBlock Grid.Column="1" Classes="caption" FontWeight="SemiBold" Text="{Binding Live.UpcomingLabel}"
                                    HorizontalAlignment="Right" />
                       </Grid>
+                      <Border Classes="slideThumb" IsVisible="{Binding Live.HasNextImage}" MaxWidth="320" HorizontalAlignment="Left">
+                        <Image Source="{Binding Live.NextImage^}" Stretch="Uniform" />
+                      </Border>
                       <ItemsControl ItemsSource="{Binding Live.NextLines}">
                         <ItemsControl.ItemTemplate>
                           <DataTemplate x:DataType="p:SlideLine">
@@ -325,12 +377,16 @@
           </Grid>
           <TextBox x:Name="PlanAddBox" DockPanel.Dock="Top" Classes="search" Text="{Binding PlanAdd.Query}" Margin="0,0,0,10"
                    PlaceholderText="Szukaj pieśni lub tekstu: numer albo słowa" />
-          <Grid DockPanel.Dock="Bottom" ColumnDefinitions="Auto,8,Auto,*,Auto" Margin="0,12,0,0">
+          <Grid DockPanel.Dock="Bottom" ColumnDefinitions="Auto,8,Auto,8,Auto,*,Auto" Margin="0,12,0,0">
             <Button Content="+ Nowa pieśń" Command="{Binding PlanAdd.NewSongCommand}" />
             <Button Grid.Column="2" Content="+ Nowy tekst" Command="{Binding PlanAdd.NewTextCommand}" />
-            <Button Grid.Column="4" Classes="primary" Content="Wybierz" Command="{Binding PlanAdd.AddCommand}"
+            <Button Grid.Column="4" Content="+ Prezentacja" Click="OnAddPresentationClick"
+                    ToolTip.Tip="Plik PowerPoint albo obrazy slajdów" />
+            <Button Grid.Column="6" Classes="primary" Content="Wybierz" Command="{Binding PlanAdd.AddCommand}"
                     CommandParameter="{x:Null}" IsEnabled="{Binding PlanAdd.HasSelection}" />
           </Grid>
+          <TextBlock DockPanel.Dock="Bottom" Classes="caption failed" Text="{Binding PlanAdd.Error}" TextWrapping="Wrap" Margin="0,10,0,0"
+                     IsVisible="{Binding PlanAdd.Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
           <!-- Klik zaznacza; dodaje „Wybierz”, Enter albo dwuklik. -->
           <ListBox ItemsSource="{Binding PlanAdd.Results}" SelectedItem="{Binding PlanAdd.Selected}">
             <ListBox.ItemTemplate>
@@ -386,6 +442,26 @@
     <!-- Tekst (część Mszy, modlitwa…) odróżnia się od pieśni kolorem; zamiast numeru ma kropkę. -->
     <Style Selector="TextBlock.textItem">
       <Setter Property="Foreground" Value="{DynamicResource TextItemBrush}" />
+    </Style>
+    <!-- Prezentacja: znak slajdu zamiast numeru i własny kolor. -->
+    <Style Selector="TextBlock.presentationItem">
+      <Setter Property="Foreground" Value="{DynamicResource PresentationItemBrush}" />
+    </Style>
+    <Style Selector="Border.slideMark">
+      <Setter Property="Width" Value="14" />
+      <Setter Property="Height" Value="10" />
+      <Setter Property="CornerRadius" Value="2" />
+      <Setter Property="BorderThickness" Value="1.5" />
+      <Setter Property="BorderBrush" Value="{DynamicResource PresentationItemBrush}" />
+    </Style>
+    <Style Selector="Border.slideThumb">
+      <Setter Property="Background" Value="Black" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="ClipToBounds" Value="True" />
+      <Setter Property="MinHeight" Value="60" />
+    </Style>
+    <Style Selector="TextBlock.failed">
+      <Setter Property="Foreground" Value="{DynamicResource DangerBrush}" />
     </Style>
     <Style Selector="Ellipse.textDot">
       <Setter Property="Width" Value="8" />

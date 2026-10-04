@@ -144,9 +144,16 @@ public sealed partial class PlanItemViewModel(PlanItem item, PlanItemInfo info, 
 
     public int? Number => Info.Number;
 
+    public bool IsSong => Info.Kind == PlanItemKind.Song;
+
     public bool IsText => Info.Kind == PlanItemKind.Text;
 
+    public bool IsPresentation => Info.Kind == PlanItemKind.Presentation;
+
     public string Title => Info.Title;
+
+    /// <summary>Uwaga pod tytułem, np. „Przygotowywanie slajdów…”.</summary>
+    public string? Note => Info.Note;
 
     [ObservableProperty]
     public partial bool IsLive { get; set; }

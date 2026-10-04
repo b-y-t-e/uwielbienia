@@ -11,8 +11,8 @@ dotnet run --project app/src/Uwielbienia.Desktop
 Wymaga .NET 10 SDK. Pieśni są wbudowane w aplikację; uruchomiona z repozytorium czyta od razu
 folder `Teksty/`, więc poprawki tekstów widać bez przebudowy.
 
-Dane użytkownika (plany, ustawienia, sparowane urządzenia, własne pieśni i teksty w `teksty/`):
-`%APPDATA%\Uwielbienia` (Linux: `~/.config/Uwielbienia`).
+Dane użytkownika (plany, ustawienia, sparowane urządzenia, własne pieśni i teksty w `teksty/`,
+prezentacje w `prezentacje/`): `%APPDATA%\Uwielbienia` (Linux: `~/.config/Uwielbienia`).
 
 **Plan, pieśni i teksty:** do planu dodaje się z planu — „+” w nagłówku albo prawy klik na pozycji
 („Dodaj przed… / po…”, „Pokaż na ekranie”, „Usuń z planu”). Okno „Dodaj do planu” wyszukuje
@@ -20,14 +20,25 @@ pieśni i teksty i pozwala utworzyć nową pieśń albo tekst (część Mszy, mo
 akordów). „Edytuj” w kolumnie „Pieśń” zmienia wybraną. Zapis jest tylko na tym komputerze; zmieniona pieśń
 śpiewnika ma „Przywróć oryginał”.
 
+**Prezentacje:** „+ Prezentacja” w oknie „Dodaj do planu” (albo upuszczenie pliku na plan) dodaje
+plik PowerPoint (`.pptx`, `.pps`, `.ppt`…) albo obrazy slajdów. Plik jest kopiowany do danych
+aplikacji, a slajdy przygotowuje w tle zainstalowany PowerPoint (Windows) — postęp widać w planie.
+Bez PowerPointa można dodać slajdy zapisane jako obrazy.
+
+**Dopasowanie obrazu do ekranu w sali** (jak w pps_viewer) — myszą wprost na ekranie projekcji:
+ruch myszy pokazuje na 3 s ramkę i narożniki. Przeciąganie w dowolnym miejscu przesuwa najbliższy
+narożnik (narożniki bywają poza ekranem w sali), z Shift — cały obraz. Kółko myszy zmienia wielkość, Shift+kółko szerokość, Ctrl+kółko wysokość.
+Klawisze (po kliknięciu w obraz): K — tryb kalibracji, a w nim G — siatka, R — pełny obraz, Tab i
+Ctrl+strzałki — narożnik dokładnie (z Shift o 10 px), Esc — koniec.
+
 ## Okno operatora
 
 Trzy kolumny (szerokość regulowana przeciąganiem, zapamiętywana):
 
 | Kolumna | Zawartość | Kod |
 |---|---|---|
-| **Plan** | kolejność pieśni: klik wybiera, dwuklik pokazuje, przeciąganie zmienia kolejność | `PlanViewModel` |
-| **Pieśń** | pozycja zaznaczona w planie: tekst, akordy, pola wyboru części (na żywo dla granej), edycja | `PreviewViewModel`, `SongEditorViewModel` |
+| **Plan** | pieśni, teksty i prezentacje: klik wybiera, dwuklik pokazuje, przeciąganie zmienia kolejność | `PlanViewModel` |
+| **Pieśń** | pozycja zaznaczona w planie: tekst, akordy, pola wyboru części (na żywo dla granej), edycja; slajdy prezentacji | `PreviewViewModel`, `SongEditorViewModel`, `PresentationViewModel` |
 | **Na ekranie** | to, co widzi sala: postęp, bieżąca i następna część z akordami, Wstecz / Dalej | `LiveViewModel` |
 
 Plany (wydarzenia i szablony) zarządza się w oknie „Plany” po kliknięciu nazwy planu.
@@ -43,7 +54,8 @@ Plany (wydarzenia i szablony) zarządza się w oknie „Plany” po kliknięciu 
 | pisanie cyfr/liter | „Dodaj do planu” z tym tekstem; Enter dodaje zaraz za pieśnią na ekranie |
 | dwuklik w planie | pokaż pieśń na ekranie (jedyny sposób w oknie operatora) |
 | Shift+1…9 | skok do slajdu bieżącej pieśni |
-| Esc | zamyka nakładkę; w trybie jednego ekranu wraca do okna operatora |
+| Esc | zamyka nakładkę; kończy kalibrację obrazu; w trybie jednego ekranu wraca do okna operatora |
+| K, a w kalibracji G, R, Tab, Ctrl+strzałki | na ekranie projekcji: tryb kalibracji, siatka, pełny obraz, narożnik |
 
 ## Struktura
 

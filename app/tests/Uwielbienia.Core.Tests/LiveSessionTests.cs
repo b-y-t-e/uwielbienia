@@ -156,4 +156,18 @@ public class LiveSessionTests
         Assert.NotEqual(plan.Items[0].Id, copy.Items[0].Id);
         Assert.Equal("001-a", ((SongPlanItem)copy.Items[0]).SongId);
     }
+
+    [Fact]
+    public void Note_of_shown_item_updates_without_new_slides()
+    {
+        var session = new LiveSession();
+        var id = Guid.NewGuid();
+        var preparing = new LiveItem(id, "p", null, "Prezentacja", [], HasOwnTitle: false, Note: "Przygotowywanie slajdów…");
+        session.SetPlaylist([preparing]);
+        session.Show(preparing);
+
+        session.SetPlaylist([preparing with { Note = "Brak PowerPointa" }]);
+
+        Assert.Equal("Brak PowerPointa", session.State.Item!.Note);
+    }
 }

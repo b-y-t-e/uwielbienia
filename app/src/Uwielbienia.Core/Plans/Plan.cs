@@ -53,10 +53,12 @@ public sealed record Plan(
 }
 
 /// <summary>
-/// Pozycja planu. Dziś tylko pieśń; w przyszłości np. stałe elementy (ogłoszenie, modlitwa, obraz).
+/// Pozycja planu: pieśń lub tekst (<see cref="SongPlanItem"/>), prezentacja (<see cref="PresentationPlanItem"/>).
+/// Nowy rodzaj = nowy rekord z <see cref="JsonDerivedTypeAttribute"/> (CLAUDE.md: „Nowy rodzaj elementu”).
 /// </summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(SongPlanItem), "song")]
+[JsonDerivedType(typeof(PresentationPlanItem), "presentation")]
 public abstract record PlanItem(Guid Id)
 {
     public abstract PlanItem WithNewId();
@@ -97,5 +99,12 @@ public sealed record SongPlanItem(Guid Id, string SongId, IReadOnlyList<string>?
 
     public static SongPlanItem For(string songId) => new(Guid.NewGuid(), songId, null);
 
+    public override PlanItem WithNewId() => this with { Id = Guid.NewGuid() };
+}
+
+/// <summary>Prezentacja (PowerPoint albo obrazy) skopiowana do folderu aplikacji.</summary>
+/// <param name="Folder">Folder prezentacji w katalogu aplikacji (<see cref="Slideshows.ISlideshowLibrary"/>).</param>
+public sealed record PresentationPlanItem(Guid Id, string Folder, string Title) : PlanItem(Id)
+{
     public override PlanItem WithNewId() => this with { Id = Guid.NewGuid() };
 }

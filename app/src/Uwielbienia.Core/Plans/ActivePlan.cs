@@ -1,5 +1,4 @@
 using Uwielbienia.Core.Presentation;
-using Uwielbienia.Core.Songs;
 
 namespace Uwielbienia.Core.Plans;
 
@@ -13,13 +12,13 @@ public sealed class ActivePlan
     private readonly IPlanItemTypes _itemTypes;
     private readonly LiveSession _session;
 
-    public ActivePlan(IPlanStore store, IPlanItemTypes itemTypes, LiveSession session, ISongLibrary library)
+    public ActivePlan(IPlanStore store, IPlanItemTypes itemTypes, LiveSession session)
     {
         _store = store;
         _itemTypes = itemTypes;
         _session = session;
-        // Zmieniona pieśń (edycja) trafia od razu do planu i — jeśli jest grana — na ekran.
-        library.Changed += (_, _) => Refresh();
+        // Zmieniona treść (edycja pieśni, gotowe slajdy prezentacji) trafia od razu do planu i — jeśli jest grana — na ekran.
+        itemTypes.Changed += (_, _) => Refresh();
     }
 
     public Plan? Plan { get; private set; }

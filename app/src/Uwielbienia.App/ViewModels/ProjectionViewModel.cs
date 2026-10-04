@@ -9,8 +9,11 @@ public sealed partial class ProjectionViewModel(
     LiveViewModel live,
     SearchViewModel quickPick,
     ILiveControl control,
-    IProjectionController projection) : ObservableObject
+    IProjectionController projection,
+    ProjectionCalibration calibration) : ObservableObject
 {
+    public ProjectionCalibration Calibration { get; } = calibration;
+
     public LiveViewModel Live { get; } = live;
 
     public SearchViewModel QuickPick { get; } = quickPick;

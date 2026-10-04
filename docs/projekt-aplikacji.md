@@ -34,10 +34,10 @@ wyświetla. Dzięki temu nowe odbiorniki nie wymagają zmian w logice.
   rodzaj: *wydarzenie* („Uwielbienie”, „Msza” — data jest osobnym polem, nie częścią
   nazwy) albo *szablon* („Próba z dziećmi”). Plany można przeglądać (historia wg daty),
   kopiować na dziś, tworzyć wydarzenie z szablonu i zapisywać wydarzenie jako szablon.
-- **Pozycja planu** — pieśń + wybrane części i ich kolejność. Domyślnie wszystkie
-  części wg `kolejnosc`; operator odznacza części albo zmienia kolejność.
-  W przyszłości ten sam typ pozycji obejmie „stałe elementy” (ogłoszenie, modlitwa,
-  obraz) — dlatego pozycja jest abstrakcją (`IPlanItem`), a pieśń jednym z typów.
+- **Pozycja planu** — pieśń (lub tekst) + wybrane części i ich kolejność albo **prezentacja**
+  (PowerPoint lub obrazy; slajdy jako obrazy na cały ekran). Domyślnie wszystkie
+  części wg `kolejnosc`; operator odznacza części albo zmienia kolejność. Pozycja jest
+  abstrakcją (`PlanItem` + `IPlanItemType`), pieśń i prezentacja to jej rodzaje.
 - **Slajd** — to, co jest naraz na ekranie: jedna część pieśni albo jej fragment, jeśli
   część jest zbyt długa (np. >6 wersów → dzielimy równo).
 - **Pieśń** vs **Na ekranie** — dwa niezależne wskaźniki. Pieśń = to, co operator
@@ -53,6 +53,8 @@ Zasada: **Plan** decyduje, co i w jakiej kolejności, **Pieśń** służy do czy
 | ułożyć plan | „+” w nagłówku planu (na koniec) albo prawy klik na pozycji → „Dodaj przed… / po…”; w oknie „Dodaj do planu” wyszukać pieśń lub tekst, zaznaczyć i „Wybierz” (Enter, dwuklik) |
 | szybko dobrać pieśń w trakcie | zacząć pisać numer lub słowa gdziekolwiek w oknie — otwiera się „Dodaj do planu”; wybrana trafia zaraz za pieśń na ekranie |
 | dodać coś, czego jeszcze nie ma | w oknie „Dodaj do planu”: „+ Nowa pieśń” / „+ Nowy tekst” → edytor w kolumnie „Pieśń” → „Zapisz” wstawia w wybrane miejsce |
+| dodać prezentację | „+ Prezentacja” w oknie „Dodaj do planu” albo upuścić plik na plan; slajdy przygotowują się w tle (PowerPoint), postęp pod tytułem w planie |
+| dopasować obraz do ekranu w sali | jak w pps_viewer: ruszyć myszą na ekranie projekcji (ramka i narożniki na 3 s) i przeciągać w dowolnym miejscu (przesuwa się najbliższy narożnik — także niewidoczny, poza ekranem), Shift — cały obraz; kółko = wielkość, Shift/Ctrl+kółko = szerokość/wysokość; K tryb kalibracji (w nim G siatka, R pełny obraz) |
 | zmienić kolejność / usunąć | przeciągnąć pozycję; ✕ albo prawy klik → „Usuń z planu” |
 | pokazać na ekranie | dwuklik na pozycji planu albo prawy klik → „Pokaż na ekranie”; dalej Dalej / Wstecz |
 | zmienić układ pieśni w tym planie | w kolumnie „Pieśń”: przeciągnąć część za nagłówek, „⋯” → „Powtórz” / „Usuń”, „Przywróć usuniętą część”; pole wyboru pomija część (wszystko działa też na żywo) |
@@ -156,9 +158,12 @@ app/
     Uwielbienia.Core/          # czysta logika, bez UI i bez sieci (net10.0)
       Songs/     Song, Section, Line, ChordSet, ISongParser → MarkdownSongParser,
                  ISongLibrary → FileSongLibrary / EmbeddedSongLibrary, SongSearch
-      Plans/     Plan, IPlanItem, SongPlanItem, IPlanStore → JsonPlanStore
+      Plans/     Plan, PlanItem → SongPlanItem / PresentationPlanItem, IPlanStore → JsonPlanStore
+      Slideshows/
+                 ISlideshowLibrary → SlideshowLibrary (kopie prezentacji, slajdy w tle), ISlideExporter
       Presentation/
-                 Slide, ISlideBuilder → SectionSlideBuilder,
+                 IPlanItemType → SongPlanItemType / PresentationPlanItemType, Keystone (narożniki obrazu),
+                 Slide / ImageSlide, ISlideBuilder → SectionSlideBuilder,
                  LiveSession (stan: pozycja, slajd, czarny ekran; Next/Prev/Show/Blank),
                  LiveState (niezmienny snapshot wysyłany do odbiorców),
                  ILiveStateSink (odbiorca stanu: okno projekcji, link, www)
@@ -214,8 +219,11 @@ Najważniejsze decyzje:
    z rozpoznaniem zwrotek/refrenu i transpozycją akordów do wybranej tonacji; operator zawsze
    zatwierdza wynik przed zapisem.
 5. **Android:** ta sama aplikacja (`Uwielbienia.Android`), układ zakładek, gesty, tryb jednego urządzenia.
-6. **Później:** stałe elementy w planie (ogłoszenie, modlitwa, obraz — nowy typ `PlanItem`),
-   telefon jako ekran (S5), edycja pieśni w kolumnie „Pieśń”.
+6. **Zrobione — prezentacje i dopasowanie obrazu:** prezentacja PowerPoint (eksport slajdów
+   przez PowerPointa, jak w pps_viewer) albo obrazy jako pozycja planu; narożniki obrazu projekcji
+   (korekcja trapezu, wielkość, położenie).
+7. **Później:** telefon jako ekran (S5), obrazy slajdów prezentacji na telefonie i w ekranie
+   przeglądarki (dziś tylko etykieta „Slajd n”), PDF jako prezentacja, sprzątanie nieużywanych prezentacji.
 
 ## 9. Wymagania środowiska
 

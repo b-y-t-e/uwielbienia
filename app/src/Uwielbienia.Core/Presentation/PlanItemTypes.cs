@@ -9,11 +9,14 @@ public enum PlanItemKind
     Song,
     /// <summary>Tekst: część Mszy, modlitwa, ogłoszenie (kropka zamiast numeru).</summary>
     Text,
+    /// <summary>Prezentacja: slajdy-obrazy (znak slajdu zamiast numeru).</summary>
+    Presentation,
 }
 
 /// <summary>Jak pozycja wygląda na liście planu.</summary>
 /// <param name="Number">Numer w śpiewniku; <c>null</c> = bez numeru.</param>
-public sealed record PlanItemInfo(string Title, int? Number, PlanItemKind Kind);
+/// <param name="Note">Krótka uwaga pod tytułem, np. „Przygotowywanie slajdów…”.</param>
+public sealed record PlanItemInfo(string Title, int? Number, PlanItemKind Kind, string? Note = null);
 
 /// <summary>
 /// Jeden rodzaj pozycji planu (pieśń, …): opis na liście i zamiana na to, co pokazuje ekran.
@@ -29,6 +32,9 @@ public interface IPlanItemType
 
     /// <summary>Slajdy do wyświetlenia; <c>null</c> = nie ma czego pokazać.</summary>
     LiveItem? Present(PlanItem item);
+
+    /// <summary>Treść pozycji tego rodzaju zmieniła się (edycja pieśni, gotowe slajdy) — plan przebuduje kolejkę.</summary>
+    event EventHandler? Changed;
 }
 
 /// <summary>Wszystkie rodzaje pozycji planu — plan, ekran i telefon pytają tylko tę usługę.</summary>
@@ -37,11 +43,23 @@ public interface IPlanItemTypes
     PlanItemInfo? Describe(PlanItem item);
 
     LiveItem? Present(PlanItem item);
+
+    /// <summary>Zmieniła się treść pozycji któregoś rodzaju.</summary>
+    event EventHandler? Changed;
 }
 
-public sealed class PlanItemTypes(IEnumerable<IPlanItemType> types) : IPlanItemTypes
+public sealed class PlanItemTypes : IPlanItemTypes
 {
-    private readonly IReadOnlyList<IPlanItemType> _types = types.ToList();
+    private readonly IReadOnlyList<IPlanItemType> _types;
+
+    public PlanItemTypes(IEnumerable<IPlanItemType> types)
+    {
+        _types = types.ToList();
+        foreach (var type in _types)
+            type.Changed += (_, _) => Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    public event EventHandler? Changed;
 
     public PlanItemInfo? Describe(PlanItem item) => TypeOf(item)?.Describe(item);
 

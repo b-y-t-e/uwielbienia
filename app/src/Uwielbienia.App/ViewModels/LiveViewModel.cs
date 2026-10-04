@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.Input;
+using Uwielbienia.App.Services;
 using Uwielbienia.Core.Presentation;
 
 namespace Uwielbienia.App.ViewModels;
@@ -25,10 +27,13 @@ public sealed partial class LiveViewModel : ObservableObject
 
     public Slide? VisibleSlide => State.VisibleSlide;
 
-    /// <summary>Strona rzutnika: slajd i — na pierwszym slajdzie pieśni — jej tytuł.</summary>
-    public ProjectedPage? Page => State.VisibleSlide is { } slide && State.Item is { } item
-        ? new ProjectedPage(slide, State.SlideIndex == 0 && item.HasOwnTitle ? item.Title : null)
-        : null;
+    /// <summary>Strona rzutnika: slajd i — na pierwszym slajdzie pieśni — jej tytuł; slajd prezentacji — obraz.</summary>
+    public ProjectedPage? Page => State.VisibleSlide switch
+    {
+        ImageSlide image => new ProjectedImage(image),
+        { } slide when State.Item is { } item => new ProjectedPage(slide, State.SlideIndex == 0 && item.HasOwnTitle ? item.Title : null),
+        _ => null,
+    };
 
     public string Title => State.Item is { } item ? item.Title : "Ekran jest pusty";
 
@@ -56,7 +61,16 @@ public sealed partial class LiveViewModel : ObservableObject
 
     public IReadOnlyList<SlideLine> NextLines => NextTab?.Slide.Lines ?? [];
 
-    public string? CurrentLabel => CurrentTab?.Label ?? (HasItem && Slides.Count == 0 ? "Wszystkie części pominięte" : null);
+    /// <summary>Slajd prezentacji (miniatura) — zamiast wersów.</summary>
+    public Task<Bitmap?>? CurrentImage => CurrentTab?.Slide is ImageSlide image ? SlideImages.LoadThumbnailAsync(image.ImageFile) : null;
+
+    public Task<Bitmap?>? NextImage => NextTab?.Slide is ImageSlide image ? SlideImages.LoadThumbnailAsync(image.ImageFile) : null;
+
+    public bool HasCurrentImage => CurrentTab?.Slide is ImageSlide;
+
+    public bool HasNextImage => NextTab?.Slide is ImageSlide;
+
+    public string? CurrentLabel => CurrentTab?.Label ?? (HasItem && Slides.Count == 0 ? State.Item?.Note ?? "Brak slajdów" : null);
 
     public string? UpcomingLabel => NextTab?.Label ?? NextText;
 
@@ -92,6 +106,9 @@ public sealed partial class LiveViewModel : ObservableObject
         }
         foreach (var tab in Slides)
             tab.IsCurrent = tab.Index == state.SlideIndex;
+        // Następny slajd prezentacji wczytany zawczasu — „Dalej” bez czekania na obraz.
+        if (NextTab?.Slide is ImageSlide next)
+            SlideImages.Preload(next.ImageFile);
 
         OnPropertyChanged(nameof(VisibleSlide));
         OnPropertyChanged(nameof(Page));
@@ -104,6 +121,10 @@ public sealed partial class LiveViewModel : ObservableObject
         OnPropertyChanged(nameof(NextTab));
         OnPropertyChanged(nameof(CurrentLines));
         OnPropertyChanged(nameof(NextLines));
+        OnPropertyChanged(nameof(CurrentImage));
+        OnPropertyChanged(nameof(NextImage));
+        OnPropertyChanged(nameof(HasCurrentImage));
+        OnPropertyChanged(nameof(HasNextImage));
         OnPropertyChanged(nameof(CurrentLabel));
         OnPropertyChanged(nameof(UpcomingLabel));
         OnPropertyChanged(nameof(HasUpcoming));
@@ -116,9 +137,15 @@ public sealed partial class LiveViewModel : ObservableObject
 /// To, co rysuje rzutnik. Jeden obiekt (a nie osobne właściwości), żeby tytuł pojawiał się
 /// i znikał w tym samym przejściu co tekst slajdu.
 /// </summary>
-public sealed record ProjectedPage(Slide Slide, string? Title)
+public record ProjectedPage(Slide Slide, string? Title)
 {
     public bool HasTitle => Title is not null;
+}
+
+/// <summary>Slajd prezentacji na rzutniku: obraz na cały ekran (wczytywany w tle).</summary>
+public sealed record ProjectedImage(ImageSlide Image) : ProjectedPage(Image, null)
+{
+    public Task<Bitmap?> Picture => SlideImages.LoadAsync(Image.ImageFile);
 }
 
 public sealed partial class SlideTabViewModel(int index, Slide slide) : ObservableObject
