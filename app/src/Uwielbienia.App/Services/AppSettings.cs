@@ -11,6 +11,7 @@ public enum AppTheme
 
 /// <param name="SongsFolder">Folder <c>Teksty/</c> z repozytorium; <c>null</c> = wykryj automatycznie / wbudowane.</param>
 /// <param name="JoinVerseAndChorus">Krótka zwrotka i refren po niej na jednym slajdzie, gdy się mieszczą.</param>
+/// <param name="PictureOffsetMs">Obraz filmu względem dźwięku w ms (+ = obraz później) — stałe opóźnienie rzutnika.</param>
 /// <param name="ProjectionCorners">Dopasowanie obrazu do rzutnika: x, y 4 narożników (0..1); <c>null</c> = pełny ekran.</param>
 public sealed record AppSettings(
     AppTheme Theme = AppTheme.Dark,
@@ -23,7 +24,8 @@ public sealed record AppSettings(
     double PreviewColumnRatio = 0.42,
     double LiveColumnRatio = 0.42,
     double[]? ProjectionCorners = null,
-    bool JoinVerseAndChorus = true);
+    bool JoinVerseAndChorus = true,
+    int PictureOffsetMs = 0);
 
 public sealed class AppPaths
 {

@@ -56,13 +56,22 @@
       <div id="currentLines" class="lines"></div>
       <!-- Film na ekranie: czas, postęp i sterowanie zamiast tekstu -->
       <div id="videoPanel" class="video-panel" hidden>
-        <div id="videoTime" class="video-time">0:00</div>
+        <div class="video-clock"><span id="videoTime" class="video-time">0:00</span><span id="videoDuration" class="video-duration"></span></div>
         <div class="video-progress"><div id="videoProgress"></div></div>
-        <div id="videoDuration" class="video-duration"></div>
         <div class="video-buttons">
-          <button id="videoBack">−15 s</button>
-          <button id="videoToggle" class="video-toggle">Pauza</button>
-          <button id="videoForward">+15 s</button>
+          <button id="videoBack" class="video-skip">−15 s</button>
+          <button id="videoToggle" class="video-toggle" aria-label="Pauza">
+            <svg id="iconPause" viewBox="0 0 16 16" aria-hidden="true"><path d="M3,2 L5.6,2 L5.6,14 L3,14 Z M10.4,2 L13,2 L13,14 L10.4,14 Z" /></svg>
+            <svg id="iconPlay" viewBox="0 0 16 16" aria-hidden="true" hidden><path d="M4.5,2 L14,8 L4.5,14 Z" /></svg>
+          </button>
+          <button id="videoForward" class="video-skip">+15 s</button>
+        </div>
+        <!-- obraz względem dźwięku (rzutnik spóźnia obraz) — przesuwamy obraz, nie dźwięk; rzadkie ustawienie, więc małe -->
+        <div id="videoOffset" class="video-offset">
+          <span>Obraz</span>
+          <button id="pictureEarlier" aria-label="Obraz wcześniej o 0,1 s"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10,3 L5,8 L10,13" /></svg></button>
+          <b id="pictureOffset">0,0 s</b>
+          <button id="pictureLater" aria-label="Obraz później o 0,1 s"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6,3 L11,8 L6,13" /></svg></button>
         </div>
         <p id="videoError" class="video-error" hidden></p>
       </div>

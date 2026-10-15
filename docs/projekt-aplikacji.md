@@ -73,6 +73,7 @@ Zasada: **Plan** decyduje, co i w jakiej kolejności, **Pieśń** służy do czy
 | `Shift`+`F5` / `Escape` (pilot: długo do tyłu — na zmianę) | `Shift`+`F5` włącza projekcję (nigdy nie wyłącza), `Escape` zamyka okno / tryb jednego ekranu. Przy filmie oba to samo: podpowiedź na 4 s: potem długo do tyłu = poprzednia, długo do przodu = następna pozycja planu |
 | Dwuklik w planie | pokaż pieśń na ekranie — jedyny sposób w oknie operatora |
 | `.` | czarny ekran (włącz/wyłącz), także przy filmie |
+| `[` / `]` | przy filmie: obraz o 100 ms wcześniej / później względem dźwięku (zapamiętane dla wszystkich filmów) |
 | `Shift`+`1`–`9` | skok do n-tego slajdu bieżącej pieśni (same cyfry zaczynają wyszukiwanie numeru) |
 | Pisanie cyfr lub liter | **szybki wybór**: `47` albo `jezus mój` → okno „Dodaj do planu”, `Enter` = dodaj zaraz za pieśnią na ekranie. W trybie jednego ekranu (nakładka na projekcji) `Enter` pokazuje od razu, a pieśń trafia do planu zaraz za bieżącą; `Ctrl+Enter` = dodaj jako następną |
 | `F5` | włącz/wyłącz okno projekcji |

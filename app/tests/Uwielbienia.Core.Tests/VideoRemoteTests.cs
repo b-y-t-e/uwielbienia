@@ -8,7 +8,7 @@ using Uwielbienia.Link;
 
 namespace Uwielbienia.Core.Tests;
 
-/// <summary>Film z telefonu: pauza i ±15 s w granicach filmu.</summary>
+/// <summary>Film z telefonu: pauza, ±15 s w granicach filmu i obraz względem dźwięku.</summary>
 public sealed class VideoRemoteTests : IDisposable
 {
     private static readonly SongLibrary Library =
@@ -16,11 +16,12 @@ public sealed class VideoRemoteTests : IDisposable
 
     private readonly string _plans = Path.Combine(Path.GetTempPath(), "uwielbienia-tests-" + Guid.NewGuid().ToString("N"));
     private readonly PlayingVideo _video = new();
+    private readonly LiveSession _session = new();
     private readonly RemoteCommandHandler _handler;
 
     public VideoRemoteTests()
     {
-        var session = new LiveSession();
+        var session = _session;
         var songs = new SongPlanItemType(Library, new SectionSlideBuilder());
         var types = new PlanItemTypes([songs]);
         var plan = new ActivePlan(new JsonPlanStore(_plans), types, session);
@@ -43,6 +44,8 @@ public sealed class VideoRemoteTests : IDisposable
         public string? Unavailable => null;
 
         public bool IsHeld { get; set; }
+
+        public TimeSpan PictureOffset { get; set; }
 
         public event EventHandler? StatusChanged { add { } remove { } }
 
@@ -79,6 +82,19 @@ public sealed class VideoRemoteTests : IDisposable
 
         _video.Seek(TimeSpan.FromSeconds(110));
         Assert.Equal(120, (await Skip(15)).GetProperty("position").GetDouble());
+    }
+
+    [Fact]
+    public async Task Phone_shifts_the_picture_against_the_sound_by_one_step_only_on_film()
+    {
+        await _handler.HandleAsync("""{"cmd":"videoOffset","milliseconds":100}"""u8.ToArray());
+        Assert.Equal(TimeSpan.Zero, _video.PictureOffset);
+
+        _session.Show(new LiveItem(Guid.NewGuid(), "film", null, "Film", [new VideoSlide(_video.Status.File!)]));
+        await Send("""{"cmd":"videoOffset","milliseconds":100}""");
+        var reply = await Send("""{"cmd":"videoOffset","milliseconds":5000}""");
+        Assert.Equal(200, reply.GetProperty("pictureOffsetMs").GetInt32());
+        Assert.Equal(TimeSpan.FromMilliseconds(200), _video.PictureOffset);
     }
 
     [Fact]

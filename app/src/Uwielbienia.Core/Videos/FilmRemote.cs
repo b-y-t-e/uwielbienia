@@ -47,7 +47,7 @@ public sealed class FilmRemote
     public event EventHandler? FilmChanged;
 
     /// <summary>Na ekranie jest film, który da się odtworzyć.</summary>
-    private bool OnFilm => _live.State.Slide is VideoSlide && _player.HasVideo();
+    private bool OnFilm => _player.IsOnScreen(_live.State);
 
     /// <summary>Krótko „do przodu” (PageDown, →, ↓).</summary>
     public bool Forward() => Skip(Step);
@@ -107,6 +107,18 @@ public sealed class FilmRemote
             return;
         _promptSince = null;
         PromptChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary><c>[</c> / <c>]</c>: obraz o 100 ms wcześniej / później względem dźwięku; <c>false</c> = filmu nie ma.</summary>
+    public bool ShiftPicture(TimeSpan by)
+    {
+        CancelPrompt();
+        if (!OnFilm)
+            return false;
+        _player.ShiftPicture(by);
+        if (!_player.IsHeld)
+            FilmChanged?.Invoke(this, EventArgs.Empty);
+        return true;
     }
 
     private bool Skip(TimeSpan by)

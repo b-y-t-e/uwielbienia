@@ -49,6 +49,10 @@ public sealed class RemoteCommandHandler(
             case "videoSkip" when video is not null && command.Seconds is { } seconds:
                 video.Skip(TimeSpan.FromSeconds(Math.Clamp(seconds, -600, 600)));
                 return new CommandReply(true, Video: CurrentVideo());
+            case "videoOffset" when video is not null && command.Milliseconds is { } milliseconds && video.IsOnScreen(live.State):
+                // telefon wybiera tylko kierunek — krok zawsze 100 ms
+                video.ShiftPicture(Math.Sign(milliseconds) * VideoPlayerExtensions.PictureStep);
+                return new CommandReply(true, Video: CurrentVideo());
             case "next":
                 control.Next();
                 break;
@@ -78,5 +82,5 @@ public sealed class RemoteCommandHandler(
 
     public PlanMessage CurrentPlan() => PlanMessage.From(plan.Plan, plan.Playlist, itemTypes);
 
-    public VideoMessage? CurrentVideo() => video is null ? null : VideoMessage.From(video.Status);
+    public VideoMessage? CurrentVideo() => video is null ? null : VideoMessage.From(video);
 }

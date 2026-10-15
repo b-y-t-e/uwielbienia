@@ -29,6 +29,8 @@ public sealed class VideoTests : IDisposable
 
         public bool IsHeld { get; set; }
 
+        public TimeSpan PictureOffset { get; set; }
+
         public event EventHandler? StatusChanged;
 
         public void Open(string file, TimeSpan start = default)
@@ -320,6 +322,26 @@ public sealed class VideoTests : IDisposable
         Assert.False(remote.Back());
         Assert.False(remote.HoldForward());
         Assert.False(remote.HoldBack());
+        Assert.False(remote.ShiftPicture(VideoPlayerExtensions.PictureStep));
+        Assert.Equal(TimeSpan.Zero, _player.PictureOffset);
+    }
+
+    [Fact]
+    public void Brackets_shift_the_picture_against_the_sound_within_limits()
+    {
+        var (remote, _, _, _) = OnFilm();
+        var shown = 0;
+        remote.FilmChanged += (_, _) => shown++;
+
+        Assert.True(remote.ShiftPicture(VideoPlayerExtensions.PictureStep));
+        Assert.True(remote.ShiftPicture(VideoPlayerExtensions.PictureStep));
+        Assert.True(remote.ShiftPicture(-VideoPlayerExtensions.PictureStep));
+        Assert.Equal(TimeSpan.FromMilliseconds(100), _player.PictureOffset);
+        Assert.Equal(3, shown);
+
+        for (var i = 0; i < 100; i++)
+            _player.ShiftPicture(-VideoPlayerExtensions.PictureStep);
+        Assert.Equal(-VideoPlayerExtensions.MaxPictureOffset, _player.PictureOffset);
     }
 
     [Fact]

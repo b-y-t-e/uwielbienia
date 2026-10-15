@@ -54,6 +54,27 @@ public sealed class VlcVideoPlayer : IVideoPlayer, IDisposable
 
     public bool IsHeld { get; set; }
 
+    public TimeSpan PictureOffset
+    {
+        get => _pictureOffset;
+        set
+        {
+            if (_pictureOffset == value)
+                return;
+            _pictureOffset = value;
+            ApplyPictureOffset();
+            StatusChanged?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    private TimeSpan _pictureOffset;
+
+    /// <summary>
+    /// VLC umie opóźnić tylko dźwięk, więc obraz później o X = dźwięk wcześniej o X (opóźnienie dźwięku −X, w µs).
+    /// VLC zeruje je przy każdym nowym pliku — stąd ponowne ustawienie po starcie odtwarzania.
+    /// </summary>
+    private void ApplyPictureOffset() => _player?.SetAudioDelay(-(long)(_pictureOffset.TotalMilliseconds * 1000));
+
     public event EventHandler? StatusChanged;
 
     public void Open(string file, TimeSpan start = default)
@@ -190,6 +211,7 @@ public sealed class VlcVideoPlayer : IVideoPlayer, IDisposable
             player.Playing += (_, _) => Post(s =>
             {
                 _started = true;
+                ApplyPictureOffset();
                 if (_wantPlaying)
                     return s with { IsPlaying = true, HasEnded = false };
                 // VLC ruszył po pauzie zamówionej przed startem — zatrzymaj go znowu, stan bez zmian

@@ -10,7 +10,8 @@ namespace Uwielbienia.Link;
 //
 // host → strona (notify):   {"type":"state", ...StateMessage} | {"type":"plan", ...PlanMessage} | {"type":"video", ...VideoMessage}
 // strona → host (request):  {"cmd":"hello"|"next"|"prev"|"blank"|"goto"|"showItem"|"showSong"|"search"
-//                                  |"videoToggle"|"videoSkip" (seconds: ±15), ...}
+//                                  |"videoToggle"|"videoSkip" (seconds: ±15)
+//                                  |"videoOffset" (milliseconds: ±100 — obraz później / wcześniej względem dźwięku), ...}
 //                           odpowiedź: CommandReply
 
 public sealed record RemoteCommand(
@@ -19,7 +20,8 @@ public sealed record RemoteCommand(
     Guid? ItemId = null,
     string? SongId = null,
     string? Query = null,
-    int? Seconds = null);
+    int? Seconds = null,
+    int? Milliseconds = null);
 
 public sealed record CommandReply(
     bool Ok,
@@ -83,15 +85,18 @@ public sealed record LineMessage(
     int TitleLength = 0,
     string? Chords = null);
 
-/// <summary>Film na ekranie: telefon pokazuje czas, pasek postępu, pauzę i ±15 s. Wysyłane przy każdej zmianie stanu
-/// odtwarzacza, czas — najwyżej raz na sekundę.</summary>
-public sealed record VideoMessage(bool IsLoaded, bool IsPlaying, double Position, double Duration, string? Error)
+/// <summary>Film na ekranie: telefon pokazuje czas, pasek postępu, pauzę, ±15 s i przesunięcie obrazu względem dźwięku
+/// (<see cref="PictureOffsetMs"/>, + = obraz później). Wysyłane przy każdej zmianie stanu odtwarzacza, czas — najwyżej
+/// raz na sekundę.</summary>
+public sealed record VideoMessage(
+    bool IsLoaded, bool IsPlaying, double Position, double Duration, string? Error, int PictureOffsetMs = 0)
 {
     public string Type => "video";
 
-    public static VideoMessage From(VideoStatus status) => new(
-        status.File is not null, status.IsPlaying, Math.Round(status.Position.TotalSeconds, 1),
-        Math.Round(status.Duration.TotalSeconds, 1), status.Error);
+    public static VideoMessage From(IVideoPlayer player) => new(
+        player.Status.File is not null, player.Status.IsPlaying, Math.Round(player.Status.Position.TotalSeconds, 1),
+        Math.Round(player.Status.Duration.TotalSeconds, 1), player.Status.Error,
+        player.PictureOffsetMs());
 }
 
 public sealed record PlanMessage(string? Name, IReadOnlyList<PlanItemMessage> Items)

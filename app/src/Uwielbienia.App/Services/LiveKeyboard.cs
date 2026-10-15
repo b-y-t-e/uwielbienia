@@ -10,7 +10,8 @@ namespace Uwielbienia.App.Services;
 /// strzałki działają jak pilot.
 /// Krótko = slajd, przy filmie ±15 s; długo do przodu = czarny ekran, przy filmie pauza; długo do tyłu = włącz
 /// projekcję, przy filmie podpowiedź i wyjście z filmu (<see cref="FilmRemote"/>). Ctrl+PageDown / Ctrl+PageUp =
-/// następna / poprzednia pozycja planu. Spacja przy filmie = pauza.
+/// następna / poprzednia pozycja planu. Spacja przy filmie = pauza, <c>[</c> / <c>]</c> = obraz o 100 ms wcześniej /
+/// później względem dźwięku.
 /// </summary>
 public static class LiveKeyboard
 {
@@ -63,6 +64,10 @@ public static class LiveKeyboard
             case Key.OemPeriod:
                 control.ToggleBlank();
                 return true;
+            case Key.OemOpenBrackets when e.KeyModifiers == KeyModifiers.None:
+                return film.ShiftPicture(-VideoPlayerExtensions.PictureStep);
+            case Key.OemCloseBrackets when e.KeyModifiers == KeyModifiers.None:
+                return film.ShiftPicture(VideoPlayerExtensions.PictureStep);
             case Key.F5:
                 projection.Toggle();
                 return true;

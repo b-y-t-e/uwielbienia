@@ -95,9 +95,15 @@ function renderVideo() {
   const elapsed = v.isPlaying ? (performance.now() - (v.receivedAt ?? 0)) / 1000 : 0;
   const position = Math.min(v.duration || Infinity, v.position + elapsed);
   $("videoTime").textContent = formatTime(position);
-  $("videoDuration").textContent = v.duration ? `z ${formatTime(v.duration)}` : "";
+  $("videoDuration").textContent = v.duration ? ` / ${formatTime(v.duration)}` : "";
   $("videoProgress").style.width = v.duration ? `${(100 * position) / v.duration}%` : "0%";
-  $("videoToggle").textContent = v.isPlaying ? "Pauza" : "Odtwórz";
+  $("iconPause").toggleAttribute("hidden", !v.isPlaying); // SVG nie ma właściwości hidden — tylko atrybut
+  $("iconPlay").toggleAttribute("hidden", v.isPlaying);
+  $("videoToggle").setAttribute("aria-label", v.isPlaying ? "Pauza" : "Odtwórz");
+  const ms = v.pictureOffsetMs ?? 0;
+  const seconds = (Math.abs(ms) / 1000).toFixed(1).replace(".", ",");
+  $("pictureOffset").textContent = ms > 0 ? `+${seconds} s` : ms < 0 ? `−${seconds} s` : `${seconds} s`;
+  $("videoOffset").classList.toggle("set", ms !== 0);
   $("videoError").hidden = !v.error;
   $("videoError").textContent = v.error ?? "";
 }
@@ -105,6 +111,8 @@ setInterval(() => { if (video?.isPlaying && state?.isVideo) renderVideo(); }, 25
 $("videoToggle").onclick = () => command("videoToggle");
 $("videoBack").onclick = () => command("videoSkip", { seconds: -15 });
 $("videoForward").onclick = () => command("videoSkip", { seconds: 15 });
+$("pictureEarlier").onclick = () => command("videoOffset", { milliseconds: -100 });
+$("pictureLater").onclick = () => command("videoOffset", { milliseconds: 100 });
 
 // ---------- widok ----------
 

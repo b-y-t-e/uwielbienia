@@ -68,7 +68,12 @@ public static class AppComposition
 
         // filmy: jeden odtwarzacz; gra, gdy film jest na ekranie (VideoDirector)
         services.AddSingleton<VideoFrames>();
-        services.AddSingleton<VlcVideoPlayer>();
+        services.AddSingleton<VlcVideoPlayer>(sp =>
+        {
+            var player = new VlcVideoPlayer(sp.GetRequiredService<VideoFrames>());
+            PictureOffsetSetting.Bind(player, sp.GetRequiredService<ISettingsStore>());
+            return player;
+        });
         services.AddSingleton<IVideoPlayer>(sp => sp.GetRequiredService<VlcVideoPlayer>());
         services.AddSingleton<VideoDirector>();
         services.AddSingleton<FilmRemote>(sp => new FilmRemote(

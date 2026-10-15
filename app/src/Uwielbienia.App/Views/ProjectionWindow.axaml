@@ -34,10 +34,14 @@
       </Border>
       <Border x:Name="VideoBar" IsVisible="False" VerticalAlignment="Bottom" Margin="60,0,60,40" Padding="18,8"
               CornerRadius="12" Background="#B3201A14">
-        <Grid ColumnDefinitions="*,16,Auto">
+        <Grid ColumnDefinitions="*,16,Auto,16,Auto">
           <Slider Minimum="0" Maximum="{Binding Live.Video.DurationSeconds}" Value="{Binding Live.Video.PositionSeconds}"
                   VerticalAlignment="Center" Focusable="False" />
           <TextBlock Grid.Column="2" Text="{Binding Live.Video.TimeText}" VerticalAlignment="Center" FontSize="18"
+                     Foreground="#C9CCD8" FontFeatures="+tnum" />
+          <!-- przesunięcie obrazu względem dźwięku — tylko gdy ustawione ([ / ]) -->
+          <TextBlock Grid.Column="4" Text="{Binding Live.Video.PictureOffsetText, StringFormat='Obraz {0}'}"
+                     IsVisible="{Binding Live.Video.HasPictureOffset}" VerticalAlignment="Center" FontSize="18"
                      Foreground="#C9CCD8" FontFeatures="+tnum" />
         </Grid>
       </Border>

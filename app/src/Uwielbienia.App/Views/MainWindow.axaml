@@ -341,18 +341,40 @@
                         <Border Classes="slideThumb" Background="Transparent" Cursor="Hand" Tapped="OnVideoPreviewTapped">
                           <v:VideoSurface Frames="{Binding Live.Video.Frames}" />
                         </Border>
-                        <Grid ColumnDefinitions="Auto,6,Auto,6,Auto,10,*,8,Auto">
-                          <Button Content="−15 s" Command="{Binding Live.Video.SkipBackCommand}" ToolTip.Tip="15 sekund wstecz" />
-                          <Button Grid.Column="2" Command="{Binding Live.Video.TogglePauseCommand}" ToolTip.Tip="Spacja albo kliknięcie w film" MinWidth="96">
-                            <Panel>
-                              <TextBlock Text="Pauza" IsVisible="{Binding Live.Video.IsPlaying}" />
-                              <TextBlock Text="Odtwórz" IsVisible="{Binding !Live.Video.IsPlaying}" />
-                            </Panel>
-                          </Button>
-                          <Button Grid.Column="4" Content="+15 s" Command="{Binding Live.Video.SkipForwardCommand}" ToolTip.Tip="15 sekund do przodu" />
-                          <Slider Grid.Column="6" Minimum="0" Maximum="{Binding Live.Video.DurationSeconds}"
-                                  Value="{Binding Live.Video.PositionSeconds}" VerticalAlignment="Center" Focusable="False" />
-                          <TextBlock Grid.Column="8" Classes="caption" Text="{Binding Live.Video.TimeText}" VerticalAlignment="Center" />
+                        <!-- Jak w odtwarzaczu: postęp na całą szerokość, pod nim sterowanie i czas, z prawej obraz
+                             względem dźwięku (rzadkie ustawienie — małe, wyciszone, kolor akordów, gdy nie jest zerem). -->
+                        <Slider Minimum="0" Maximum="{Binding Live.Video.DurationSeconds}" Margin="0,-6,0,-10"
+                                Value="{Binding Live.Video.PositionSeconds}" Focusable="False" />
+                        <Grid ColumnDefinitions="Auto,12,*,8,Auto">
+                          <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                            <Button Classes="videoSkip" Content="−15 s" Command="{Binding Live.Video.SkipBackCommand}" ToolTip.Tip="15 sekund wstecz" />
+                            <Button Classes="videoPlay" Command="{Binding Live.Video.TogglePauseCommand}"
+                                    ToolTip.Tip="Pauza / odtwarzanie (spacja albo kliknięcie w film)">
+                              <Panel>
+                                <Path Data="M3,2 L5.6,2 L5.6,14 L3,14 Z M10.4,2 L13,2 L13,14 L10.4,14 Z" IsVisible="{Binding Live.Video.IsPlaying}" />
+                                <Path Data="M4.5,2 L14,8 L4.5,14 Z" IsVisible="{Binding !Live.Video.IsPlaying}" />
+                              </Panel>
+                            </Button>
+                            <Button Classes="videoSkip" Content="+15 s" Command="{Binding Live.Video.SkipForwardCommand}" ToolTip.Tip="15 sekund do przodu" />
+                          </StackPanel>
+                          <TextBlock Grid.Column="2" Classes="caption videoTime" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                            <Run Text="{Binding Live.Video.PositionText}" Foreground="{DynamicResource TextBrush}" />
+                            <Run Text=" / " />
+                            <Run Text="{Binding Live.Video.DurationText}" />
+                          </TextBlock>
+                          <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center"
+                                      ToolTip.Tip="Obraz względem dźwięku — gdy rzutnik spóźnia obraz ( [ / ] )">
+                            <TextBlock Classes="caption" Text="Obraz" VerticalAlignment="Center" Margin="0,0,4,0" />
+                            <Button Classes="videoStep" Command="{Binding Live.Video.PictureEarlierCommand}" ToolTip.Tip="Obraz wcześniej o 0,1 s ( [ )">
+                              <Path Data="M10,3 L5,8 L10,13" />
+                            </Button>
+                            <Button Classes="videoOffset" Classes.set="{Binding Live.Video.HasPictureOffset}"
+                                    Content="{Binding Live.Video.PictureOffsetText}" Command="{Binding Live.Video.ResetPictureOffsetCommand}"
+                                    ToolTip.Tip="Kliknij, żeby wyzerować" />
+                            <Button Classes="videoStep" Command="{Binding Live.Video.PictureLaterCommand}" ToolTip.Tip="Obraz później o 0,1 s ( ] )">
+                              <Path Data="M6,3 L11,8 L6,13" />
+                            </Button>
+                          </StackPanel>
                         </Grid>
                         <Border IsVisible="{Binding Live.Video.IsPromptVisible}" Background="{DynamicResource CandleSoftBrush}"
                                 CornerRadius="8" Padding="12,8">
@@ -622,6 +644,64 @@
       <Setter Property="StrokeJoin" Value="Round" />
       <Setter Property="Stroke" Value="{Binding $parent[Button].Foreground}" />
       <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <!-- Film w „Na ekranie”: pauza = okrągły przycisk w kolorze świecy, reszta bez tła. -->
+    <Style Selector="Button.videoPlay">
+      <Setter Property="Width" Value="40" />
+      <Setter Property="Height" Value="40" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="20" />
+      <Setter Property="Background" Value="{DynamicResource CandleBrush}" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.videoPlay:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource CandleBrush}" />
+      <Setter Property="Opacity" Value="0.9" />
+    </Style>
+    <Style Selector="Button.videoPlay Path">
+      <Setter Property="Width" Value="15" />
+      <Setter Property="Height" Value="15" />
+      <Setter Property="Stretch" Value="Uniform" />
+      <Setter Property="Fill" Value="{DynamicResource OnCandleBrush}" />
+    </Style>
+    <Style Selector="Button.videoSkip, Button.videoStep, Button.videoOffset">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="FontFeatures" Value="+tnum" />
+    </Style>
+    <Style Selector="Button.videoSkip">
+      <Setter Property="Padding" Value="10,8" />
+    </Style>
+    <Style Selector="TextBlock.videoTime">
+      <Setter Property="FontFeatures" Value="+tnum" />
+    </Style>
+    <Style Selector="Button.videoStep">
+      <Setter Property="Width" Value="28" />
+      <Setter Property="Height" Value="28" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="14" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.videoStep Path">
+      <Setter Property="Width" Value="12" />
+      <Setter Property="Height" Value="12" />
+      <Setter Property="Stretch" Value="Uniform" />
+      <Setter Property="StrokeThickness" Value="1.8" />
+      <Setter Property="StrokeLineCap" Value="Round" />
+      <Setter Property="StrokeJoin" Value="Round" />
+      <Setter Property="Stroke" Value="{DynamicResource MutedBrush}" />
+    </Style>
+    <Style Selector="Button.videoOffset">
+      <Setter Property="Padding" Value="6,4" />
+      <Setter Property="MinWidth" Value="58" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+    </Style>
+    <Style Selector="Button.videoOffset.set">
+      <Setter Property="Foreground" Value="{DynamicResource ChordBrush}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <Style Selector="Border.dropMarker">
       <Setter Property="Height" Value="3" />

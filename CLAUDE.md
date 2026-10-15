@@ -254,7 +254,14 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   krótko = slajd, `b` = czarny ekran, `Shift+F5` tylko włącza projekcję (nigdy jej nie wyłącza). `Ctrl+PageDown` /
   `Ctrl+PageUp` = następna / poprzednia pozycja planu (`ILiveControl.NextItem` / `PreviousItem`). Przyciski
   „Dalej” / „Wstecz” (okno, telefon) zawsze zmieniają slajd / pozycję.
-  „−15 s” / „+15 s” (`IVideoPlayer.Skip`, w granicach filmu) w „Na ekranie” i na telefonie. Na rzutniku pasek
+  „−15 s” / „+15 s” (`IVideoPlayer.Skip`, w granicach filmu) w „Na ekranie” i na telefonie; pauza / odtwarzanie
+  to ikony (okrągły przycisk w kolorze świecy; pod podglądem filmu: postęp na całą szerokość, a pod nim sterowanie i czas).
+  **Obraz względem dźwięku** (rzutnik spóźnia obraz): mały przełącznik „Obraz ‹ +1,6 s ›” (krok 0,1 s; kliknięcie w wartość
+  w oknie = 0; kolor akordów, gdy nie jest zerem) w „Na ekranie”, na telefonie
+  i `[` / `]` przy filmie (`FilmRemote.ShiftPicture`, `IVideoPlayer.PictureOffset`, + = obraz później, najwyżej ±5 s).
+  Przesuwamy obraz, nie dźwięk — VLC umie opóźnić tylko dźwięk, więc `VlcVideoPlayer` ustawia opóźnienie dźwięku
+  o przeciwnym znaku (ponownie po starcie każdego pliku). Jedno dla wszystkich filmów: `AppSettings.PictureOffsetMs`.
+  Na rzutniku pasek
   postępu z suwakiem (`ProjectionWindow` → `VideoBar`, w warstwie `Warped` — z tą samą perspektywą co film)
   widać razem z uchwytami „Dopasuj obraz” (ruch myszy / tryb K) oraz przez 2,5 s po ±15 s albo pauzie z
   klawiatury, pilota czy kliknięcia (`FilmRemote.FilmChanged`; nie na czarnym ekranie). Brak odtwarzacza
@@ -299,8 +306,8 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   komputerze z myszą) rysuje slajd jak rzutnik (`renderSlide`: płótno 16:9 w jednostkach `cqw`,
   wymiary i kolory jak `SlideView`). Stan niesie wersy z akordami (`LineMessage`: `Chords`, `TitleLength`,
   `Chorus`, `PartStart`), `ShowTitle`, `NextLines` i `IsVideo`; przy filmie telefon pokazuje czas, pasek postępu,
-  pauzę i ±15 s (wiadomość `video` — `VideoMessage`, czas najwyżej raz na sekundę; polecenia `videoToggle`,
-  `videoSkip`). Polecenia `blank` / `goto` / `showItem` /
+  pauzę, ±15 s i obraz ±100 ms (wiadomość `video` — `VideoMessage` z `PictureOffsetMs`, czas najwyżej raz na sekundę;
+  polecenia `videoToggle`, `videoSkip`, `videoOffset`). Polecenia `blank` / `goto` / `showItem` /
   `showSong` / `search` zostają w protokole, strona ich nie używa. Podgląd bez aplikacji: kopia strony
   z udawanym `lib/tailcat/index.js`.
 - **Aktualizacje.** `UpdateService` + `VelopackReleaseFeed`: tylko instalacja z
@@ -375,7 +382,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 ### Dane i ustawienia (`AppPaths`, `%APPDATA%\Uwielbienia`, Linux `~/.config/Uwielbienia`)
 
 `ustawienia.json` (`AppSettings`: motyw okna i ekranu, akordy, szerokości kolumn, ostatni plan,
-`MaxLinesPerSlide`, `JoinVerseAndChorus`, opcjonalny folder pieśni, narożniki „Dopasuj obraz”), `plany/`, `teksty/`,
+`MaxLinesPerSlide`, `JoinVerseAndChorus`, opcjonalny folder pieśni, narożniki „Dopasuj obraz”, `PictureOffsetMs`), `plany/`, `teksty/`,
 `prezentacje/` (kopie prezentacji i ich slajdy; nieużywane nie są dziś usuwane), `polaczenia/`
 (tailcat-link), `aktualizacje.log`.
 
