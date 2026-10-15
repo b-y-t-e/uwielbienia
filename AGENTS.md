@@ -218,7 +218,8 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   spoza planu na ekran), `PresentationPlanItemType` (prezentacja) i `VideoPlanItemType` (film).
 - **Prezentacje** (`PresentationPlanItem`: folder + tytuł). `SlideshowLibrary` kopiuje plik
   PowerPoint (`.pptx .ppt .pps .ppsx .pptm .ppsm .odp`) albo obrazy (`.png .jpg .jpeg .bmp .webp`,
-  kilka = jedna prezentacja) do `prezentacje/{id8}-{slug}/` — plan działa po wyjęciu pendrive'a.
+  kilka = jedna prezentacja; „Obraz” — `ImportEachAsync`: każdy obraz osobno, wszystko albo nic) do
+  `prezentacje/{id8}-{slug}/` — plan działa po wyjęciu pendrive'a. Import / kopia przerwane błędem usuwają swój folder.
   Slajdy prezentacji eksportuje raz, w tle, do `slajdy/` (najpierw `slajdy.tmp`, potem znacznik
   `.complete`; PNG 1920 px, bez slajdów ukrytych) `SlideExporterChain` (Core) — pierwszy dostępny
   `ISlideExporter` (App/Services), a gdy zawiedzie, następny: `PowerPointExporter` (automatyzacja COM
@@ -328,7 +329,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 5. **Kolumna „Pieśń”:** `MainViewModel.ShowDetails` wybiera widok dla zaznaczonej pozycji;
    nowy rodzaj dostaje własny model widoku i szablon (wzorzec: `PresentationViewModel`).
 6. **Dodawanie:** przycisk w oknie „Dodaj do planu” (`PlanAddViewModel`) tworzący pozycję i
-   wstawiający ją przez `PlanActions.Insert(item, index)` (wzorzec: „+ Prezentacja”).
+   wstawiający ją przez `PlanActions.Insert(item, index)` (wzorzec: „Prezentacja”, „Obraz”; każdy przycisk ma ikonę — klasa `addKind`).
 7. **Kolumna „Na ekranie” i telefon:** pokazują `Lines` — dla treści innej niż tekst dodać
    szablon w `MainWindow.axaml` (bieżący slajd / NASTĘPNA, wzorzec: obraz `ImageSlide`), a na rzutniku
    stronę (`ProjectedPage` → np. `ProjectedImage` z szablonem w `SlideView.axaml`, gdy treść ma
@@ -346,7 +347,8 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 - Każda czynność ma jedno miejsce:
   - dodawanie do planu tylko z planu: „+”, prawy klik („Dodaj przed… / po…”) albo pisanie
     gdziekolwiek w oknie → okno „Dodaj do planu” (`PlanAddViewModel`: zaznacz + „Wybierz”, Enter,
-    dwuklik; „+ Nowa pieśń / + Nowy tekst / + Prezentacja / + Film”); plik prezentacji (lub obrazy,
+    dwuklik; „Nowa pieśń / Nowy tekst / Prezentacja / Obraz / Film”, z ikonami; „Obraz” = każdy wybrany obraz
+    osobną pozycją, na cały ekran — jednoslajdowa prezentacja); plik prezentacji (lub obrazy,
     filmy) upuszczony na plan trafia za wiersz pod kursorem;
   - na ekran wyłącznie dwuklikiem albo prawym klikiem („Pokaż na ekranie”) w planie;
   - kolejność: przeciąganie w planie; usuwanie: ✕ / prawy klik (z potwierdzeniem);

@@ -133,6 +133,41 @@ public sealed class PresentationTests : IDisposable
     }
 
     [Fact]
+    public async Task Failed_import_leaves_no_folder_behind()
+    {
+        var missing = Path.Combine(_temp, "brak.png"); // np. zablokowany albo wyjęty pendrive
+
+        await Assert.ThrowsAnyAsync<IOException>(() => _library.ImportAsync([Source("a.png"), missing]));
+
+        var root = Path.Combine(_temp, "prezentacje");
+        Assert.True(!Directory.Exists(root) || Directory.GetDirectories(root).Length == 0);
+    }
+
+    [Fact]
+    public async Task Several_images_are_all_or_nothing()
+    {
+        var images = await _library.ImportEachAsync([Source("a.png"), Source("b.png")]);
+        Assert.Equal(["a", "b"], images.Select(i => i.Title));
+        Assert.All(images, i => Assert.Single(_library.Load(i.Folder).Slides));
+
+        var missing = Path.Combine(_temp, "brak.png");
+        await Assert.ThrowsAnyAsync<IOException>(() => _library.ImportEachAsync([Source("c.png"), missing]));
+        // „c” skopiowane przed błędem zostało usunięte — zostały tylko dwa udane
+        Assert.Equal(2, Directory.GetDirectories(Path.Combine(_temp, "prezentacje")).Length);
+    }
+
+    [Fact]
+    public async Task Failed_copy_leaves_no_folder_behind()
+    {
+        var imported = await _library.ImportAsync([Source("a.png")]);
+        Directory.Delete(Path.Combine(_temp, "prezentacje", imported.Folder), recursive: true); // źródło zniknęło
+
+        await Assert.ThrowsAnyAsync<IOException>(() => _library.CopyAsync(imported.Folder));
+
+        Assert.Empty(Directory.GetDirectories(Path.Combine(_temp, "prezentacje")));
+    }
+
+    [Fact]
     public async Task Unsupported_files_are_rejected() =>
         await Assert.ThrowsAsync<NotSupportedException>(() => _library.ImportAsync([Source("x.txt")]));
 

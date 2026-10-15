@@ -419,7 +419,7 @@
     <!-- Dodaj do planu: wyszukiwarka pieśni i tekstów; wybór od razu wstawia w miejsce wskazane w planie. -->
     <Border x:Name="PlanAddScrim" ZIndex="90" Background="{DynamicResource ScrimBrush}" IsVisible="{Binding PlanAdd.IsOpen}"
             PointerPressed="OnPlanAddScrimPressed">
-      <Border Classes="panel dialog" Width="640" MaxHeight="640" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,96,0,24">
+      <Border Classes="panel dialog" Width="780" MaxHeight="640" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,96,0,24">
         <DockPanel>
           <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
             <TextBlock Classes="heading" Text="Dodaj do planu" VerticalAlignment="Center" />
@@ -427,14 +427,41 @@
           </Grid>
           <TextBox x:Name="PlanAddBox" DockPanel.Dock="Top" Classes="search" Text="{Binding PlanAdd.Query}" Margin="0,0,0,10"
                    PlaceholderText="Szukaj pieśni lub tekstu: numer albo słowa" />
-          <Grid DockPanel.Dock="Bottom" ColumnDefinitions="Auto,8,Auto,8,Auto,*,Auto" Margin="0,12,0,0">
-            <Button Content="+ Nowa pieśń" Command="{Binding PlanAdd.NewSongCommand}" />
-            <Button Grid.Column="2" Content="+ Nowy tekst" Command="{Binding PlanAdd.NewTextCommand}" />
-            <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8">
-              <Button Content="+ Prezentacja" Click="OnAddPresentationClick" ToolTip.Tip="Plik PowerPoint albo obrazy slajdów" />
-              <Button Content="+ Film" Click="OnAddVideoClick" ToolTip.Tip="mp4, mkv, avi, mov… — plik zostaje na swoim miejscu" />
-            </StackPanel>
-            <Button Grid.Column="6" Classes="primary" Content="Wybierz" Command="{Binding PlanAdd.AddCommand}"
+          <!-- Nowa pozycja: każdy rodzaj z własną ikoną (cały rząd to dodawanie, więc bez „+”). -->
+          <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,12,Auto" Margin="0,12,0,0">
+            <WrapPanel ItemSpacing="8" LineSpacing="8">
+              <Button Classes="addKind" Command="{Binding PlanAdd.NewSongCommand}" ToolTip.Tip="Nowa pieśń z akordami">
+                <StackPanel>
+                  <Path Data="M9,18 A3,3 0 1 1 3,18 A3,3 0 1 1 9,18 Z M9,18 V5 L20,3 V16 M20,16 A3,3 0 1 1 14,16 A3,3 0 1 1 20,16 Z" />
+                  <TextBlock Text="Nowa pieśń" />
+                </StackPanel>
+              </Button>
+              <Button Classes="addKind" Command="{Binding PlanAdd.NewTextCommand}" ToolTip.Tip="Część Mszy, modlitwa, ogłoszenie">
+                <StackPanel>
+                  <Path Data="M4,6 H20 M4,10 H20 M4,14 H14 M4,18 H17" />
+                  <TextBlock Text="Nowy tekst" />
+                </StackPanel>
+              </Button>
+              <Button Classes="addKind" Click="OnAddPresentationClick" ToolTip.Tip="Plik PowerPoint albo kilka obrazów jako slajdy">
+                <StackPanel>
+                  <Path Data="M3,4 H21 V15 H3 Z M12,15 V19 M8,20 H16" />
+                  <TextBlock Text="Prezentacja" />
+                </StackPanel>
+              </Button>
+              <Button Classes="addKind" Click="OnAddImagesClick" ToolTip.Tip="Każdy obraz osobno, na cały ekran">
+                <StackPanel>
+                  <Path Data="M3,5 H21 V19 H3 Z M3,16 L9,10 L14,15 L17,12 L21,16 M15,8 A1.5,1.5 0 1 1 18,8 A1.5,1.5 0 1 1 15,8 Z" />
+                  <TextBlock Text="Obraz" />
+                </StackPanel>
+              </Button>
+              <Button Classes="addKind" Click="OnAddVideoClick" ToolTip.Tip="mp4, mkv, avi, mov… — plik zostaje na swoim miejscu">
+                <StackPanel>
+                  <Path Data="M3,5 H21 V19 H3 Z M10,9 L15,12 L10,15 Z" />
+                  <TextBlock Text="Film" />
+                </StackPanel>
+              </Button>
+            </WrapPanel>
+            <Button Grid.Column="2" Classes="primary" Content="Wybierz" Command="{Binding PlanAdd.AddCommand}" VerticalAlignment="Bottom"
                     CommandParameter="{x:Null}" IsEnabled="{Binding PlanAdd.HasSelection}" />
           </Grid>
           <TextBlock DockPanel.Dock="Bottom" Classes="caption failed" Text="{Binding PlanAdd.Error}" TextWrapping="Wrap" Margin="0,10,0,0"
@@ -580,6 +607,21 @@
     </Style>
     <Style Selector="Grid.dragged, Panel.dragged">
       <Setter Property="Opacity" Value="0.45" />
+    </Style>
+    <!-- „Dodaj do planu”: rodzaj pozycji — ikona (obrys w kolorze tekstu przycisku) i nazwa. -->
+    <Style Selector="Button.addKind > StackPanel">
+      <Setter Property="Orientation" Value="Horizontal" />
+      <Setter Property="Spacing" Value="8" />
+    </Style>
+    <Style Selector="Button.addKind Path">
+      <Setter Property="Width" Value="16" />
+      <Setter Property="Height" Value="16" />
+      <Setter Property="Stretch" Value="Uniform" />
+      <Setter Property="StrokeThickness" Value="1.8" />
+      <Setter Property="StrokeLineCap" Value="Round" />
+      <Setter Property="StrokeJoin" Value="Round" />
+      <Setter Property="Stroke" Value="{Binding $parent[Button].Foreground}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
     <Style Selector="Border.dropMarker">
       <Setter Property="Height" Value="3" />

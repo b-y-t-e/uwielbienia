@@ -49,7 +49,7 @@ public sealed partial class PlanAddViewModel(
         IsOpen = true;
     }
 
-    /// <summary>„+ Prezentacja”: wybrane pliki (PowerPoint, obrazy) w zapamiętane miejsce planu („+ Film” — <see cref="AddVideos"/>).</summary>
+    /// <summary>„Prezentacja”: wybrane pliki (PowerPoint, obrazy) w zapamiętane miejsce planu („Film” — <see cref="AddVideos"/>).</summary>
     public async Task AddPresentationAsync(IReadOnlyList<string> files)
     {
         if (await AddFilesAsync(files, _index))
@@ -76,14 +76,35 @@ public sealed partial class PlanAddViewModel(
             Error = null;
             return true;
         }
-        catch (Exception ex) when (ex is IOException or NotSupportedException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or NotSupportedException or UnauthorizedAccessException or ArgumentException)
         {
             Error = ex.Message;
             return false;
         }
     }
 
-    /// <summary>„+ Film”: wybrane filmy (każdy osobno) w zapamiętane miejsce planu.</summary>
+    /// <summary>
+    /// „Obraz”: każdy wybrany obraz to osobna pozycja planu — jednoslajdowa prezentacja na cały ekran (kopiowana do
+    /// folderu aplikacji, jak prezentacja). Kopie „wszystko albo nic” (<see cref="ISlideshowLibrary.ImportEachAsync"/>),
+    /// potem plan — błąd nie zostawia połowy wyboru ani kopii na dysku.
+    /// </summary>
+    public async Task AddImagesAsync(IReadOnlyList<string> files)
+    {
+        try
+        {
+            var index = _index;
+            foreach (var image in await slideshows.ImportEachAsync(files))
+                actions.Insert(new PresentationPlanItem(Guid.NewGuid(), image.Folder, image.Title), index++);
+            Error = null;
+            IsOpen = false;
+        }
+        catch (Exception ex) when (ex is IOException or NotSupportedException or UnauthorizedAccessException or ArgumentException)
+        {
+            Error = ex.Message;
+        }
+    }
+
+    /// <summary>„Film”: wybrane filmy (każdy osobno) w zapamiętane miejsce planu.</summary>
     public void AddVideos(IReadOnlyList<VideoPlanItem> videos)
     {
         var index = _index;

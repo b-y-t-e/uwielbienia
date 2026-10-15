@@ -20,12 +20,12 @@ pieśni i teksty i pozwala utworzyć nową pieśń albo tekst (część Mszy, mo
 akordów). „Edytuj” w kolumnie „Pieśń” zmienia wybraną. Zapis jest tylko na tym komputerze; zmieniona pieśń
 śpiewnika ma „Przywróć oryginał”.
 
-**Prezentacje:** „+ Prezentacja” w oknie „Dodaj do planu” (albo upuszczenie pliku na plan) dodaje
+**Prezentacje i obrazy:** „Prezentacja” (albo „Obraz” — każdy obraz osobną pozycją) w oknie „Dodaj do planu” (albo upuszczenie pliku na plan) dodaje
 plik PowerPoint (`.pptx`, `.pps`, `.ppt`…) albo obrazy slajdów. Plik jest kopiowany do danych
 aplikacji, a slajdy przygotowuje w tle zainstalowany PowerPoint (Windows) — postęp widać w planie.
 Bez PowerPointa można dodać slajdy zapisane jako obrazy.
 
-**Filmy:** „+ Film” (albo upuszczenie pliku na plan) dodaje film w dowolnym formacie, który zna
+**Filmy:** „Film” (albo upuszczenie pliku na plan) dodaje film w dowolnym formacie, który zna
 VLC (`.mp4`, `.mkv`, `.avi`, `.mov`, `.wmv`, `.webm`…). Plik nie jest kopiowany — plan go tylko
 wskazuje, więc musi zostać na swoim miejscu (brak pliku widać w planie). Film gra, gdy jest na
 ekranie: spacja — pauza / odtwarzanie, suwak w kolumnie „Na ekranie” przewija, B (czarny ekran)

@@ -37,6 +37,12 @@ public interface ISlideshowLibrary
     /// <summary>Niezależna kopia prezentacji (plik i gotowe slajdy) — zwraca nowy folder.</summary>
     Task<string> CopyAsync(string folder);
 
+    /// <summary>
+    /// Każdy plik osobno (np. „Obraz”: każdy obraz to osobna pozycja planu) — wszystko albo nic: gdy któregoś nie da się
+    /// skopiować, kopie wcześniejszych są usuwane, a błąd idzie dalej.
+    /// </summary>
+    Task<IReadOnlyList<ImportedSlideshow>> ImportEachAsync(IReadOnlyList<string> files);
+
     /// <summary>Slajdy prezentacji; gdy jeszcze ich nie ma — zaczyna je przygotowywać w tle.</summary>
     SlideshowState Load(string folder);
 
@@ -87,17 +93,58 @@ public sealed class SlideshowLibrary(string root, ISlideExporter exporter, IUiDi
         var folder = $"{Guid.NewGuid().ToString("N")[..8]}-{LocalSongEditor.Slug(title)}";
         var directory = Path.Combine(root, folder);
         Directory.CreateDirectory(directory);
-        await Task.Run(() =>
+        try
         {
-            for (var i = 0; i < sources.Count; i++)
+            await Task.Run(() =>
             {
-                var name = presentation is not null
-                    ? Path.GetFileName(sources[i])
-                    : $"{i + 1:D3}{Path.GetExtension(sources[i]).ToLowerInvariant()}";
-                File.Copy(sources[i], Path.Combine(directory, name));
-            }
-        }).ConfigureAwait(false);
+                for (var i = 0; i < sources.Count; i++)
+                {
+                    var name = presentation is not null
+                        ? Path.GetFileName(sources[i])
+                        : $"{i + 1:D3}{Path.GetExtension(sources[i]).ToLowerInvariant()}";
+                    File.Copy(sources[i], Path.Combine(directory, name));
+                }
+            }).ConfigureAwait(false);
+        }
+        catch
+        {
+            // przerwana kopia nie zostaje na dysku (plan jej nie dostanie, a każda ponowna próba dodałaby kolejną)
+            Remove(folder);
+            throw;
+        }
         return new ImportedSlideshow(folder, title);
+    }
+
+    public async Task<IReadOnlyList<ImportedSlideshow>> ImportEachAsync(IReadOnlyList<string> files)
+    {
+        var imported = new List<ImportedSlideshow>();
+        try
+        {
+            foreach (var file in files)
+                imported.Add(await ImportAsync([file]).ConfigureAwait(false));
+            return imported;
+        }
+        catch
+        {
+            foreach (var done in imported)
+                Remove(done.Folder);
+            throw;
+        }
+    }
+
+    /// <summary>Usuwa folder kopii, która nie trafiła do planu (tylko przy błędzie importu / kopii).</summary>
+    private void Remove(string folder)
+    {
+        try
+        {
+            var directory = Path.Combine(root, folder);
+            if (Directory.Exists(directory))
+                Directory.Delete(directory, recursive: true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // plik zajęty — zostaje; to tylko nieużywana kopia
+        }
     }
 
     public async Task<string> CopyAsync(string folder)
@@ -107,7 +154,15 @@ public sealed class SlideshowLibrary(string root, ISlideExporter exporter, IUiDi
         var copy = Guid.NewGuid().ToString("N")[..8] + (dash >= 0 ? folder[dash..] : "-" + folder);
         var source = Path.Combine(root, folder);
         var target = Path.Combine(root, copy);
-        await Task.Run(() => CopyDirectory(source, target)).ConfigureAwait(false);
+        try
+        {
+            await Task.Run(() => CopyDirectory(source, target)).ConfigureAwait(false);
+        }
+        catch
+        {
+            Remove(copy); // niedokończona kopia (np. brak miejsca) nie zostaje na dysku
+            throw;
+        }
         return copy;
     }
 

@@ -53,8 +53,8 @@ Zasada: **Plan** decyduje, co i w jakiej kolejności, **Pieśń** służy do czy
 |---|---|
 | ułożyć plan | „+” w nagłówku planu (na koniec) albo prawy klik na pozycji → „Dodaj przed… / po…”; w oknie „Dodaj do planu” wyszukać pieśń lub tekst, zaznaczyć i „Wybierz” (Enter, dwuklik) |
 | szybko dobrać pieśń w trakcie | zacząć pisać numer lub słowa gdziekolwiek w oknie — otwiera się „Dodaj do planu”; wybrana trafia zaraz za pieśń na ekranie |
-| dodać coś, czego jeszcze nie ma | w oknie „Dodaj do planu”: „+ Nowa pieśń” / „+ Nowy tekst” → edytor w kolumnie „Pieśń” → „Zapisz” wstawia w wybrane miejsce |
-| dodać prezentację | „+ Prezentacja” w oknie „Dodaj do planu” albo upuścić plik na plan; slajdy przygotowują się w tle (PowerPoint), postęp pod tytułem w planie |
+| dodać coś, czego jeszcze nie ma | w oknie „Dodaj do planu”: „Nowa pieśń” / „Nowy tekst” → edytor w kolumnie „Pieśń” → „Zapisz” wstawia w wybrane miejsce |
+| dodać prezentację lub obraz | „Prezentacja” (plik PowerPoint albo kilka obrazów jako slajdy) lub „Obraz” (każdy obraz osobno) w oknie „Dodaj do planu” albo upuścić plik na plan; slajdy przygotowują się w tle (PowerPoint), postęp pod tytułem w planie |
 | dopasować obraz do ekranu w sali | jak w pps_viewer: ruszyć myszą na ekranie projekcji (ramka i narożniki na 3 s) i przeciągać w dowolnym miejscu (przesuwa się najbliższy narożnik — także niewidoczny, poza ekranem), Shift — cały obraz; kółko = wielkość, Shift/Ctrl+kółko = szerokość/wysokość; K tryb kalibracji (w nim G siatka, R pełny obraz) |
 | zmienić kolejność / usunąć | przeciągnąć pozycję; ✕ albo prawy klik → „Usuń z planu” |
 | pokazać na ekranie | dwuklik na pozycji planu albo prawy klik → „Pokaż na ekranie”; dalej Dalej / Wstecz |

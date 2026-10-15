@@ -193,7 +193,21 @@ public partial class MainWindow : Window
             await ViewModel.PlanAdd.AddPresentationAsync(paths);
     }
 
-    /// <summary>„+ Film”: filmy w dowolnym formacie, który zna VLC; każdy to osobna pozycja planu.</summary>
+    /// <summary>„Obraz”: jeden albo kilka obrazów — każdy osobną pozycją planu, na cały ekran.</summary>
+    private async void OnAddImagesClick(object? sender, RoutedEventArgs e)
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Obraz",
+            AllowMultiple = true,
+            FileTypeFilter = [new FilePickerFileType("Obrazy") { Patterns = [.. SlideshowLibrary.ImageExtensions.Select(ext => "*" + ext)] }],
+        });
+        var paths = files.Select(f => f.TryGetLocalPath()).OfType<string>().ToList();
+        if (paths.Count > 0)
+            await ViewModel.PlanAdd.AddImagesAsync(paths);
+    }
+
+    /// <summary>„Film”: filmy w dowolnym formacie, który zna VLC; każdy to osobna pozycja planu.</summary>
     private async void OnAddVideoClick(object? sender, RoutedEventArgs e)
     {
         var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
