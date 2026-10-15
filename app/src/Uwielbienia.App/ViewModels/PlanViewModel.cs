@@ -46,6 +46,9 @@ public sealed partial class PlanViewModel : ObservableObject
         actions.ItemAdded += (_, added) => Selected = Items.FirstOrDefault(i => i.Id == added.Id) ?? Selected;
         live.StateChanged += (_, _) => MarkLive();
         Rebuild();
+        // Przy starcie ostatni plan otwiera się, zanim powstanie ta lista (Opened już minęło).
+        if (plan.Plan is not null)
+            StartFromBeginning();
     }
 
     public ObservableCollection<PlanItemViewModel> Items { get; } = [];
@@ -157,10 +160,20 @@ public sealed partial class PlanViewModel : ObservableObject
     /// Po otwarciu innego planu: zaznaczona pierwsza pieśń, a ekran z pieśnią spoza tego planu
     /// jest czyszczony — „Dalej” zacznie wtedy od pierwszej pieśni nowego planu.
     /// </summary>
+    /// <summary>
+    /// Otwarty plan zaczyna od początku: na ekranie pierwszy slajd pierwszej pozycji, która ma slajdy (chyba że ekran
+    /// już pokazuje coś z tego planu — np. ponowne otwarcie tego samego planu w trakcie).
+    /// </summary>
     private void StartFromBeginning()
     {
-        if (_live.State.Item is { } shown && Items.All(i => i.Id != shown.PlanItemId))
-            _control.Clear();
+        var showsThisPlan = _live.State.Item is { } shown && Items.Any(i => i.Id == shown.PlanItemId);
+        if (!showsThisPlan)
+        {
+            if (_plan.Playlist.FirstOrDefault(i => i.Slides.Count > 0) is { } first)
+                _control.Show(first);
+            else
+                _control.Clear();
+        }
         Selected = Items.FirstOrDefault();
         if (Selected is null)
             SelectionCleared?.Invoke(this, EventArgs.Empty);

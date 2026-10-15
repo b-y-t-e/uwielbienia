@@ -209,7 +209,8 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   `SongPlanItem` z `Arrangement` / `Layout` — `null` = układ z pliku pieśni) w `JsonPlanStore`
   (`%APPDATA%\Uwielbienia\plany\{id}.json`). `ActivePlan` trzyma otwarty plan, zapisuje każdą
   zmianę, buduje `Playlist` (`LiveItem`) i wysyła `Changed` / `Opened` (po otwarciu innego planu
-  widoki zaczynają od początku). Dodawanie do planu: `PlanActions` (`Insert`, `InsertAt`, `ItemAdded`).
+  widoki zaczynają od początku: zaznaczona pierwsza pozycja, a na ekranie jej pierwszy slajd —
+  `PlanViewModel.StartFromBeginning`; także przy starcie z ostatnim planem). Dodawanie do planu: `PlanActions` (`Insert`, `InsertAt`, `ItemAdded`).
 - **Rodzaje pozycji planu.** Plan nie zakłada, że pozycja to pieśń: `IPlanItemTypes`
   (`PlanItemTypes` — rejestr wszystkich `IPlanItemType`) daje opis na liście (`PlanItemInfo`:
   tytuł, numer, `PlanItemKind`, uwaga) i slajdy (`LiveItem`), a jego `Changed` (zmieniona treść)
