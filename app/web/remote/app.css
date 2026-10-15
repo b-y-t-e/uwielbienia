@@ -113,6 +113,7 @@ input {
 }
 .lines .rep { color: var(--muted); font: 400 .6em "Atkinson Hyperlegible Next", system-ui, sans-serif; }
 .lines.image { display: grid; place-items: center; color: var(--muted); }
+.lines.title-only { display: grid; place-items: center; text-align: center; color: var(--candle); }
 /* pomiar szerokości wersów bez zawijania (app.js: avoidWrapping) */
 .lines.measure p { white-space: nowrap; width: max-content; }
 

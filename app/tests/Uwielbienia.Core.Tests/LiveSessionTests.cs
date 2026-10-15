@@ -189,18 +189,20 @@ public class LiveSessionTests
     }
 
     [Theory]
-    [InlineData("Zaufałem Panu i już", "Zaufałem Panu i już|Niczego nie muszę się lękać", 1)]
-    [InlineData("Zaufałem Panu", "Zaufałem Panu i już,|Niczego", 1)]
-    [InlineData("Jezus mój Pan", "JEZUS, mój Pan!", 1)]
-    [InlineData("Jezus pokonał śmierć", "Jezus|pokonał śmierć, zmartwychwstał|Alleluja", 2)]
-    [InlineData("Jezus", "Jezusie mój", 0)]
-    [InlineData("Taki jesteś Ty", "Jesteś tu, jesteś pośród nas", 0)]
-    [InlineData("", "Ojcze nasz", 0)]
-    public void Lines_repeating_the_title_are_counted(string title, string firstLines, int count)
+    [InlineData("Zaufałem Panu i już", "Zaufałem Panu i już|Niczego nie muszę się lękać", "Zaufałem Panu i już")]
+    [InlineData("Zaufałem Panu", "Zaufałem Panu i już,|Niczego", "Zaufałem Panu")]
+    [InlineData("Uwielbienie jest", "Uwielbienie jest piękne i wspaniałe.|Uwielbienie", "Uwielbienie jest")]
+    [InlineData("Jezus mój Pan", "JEZUS, mój Pan!", "JEZUS, mój Pan!")]
+    [InlineData("Jezus pokonał śmierć", "Jezus|pokonał śmierć, zmartwychwstał|Alleluja", "Jezus|pokonał śmierć,")]
+    [InlineData("Jezus", "Jezusie mój", "")]
+    [InlineData("Taki jesteś Ty", "Jesteś tu, jesteś pośród nas", "")]
+    [InlineData("", "Ojcze nasz", "")]
+    public void Words_repeating_the_title_are_colored(string title, string firstLines, string colored)
     {
-        // wersy pierwszego slajdu rozdzielone „|”
+        // wersy pierwszego slajdu i ich części w kolorze tytułu rozdzielone „|”
         Slide[] slides = [new("V1", "Zwrotka 1", [.. firstLines.Split('|').Select(l => new SlideLine(l, null, 1, false, false))])];
-        Assert.Equal(count, SongPlanItemType.TitleLineCount(title, slides));
+        var spans = SongPlanItemType.TitleSpans(title, slides);
+        Assert.Equal(colored, string.Join("|", spans.Select((length, i) => slides[0].Lines[i].Text[..length])));
     }
 
     [Fact]
@@ -211,7 +213,7 @@ public class LiveSessionTests
         var live = new SongPlanItemType(library, new SectionSlideBuilder()).Present(song);
 
         Assert.False(live.ShowTitle);
-        Assert.True(live.Slides[0].Lines[0].IsTitle);
-        Assert.DoesNotContain(live.Slides.Skip(1).SelectMany(sl => sl.Lines), l => l.IsTitle);
+        Assert.Equal(live.Slides[0].Lines[0].Text, live.Slides[0].Lines[0].TitlePart);
+        Assert.DoesNotContain(live.Slides.Skip(1).SelectMany(sl => sl.Lines), l => l.TitleLength > 0);
     }
 }

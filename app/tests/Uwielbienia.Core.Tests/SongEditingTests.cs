@@ -1,3 +1,4 @@
+using Uwielbienia.Core.Presentation;
 using Uwielbienia.Core.Songs;
 
 namespace Uwielbienia.Core.Tests;
@@ -91,6 +92,24 @@ public class SongEditingTests : IDisposable
     }
 
     [Fact]
+    public void Text_with_only_a_title_is_saved_and_shown_as_a_title_slide()
+    {
+        // tytuł i dwie puste części
+        var draft = SongDraft.New(SongKind.Text) with { Title = "Uwielbienie", Parts = [new DraftPart("O", "", ""), new DraftPart("O", "", " ")] };
+
+        Assert.Null(draft.Validate());
+        var text = _editor.Save(draft);
+        var live = new SongPlanItemType(_library, new SectionSlideBuilder()).Present(text);
+
+        Assert.Empty(text.Sections);
+        Assert.Equal("Uwielbienie", text.DisplayTitle);
+        Assert.True(live.ShowTitle);
+        Assert.Empty(Assert.Single(live.Slides).Lines);
+        Assert.Single(SongDraft.From(text).Parts);
+        Assert.Equal("Wpisz tytuł albo treść.", SongDraft.New(SongKind.Text).Validate());
+    }
+
+    [Fact]
     public void Editing_songbook_song_saves_local_copy_that_can_be_reverted()
     {
         var original = _library.Songs.First(s => s.Number == 47);
@@ -149,7 +168,7 @@ public class SongEditingTests : IDisposable
     public void Draft_without_title_or_text_is_invalid()
     {
         Assert.NotNull(SongDraft.New(SongKind.Song).Validate());
-        Assert.NotNull((SongDraft.New(SongKind.Text) with { Title = "Pusty" }).Validate());
+        Assert.NotNull((SongDraft.New(SongKind.Song) with { Title = "Pusty" }).Validate());
         Assert.NotNull(SongDraft.New(SongKind.Text).Validate());
     }
 

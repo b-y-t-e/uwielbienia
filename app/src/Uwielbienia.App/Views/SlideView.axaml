@@ -41,20 +41,13 @@
                         <ItemsControl ItemsSource="{Binding Lines}">
                           <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="p:SlideLine">
-                              <!-- Wers powtarzający tytuł pieśni (zamiast tytułu nad tekstem) — w kolorze tytułu. -->
-                              <!-- Refren dołączony do zwrotki: odstęp nad nim i kursywa. -->
+                              <!-- Słowa powtarzające tytuł pieśni (zamiast tytułu nad tekstem) — w kolorze tytułu, reszta wersu zwykła.
+                                   Refren dołączony do zwrotki: odstęp nad nim i kursywa. -->
                               <TextBlock TextAlignment="Center" TextWrapping="Wrap" FontFamily="{StaticResource TitleFont}"
-                                         FontSize="86" Padding="0,4"
+                                         FontSize="86" Padding="0,4" Foreground="{Binding #Root.SlideForeground}"
                                          Margin="{Binding StartsPart, Converter={x:Static v:SlideConverters.PartGap}, ConverterParameter=40}"
                                          FontStyle="{Binding IsChorus, Converter={x:Static v:SlideConverters.ChorusStyle}}">
-                                <TextBlock.Foreground>
-                                  <MultiBinding Converter="{x:Static v:SlideConverters.LineBrush}">
-                                    <Binding Path="IsTitle" />
-                                    <Binding Path="#Root.SlideTitle" />
-                                    <Binding Path="#Root.SlideForeground" />
-                                  </MultiBinding>
-                                </TextBlock.Foreground>
-                                <Run Text="{Binding Text}" /><Run Text="{Binding Repeat, Converter={x:Static v:SlideConverters.RepeatSuffix}}"
+                                <Run Text="{Binding TitlePart}" Foreground="{Binding #Root.SlideTitle}" /><Run Text="{Binding Rest}" /><Run Text="{Binding Repeat, Converter={x:Static v:SlideConverters.RepeatSuffix}}"
                                      FontSize="54" Foreground="{Binding #Root.SlideMuted}" />
                               </TextBlock>
                             </DataTemplate>

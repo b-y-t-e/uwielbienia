@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Slideshows;
 using Uwielbienia.Core.Songs;
@@ -29,7 +30,7 @@ public interface ISongPresenter
 }
 
 /// <summary>Rodzaj pozycji „pieśń” (także tekst — ten sam model <see cref="Song"/>).</summary>
-public sealed class SongPlanItemType : IPlanItemType, ISongPresenter
+public sealed partial class SongPlanItemType : IPlanItemType, ISongPresenter
 {
     private readonly ISongLibrary _library;
     private readonly ISlideBuilder _slideBuilder;
@@ -58,43 +59,59 @@ public sealed class SongPlanItemType : IPlanItemType, ISongPresenter
 
     public LiveItem Present(Song song) => Create(null, song, song.Arrangement);
 
+    /// <summary>Kod slajdu z samym tytułem (tekst bez treści) — nie koliduje z kodami części.</summary>
+    public const string TitleSlideCode = "TYTUL";
+
     private LiveItem Create(Guid? planItemId, Song song, IReadOnlyList<string> arrangement)
     {
         var slides = _slideBuilder.Build(song, arrangement);
-        var titleLines = TitleLineCount(song.Title, slides);
-        if (titleLines > 0)
-            slides = [MarkTitle(slides[0], titleLines), .. slides.Skip(1)];
-        var showTitle = song.Title.Length > 0 && titleLines == 0;
+        // tekst z samym tytułem: jeden slajd, na którym jest tylko tytuł (w stylu tytułu, z linią)
+        if (slides.Count == 0 && song.IsText && song.Sections.Count == 0 && song.Title.Length > 0)
+            slides = [new Slide(TitleSlideCode, "Tytuł", [])];
+        var titleSpans = TitleSpans(song.Title, slides);
+        if (titleSpans.Count > 0)
+            slides = [MarkTitle(slides[0], titleSpans), .. slides.Skip(1)];
+        var showTitle = song.Title.Length > 0 && titleSpans.Count == 0;
         return new(planItemId, song.Id, song.Number, song.DisplayTitle, slides, showTitle, "Wszystkie części pominięte");
     }
 
     /// <summary>
-    /// Ile pierwszych wersów pierwszego slajdu powtarza tytuł (np. „Zaufałem Panu i już”, także rozbity na
-    /// wersy „Jezus / pokonał śmierć”); 0 = tytuł jest inny niż początek tekstu. Wtedy rzutnik nie pokazuje
-    /// tytułu nad tekstem, tylko te wersy w kolorze tytułu. Porównanie bez wielkości liter, polskich znaków
+    /// Ile znaków kolejnych wersów pierwszego slajdu powtarza tytuł — po jednej liczbie na wers, który go zawiera
+    /// (np. tytuł „Uwielbienie jest” i wers „Uwielbienie jest piękne” → [16]; „Jezus / pokonał śmierć, …” →
+    /// [5, 14]); pusta lista = tytuł nie jest początkiem tekstu. Wtedy rzutnik pokazuje tytuł nad tekstem,
+    /// a inaczej — zamiast tytułu — te słowa w kolorze tytułu. Porównanie bez wielkości liter, polskich znaków
     /// i interpunkcji, całymi słowami („Jezus” nie jest początkiem „Jezusie mój”).
     /// </summary>
-    internal static int TitleLineCount(string title, IReadOnlyList<Slide> slides)
+    internal static IReadOnlyList<int> TitleSpans(string title, IReadOnlyList<Slide> slides)
     {
-        var normalizedTitle = SongSearch.Normalize(title);
-        if (normalizedTitle.Length == 0 || slides.Count == 0)
-            return 0;
-        var text = "";
-        for (var i = 0; i < slides[0].Lines.Count; i++)
+        var titleWords = SongSearch.Normalize(title).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (titleWords.Length == 0 || slides.Count == 0)
+            return [];
+        var spans = new List<int>();
+        var matched = 0;
+        foreach (var line in slides[0].Lines)
         {
-            text = SongSearch.Normalize(text + " " + slides[0].Lines[i].Text);
-            if (text.Length == 0)
-                continue;
-            if (text == normalizedTitle || text.StartsWith(normalizedTitle + " ", StringComparison.Ordinal))
-                return i + 1;
-            if (!normalizedTitle.StartsWith(text + " ", StringComparison.Ordinal))
-                return 0;
+            foreach (Match token in Token().Matches(line.Text))
+                foreach (var word in SongSearch.Normalize(token.Value).Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    if (word != titleWords[matched])
+                        return [];
+                    if (++matched == titleWords.Length)
+                    {
+                        spans.Add(token.Index + token.Length);
+                        return spans;
+                    }
+                }
+            spans.Add(line.Text.Length);
         }
-        return 0;
+        return [];
     }
 
-    private static Slide MarkTitle(Slide slide, int count) =>
-        slide with { Lines = [.. slide.Lines.Select((line, i) => i < count ? line with { IsTitle = true } : line)] };
+    [GeneratedRegex(@"\S+")]
+    private static partial Regex Token();
+
+    private static Slide MarkTitle(Slide slide, IReadOnlyList<int> spans) =>
+        slide with { Lines = [.. slide.Lines.Select((line, i) => i < spans.Count ? line with { TitleLength = spans[i] } : line)] };
 }
 
 /// <summary>Rodzaj pozycji „prezentacja”: slajdy-obrazy przygotowane przez <see cref="ISlideshowLibrary"/>.</summary>

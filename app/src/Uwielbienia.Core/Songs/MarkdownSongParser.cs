@@ -22,9 +22,11 @@ public sealed partial class MarkdownSongParser : ISongParser
     {
         var lines = markdown.Replace("\r\n", "\n").Split('\n');
         var (meta, bodyStart) = ReadFrontMatter(id, lines);
-        var sections = ReadSections(id, lines.AsSpan(bodyStart));
-
         var kind = meta.GetValueOrDefault("rodzaj") is { } rodzaj && Unquote(rodzaj) == "tekst" ? SongKind.Text : SongKind.Song;
+        var sections = ReadSections(id, lines.AsSpan(bodyStart));
+        // tekst może mieć sam tytuł (plansza, np. „Uwielbienie”); pieśń — zawsze części
+        if (sections.Count == 0 && (kind == SongKind.Song || Unquote(Required(id, meta, "tytul")).Length == 0))
+            throw new SongFormatException(id, "pieśń nie ma żadnej sekcji");
         var arrangement = ParseList(meta.GetValueOrDefault("kolejnosc") ?? (kind == SongKind.Text ? "" : Required(id, meta, "kolejnosc")));
         return new Song(
             Id: id,
@@ -84,8 +86,6 @@ public sealed partial class MarkdownSongParser : ISongParser
         }
         if (current is not null)
             sections.Add(current.Build());
-        if (sections.Count == 0)
-            throw new SongFormatException(id, "pieśń nie ma żadnej sekcji");
         return sections;
     }
 

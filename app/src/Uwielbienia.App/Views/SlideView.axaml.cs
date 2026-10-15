@@ -73,14 +73,6 @@ public static class SlideConverters
     public static readonly IValueConverter RepeatSuffix =
         new FuncValueConverter<int, string>(n => n > 1 ? $"  ×{n}" : "");
 
-    /// <summary>Kolor wersu: [czy powtarza tytuł, kolor tytułu, kolor tekstu].</summary>
-    public static readonly IMultiValueConverter LineBrush =
-        new FuncMultiValueConverter<object?, IBrush?>(values =>
-        {
-            var list = values.ToList();
-            return list is [true, IBrush title, _] ? title : list.ElementAtOrDefault(2) as IBrush;
-        });
-
     /// <summary>Refren dołączony do zwrotki na tym samym slajdzie — kursywą, jak w śpiewniku.</summary>
     public static readonly IValueConverter ChorusStyle =
         new FuncValueConverter<bool, FontStyle>(chorus => chorus ? FontStyle.Italic : FontStyle.Normal);

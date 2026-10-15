@@ -89,7 +89,7 @@ ostatnia linia fragmentu :| {x2} `D`
 | `tonacja`        | string \| `null`| Pierwszy akord pieśni (przybliżenie tonacji) |
 | `kolejnosc`      | lista kodów     | Kolejność wykonania (arrangement); kody muszą istnieć jako sekcje |
 | `zrodlo`         | string          | Plik źródłowy (PDF, z którego pochodzi pieśń) |
-| `rodzaj`         | `"tekst"`       | Opcjonalny, tylko w plikach lokalnych aplikacji: **tekst** (część Mszy, modlitwa, ogłoszenie…) — bez akordów, `numer: null`, `tytul` może być pusty (`""`), części `[O1] Część 1`, `[O2] Część 2`… |
+| `rodzaj`         | `"tekst"`       | Opcjonalny, tylko w plikach lokalnych aplikacji: **tekst** (część Mszy, modlitwa, ogłoszenie…) — bez akordów, `numer: null`, `tytul` może być pusty (`""`), części `[O1] Część 1`, `[O2] Część 2`…; z tytułem może nie mieć żadnej części (plansza, np. „Uwielbienie”) |
 
 ### Treść
 
@@ -184,9 +184,11 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   opcjonalny — bez tytułu przedstawia go pierwszy wers (`Song.DisplayTitle`); ten sam format pliku.
   Rzutnik pokazuje tytuł z linią nad pierwszym slajdem tylko, gdy coś wnosi (`LiveItem.ShowTitle`):
   jest własny i nie jest początkiem tekstu pierwszego slajdu (porównanie bez wielkości liter, polskich
-  znaków i interpunkcji, całymi słowami — `SongPlanItemType.TitleLineCount`). W śpiewniku tytuł to
-  zwykle incipit — wtedy zamiast tytułu wersy, które go powtarzają, mają kolor tytułu
-  (`SlideLine.IsTitle`), co zaznacza początek pieśni.
+  znaków i interpunkcji, całymi słowami — `SongPlanItemType.TitleSpans`). W śpiewniku tytuł to
+  zwykle incipit — wtedy zamiast tytułu słowa, które go powtarzają, mają kolor tytułu, a reszta wersu
+  zwykły (`SlideLine.TitleLength` — `TitlePart` / `Rest`; `SongPlanItemType.TitleSpans`), co zaznacza
+  początek pieśni. Tekst z samym tytułem (bez części — puste pola
+  edytora się nie zapisują) to jeden slajd z samym tytułem w stylu tytułu (`SongPlanItemType.TitleSlideCode`).
 - **Zapis lokalny.** `LocalSongEditor` (`ISongEditor`) zapisuje własne pieśni (numery od 1000),
   teksty (`tekst-slug`) i poprawki pieśni śpiewnika w `%APPDATA%\Uwielbienia\teksty\{id}\piesn.md`
   (`MarkdownSongWriter` — odwrotność parsera, odtwarza pliki śpiewnika co do znaku). Plik o `id`
@@ -264,7 +266,7 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   (`--fs-*`), tekst pieśni 24 px lub mniej, akordy i „×N” 0,6 tego rozmiaru. Bez planu, wyszukiwania, gaszenia ekranu i
   edycji — telefon można dać dziecku. Tryb „Ekran” (przeglądarka jako drugi ekran; przycisk tylko na
   komputerze z myszą) rysuje slajd jak rzutnik (`renderSlide`: płótno 16:9 w jednostkach `cqw`,
-  wymiary i kolory jak `SlideView`). Stan niesie wersy z akordami (`LineMessage`: `Chords`, `Title`,
+  wymiary i kolory jak `SlideView`). Stan niesie wersy z akordami (`LineMessage`: `Chords`, `TitleLength`,
   `Chorus`, `PartStart`), `ShowTitle` i `NextLines`. Polecenia `blank` / `goto` / `showItem` /
   `showSong` / `search` zostają w protokole, strona ich nie używa. Podgląd bez aplikacji: kopia strony
   z udawanym `lib/tailcat/index.js`.

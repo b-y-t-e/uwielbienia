@@ -53,7 +53,7 @@ public sealed partial record SongDraft(SongKind Kind, string Title, string Categ
             s.Name,
             string.Join('\n', s.Lines.Select(ToEditorLine)),
             s.Code,
-            s.Repeat)).ToList(),
+            s.Repeat)).DefaultIfEmpty(new DraftPart("O", "", "")).ToList(),
         song);
 
     /// <summary>Komunikat dla operatora albo <c>null</c>, gdy można zapisać.</summary>
@@ -62,8 +62,9 @@ public sealed partial record SongDraft(SongKind Kind, string Title, string Categ
         // Tekst może nie mieć tytułu — przedstawia go wtedy pierwszy wers.
         if (Kind == SongKind.Song && string.IsNullOrWhiteSpace(Title))
             return "Wpisz tytuł.";
-        if (!Parts.Any(p => ParseLines(p.Text).Any(l => l.IsSung)))
-            return "Wpisz tekst co najmniej jednej części.";
+        // Tekst z samym tytułem (np. „Uwielbienie”) też jest poprawny — na ekranie sam tytuł.
+        if (!Parts.Any(p => ParseLines(p.Text).Any(l => l.IsSung)) && (Kind == SongKind.Song || string.IsNullOrWhiteSpace(Title)))
+            return Kind == SongKind.Text ? "Wpisz tytuł albo treść." : "Wpisz tekst co najmniej jednej części.";
         return null;
     }
 

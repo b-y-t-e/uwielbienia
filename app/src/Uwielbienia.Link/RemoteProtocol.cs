@@ -56,24 +56,25 @@ public sealed record StateMessage(
         state.Item?.Slides.Select(s => s.Label).ToList() ?? [],
         state.IsBlank,
         state.Next,
-        state.Item is { ShowTitle: true } && state.SlideIndex == 0 && state.Slide is { Lines.Count: > 0 },
+        // tylko slajd z tekstem (także sam tytuł bez wersów) — nie obraz ani film
+        state.Item is { ShowTitle: true } && state.SlideIndex == 0 && state.Slide?.GetType() == typeof(Slide),
         // następny slajd tej samej pieśni — muzyk widzi, co nadchodzi (inna pieśń: tylko tytuł w Next)
         state.Item is { } item && state.SlideIndex + 1 < item.Slides.Count ? LinesOf(item.Slides[state.SlideIndex + 1]) : null);
 
     private static List<LineMessage> LinesOf(Slide? slide) =>
-        slide?.Lines.Select(l => new LineMessage(l.Text, l.Repeat, l.IsChorus, l.StartsPart, l.IsTitle, l.Chords)).ToList() ?? [];
+        slide?.Lines.Select(l => new LineMessage(l.Text, l.Repeat, l.IsChorus, l.StartsPart, l.TitleLength, l.Chords)).ToList() ?? [];
 }
 
 /// <param name="Chorus">Refren dołączony do zwrotki (kursywa).</param>
 /// <param name="PartStart">Początek dołączonej części (odstęp nad wersem).</param>
-/// <param name="Title">Wers powtarza tytuł pieśni (kolor tytułu).</param>
+/// <param name="TitleLength">Ile pierwszych znaków wersu powtarza tytuł pieśni (kolor tytułu).</param>
 /// <param name="Chords">Akordy wersu (telefon muzyka), jak w kolumnie „Na ekranie”.</param>
 public sealed record LineMessage(
     string Text,
     int Repeat,
     bool Chorus = false,
     bool PartStart = false,
-    bool Title = false,
+    int TitleLength = 0,
     string? Chords = null);
 
 public sealed record PlanMessage(string? Name, IReadOnlyList<PlanItemMessage> Items)

@@ -87,10 +87,13 @@ function renderSlide(screen, s) {
   if (s && !s.isBlank) {
     if (s.showTitle) content.push(Object.assign(document.createElement("div"), { className: "slide-title", textContent: s.title }));
     for (const l of s.lines) {
-      const p = paragraph(l.text);
+      // słowa powtarzające tytuł w kolorze tytułu, reszta wersu zwykła
+      const p = document.createElement("p");
+      const titleLength = l.titleLength ?? 0;
+      if (titleLength > 0) p.append(Object.assign(document.createElement("span"), { className: "is-title", textContent: l.text.slice(0, titleLength) }));
+      p.append(l.text.slice(titleLength));
       p.classList.toggle("chorus", !!l.chorus);
       p.classList.toggle("part-start", !!l.partStart);
-      p.classList.toggle("is-title", !!l.title);
       if (l.repeat > 1) p.append(Object.assign(document.createElement("span"), { className: "rep", textContent: `  ×${l.repeat}` }));
       content.push(p);
     }
@@ -122,10 +125,13 @@ function renderState() {
   ui.nowLabel.textContent = s.label ?? "";
   ui.blankBadge.hidden = !s.isBlank;
   ui.currentLines.parentElement.classList.toggle("empty", !s.title);
-  // slajd prezentacji (obraz) — telefon dostaje tylko jego nazwę
-  ui.currentLines.replaceChildren(...(s.lines.length ? s.lines.map(chordLine) : []));
-  ui.currentLines.classList.toggle("image", s.lines.length === 0 && !!s.label);
-  if (s.lines.length === 0 && s.label) ui.currentLines.append(paragraph(s.label));
+  ui.currentLines.replaceChildren(...s.lines.map(chordLine));
+  // sam tytuł (tekst bez treści) — jak na rzutniku; slajd prezentacji (obraz) — tylko jego nazwa
+  const titleOnly = s.lines.length === 0 && s.showTitle;
+  ui.currentLines.classList.toggle("image", s.lines.length === 0 && !!s.label && !titleOnly);
+  ui.currentLines.classList.toggle("title-only", titleOnly);
+  if (titleOnly) ui.currentLines.append(paragraph(s.title));
+  else if (s.lines.length === 0 && s.label) ui.currentLines.append(paragraph(s.label));
 
   // początek następnego slajdu (2 wersy z akordami) — muzyk wie, co nadchodzi, a bieżący zostaje duży
   const nextLines = (s.nextLines ?? []).slice(0, 2);

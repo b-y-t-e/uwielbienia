@@ -25,7 +25,8 @@ public sealed record ImageSlide(string ImageFile, int Number) : Slide($"S{Number
 /// <param name="Text">Tekst do wyświetlenia (bez znaczników).</param>
 /// <param name="Chords">Akordy (tylko dla operatora; nigdy na ekranie projekcji).</param>
 /// <param name="Repeat">Liczba powtórzeń wersu/fragmentu, 1 = bez powtórzeń.</param>
-/// <param name="IsTitle">Wers powtarza tytuł pieśni (początek pierwszego slajdu) — rzutnik pokazuje go w kolorze tytułu.</param>
+/// <param name="TitleLength">Ile pierwszych znaków wersu powtarza tytuł pieśni (początek pierwszego slajdu) — rzutnik
+/// pokazuje je w kolorze tytułu, resztę wersu zwykłym; 0 = wers bez tytułu.</param>
 /// <param name="IsChorus">Wers refrenu dołączonego do zwrotki na tym samym slajdzie — kursywa.</param>
 /// <param name="StartsPart">Pierwszy wers dołączonej części — odstęp nad nim.</param>
 public sealed record SlideLine(
@@ -34,6 +35,13 @@ public sealed record SlideLine(
     int Repeat,
     bool RepeatStart,
     bool RepeatEnd,
-    bool IsTitle = false,
+    int TitleLength = 0,
     bool IsChorus = false,
-    bool StartsPart = false);
+    bool StartsPart = false)
+{
+    /// <summary>Początek wersu w kolorze tytułu.</summary>
+    public string TitlePart => Text[..Math.Min(TitleLength, Text.Length)];
+
+    /// <summary>Reszta wersu po tytule.</summary>
+    public string Rest => Text[Math.Min(TitleLength, Text.Length)..];
+}
