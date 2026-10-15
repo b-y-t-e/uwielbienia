@@ -165,6 +165,21 @@ public class LiveSessionTests
     }
 
     [Fact]
+    public void Next_and_previous_item_start_from_the_first_slide()
+    {
+        _session.Show(_first, 1);
+        _session.NextItem();
+        Assert.Equal((_second, 0), (_session.State.Item, _session.State.SlideIndex));
+
+        _session.Show(_second, 2);
+        _session.PreviousItem();
+        Assert.Equal((_first, 0), (_session.State.Item, _session.State.SlideIndex));
+
+        _session.PreviousItem(); // początek planu — zostaje
+        Assert.Equal((_first, 0), (_session.State.Item, _session.State.SlideIndex));
+    }
+
+    [Fact]
     public void Plan_clone_gets_new_ids()
     {
         var plan = Plan.Create("Próba z dziećmi", null, PlanKind.Template).Insert(0, SongPlanItem.For("001-a"));

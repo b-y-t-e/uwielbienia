@@ -354,6 +354,13 @@
                                   Value="{Binding Live.Video.PositionSeconds}" VerticalAlignment="Center" Focusable="False" />
                           <TextBlock Grid.Column="8" Classes="caption" Text="{Binding Live.Video.TimeText}" VerticalAlignment="Center" />
                         </Grid>
+                        <Border IsVisible="{Binding Live.Video.IsPromptVisible}" Background="{DynamicResource CandleSoftBrush}"
+                                CornerRadius="8" Padding="12,8">
+                          <StackPanel>
+                            <TextBlock Classes="bodyStrong" Text="Przytrzymaj „do tyłu” — poprzednia pozycja planu" />
+                            <TextBlock Classes="bodyStrong" Text="Przytrzymaj „do przodu” — następna pozycja planu" />
+                          </StackPanel>
+                        </Border>
                         <TextBlock Classes="caption failed" Text="{Binding Live.Video.Error}" TextWrapping="Wrap"
                                    IsVisible="{Binding Live.Video.Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
                       </StackPanel>

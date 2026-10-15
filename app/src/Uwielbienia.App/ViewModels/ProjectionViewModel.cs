@@ -12,9 +12,12 @@ public sealed partial class ProjectionViewModel(
     ILiveControl control,
     IProjectionController projection,
     ProjectionCalibration calibration,
-    IVideoPlayer video) : ObservableObject
+    IVideoPlayer video,
+    FilmRemote film) : ObservableObject
 {
     public IVideoPlayer Video { get; } = video;
+
+    public FilmRemote Film { get; } = film;
 
     public ProjectionCalibration Calibration { get; } = calibration;
 

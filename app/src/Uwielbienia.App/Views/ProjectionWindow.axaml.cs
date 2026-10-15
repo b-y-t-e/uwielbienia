@@ -259,13 +259,17 @@ public partial class ProjectionWindow : Window
         }
         if (HandleCalibrationKey(e))
             return;
+        // najpierw sterowanie (przy filmie Escape z pilota to „długo do tyłu”), dopiero potem Esc = wróć do planu
+        if (LiveKeyboard.Handle(e, vm.Control, vm.Projection, vm.Video, vm.Film))
+        {
+            e.Handled = true;
+            return;
+        }
         if (e.Key == Key.Escape && IsSameScreen)
         {
             vm.Projection.Close();
             e.Handled = true;
-            return;
         }
-        e.Handled = LiveKeyboard.Handle(e, vm.Control, vm.Projection, vm.Video);
     }
 
     /// <summary>

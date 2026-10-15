@@ -24,6 +24,14 @@
       <v:CalibrationGrid IsVisible="{Binding Calibration.IsGridVisible}" />
       <!-- Postęp filmu (przewijanie): tylko razem z uchwytami dopasowania obrazu — po ruchu myszą albo w trybie K,
            więc sala go zwykle nie widzi. W obrębie dopasowanego obrazu (widać go na ekranie w sali). -->
+      <!-- Pilot przy filmie: po długim „do tyłu” — co zrobi drugie długie naciśnięcie (kilka sekund). -->
+      <Border IsVisible="{Binding Live.Video.IsPromptVisible}" VerticalAlignment="Top" HorizontalAlignment="Center"
+              Margin="0,40,0,0" Padding="22,12" CornerRadius="12" Background="#D9201A14">
+        <StackPanel Spacing="4">
+          <TextBlock Text="Przytrzymaj „do tyłu” — poprzednia pozycja planu" FontSize="24" Foreground="#F4ECDD" />
+          <TextBlock Text="Przytrzymaj „do przodu” — następna pozycja planu" FontSize="24" Foreground="#F4ECDD" />
+        </StackPanel>
+      </Border>
       <Border x:Name="VideoBar" IsVisible="False" VerticalAlignment="Bottom" Margin="60,0,60,40" Padding="18,8"
               CornerRadius="12" Background="#B3201A14">
         <Grid ColumnDefinitions="*,16,Auto">

@@ -11,6 +11,12 @@ public interface ILiveControl
 
     void Previous();
 
+    /// <summary>Następna pozycja planu od pierwszego slajdu (Ctrl+PageDown, wyjście z filmu pilotem).</summary>
+    void NextItem();
+
+    /// <summary>Poprzednia pozycja planu od pierwszego slajdu (Ctrl+PageUp, wyjście z filmu pilotem).</summary>
+    void PreviousItem();
+
     void GoToSlide(int slideIndex);
 
     void ToggleBlank();
@@ -161,6 +167,20 @@ public sealed class LiveSession : ILiveControl, ILiveStateSource
             Publish(item, State.SlideIndex - 1, State.IsBlank);
         else if (Neighbour(item, -1) is { } previous)
             Publish(previous, Math.Max(0, previous.Slides.Count - 1), State.IsBlank);
+    }
+
+    public void NextItem()
+    {
+        if (State.Item is null)
+            Next();
+        else if (Neighbour(State.Item, +1) is { } next)
+            Publish(next, 0, State.IsBlank);
+    }
+
+    public void PreviousItem()
+    {
+        if (State.Item is { } item && Neighbour(item, -1) is { } previous)
+            Publish(previous, 0, State.IsBlank);
     }
 
     public void GoToSlide(int slideIndex)

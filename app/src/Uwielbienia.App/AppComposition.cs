@@ -71,6 +71,8 @@ public static class AppComposition
         services.AddSingleton<VlcVideoPlayer>();
         services.AddSingleton<IVideoPlayer>(sp => sp.GetRequiredService<VlcVideoPlayer>());
         services.AddSingleton<VideoDirector>();
+        services.AddSingleton<FilmRemote>(sp => new FilmRemote(
+            sp.GetRequiredService<ILiveControl>(), sp.GetRequiredService<ILiveStateSource>(), sp.GetRequiredService<IVideoPlayer>()));
 
         // połączenia (telefon / przeglądarka)
         services.AddSingleton(sp => new RemoteServerOptions(
@@ -101,7 +103,8 @@ public static class AppComposition
             sp.GetRequiredService<ILiveControl>(),
             sp.GetRequiredService<IProjectionController>(),
             sp.GetRequiredService<ProjectionCalibration>(),
-            sp.GetRequiredService<IVideoPlayer>())));
+            sp.GetRequiredService<IVideoPlayer>(),
+            sp.GetRequiredService<FilmRemote>())));
 
         return services.BuildServiceProvider();
     }

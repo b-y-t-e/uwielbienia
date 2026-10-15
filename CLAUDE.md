@@ -243,7 +243,16 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   `VideoSurface` (zwykła kontrolka): rzutnik (`ProjectedVideo` w `SlideView`) i podgląd w kolumnie
   „Na ekranie” — dzięki temu film podlega „Dopasuj obraz” i przenikaniu. Przy filmie spacja i kliknięcie
   w obraz (rzutnik w trybie jednego ekranu, podgląd w „Na ekranie”) = pauza / wznowienie jak w odtwarzaczu
-  (jedna reguła: `VideoPlayerExtensions.TogglePause` — zwraca `false`, gdy filmu nie ma); slajd zmieniają tylko przyciski, strzałki, PageUp/PageDown, pilot.
+  (jedna reguła: `VideoPlayerExtensions.TogglePause` — zwraca `false`, gdy filmu nie ma).
+  **Pilot** (`FilmRemote`, `LiveKeyboard`): wysyła krótko `PageDown` / `PageUp`, a przytrzymany — inny klawisz:
+  `b` (do przodu) i na zmianę `Shift+F5` / `Escape` (do tyłu — pilot przełącza „start / koniec pokazu”;
+  przy filmie oba to długie „do tyłu”, bez filmu `Escape` dalej zamyka okna i tryb jednego ekranu); strzałki
+  działają jak pilot. Przy filmie: krótko = ±15 s (szybkie
+  klikanie tylko przewija), długo do przodu = pauza, długo do tyłu = podpowiedź na rzutniku i w „Na ekranie”
+  (4 s), a po niej długo do tyłu = poprzednia, długo do przodu = następna pozycja planu. Przy zwykłym slajdzie:
+  krótko = slajd, `b` = czarny ekran, `Shift+F5` tylko włącza projekcję (nigdy jej nie wyłącza). `Ctrl+PageDown` /
+  `Ctrl+PageUp` = następna / poprzednia pozycja planu (`ILiveControl.NextItem` / `PreviousItem`). Przyciski
+  „Dalej” / „Wstecz” (okno, telefon) zawsze zmieniają slajd / pozycję.
   „−15 s” / „+15 s” (`IVideoPlayer.Skip`, w granicach filmu) w „Na ekranie” i na telefonie. Na rzutniku pasek
   postępu z suwakiem (`ProjectionWindow` → `VideoBar`, w warstwie `Warped` — z tą samą perspektywą co film)
   widać tylko razem z uchwytami „Dopasuj obraz” (ruch myszy / tryb K). Brak odtwarzacza

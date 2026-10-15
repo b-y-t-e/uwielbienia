@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Avalonia.Threading;
 using Uwielbienia.App.Services;
 using Uwielbienia.Core.Videos;
 
@@ -9,13 +10,28 @@ namespace Uwielbienia.App.ViewModels;
 public sealed partial class VideoControlsViewModel : ObservableObject
 {
     private readonly IVideoPlayer _player;
+    private readonly FilmRemote _film;
+    private readonly DispatcherTimer _promptTimer = new() { Interval = FilmRemote.PromptTime };
 
-    public VideoControlsViewModel(IVideoPlayer player, VideoFrames frames)
+    public VideoControlsViewModel(IVideoPlayer player, VideoFrames frames, FilmRemote film)
     {
         _player = player;
+        _film = film;
         Frames = frames;
         player.StatusChanged += (_, _) => Refresh();
+        // Podpowiedź pilota (długo „do tyłu”) znika sama po kilku sekundach bez drugiego naciśnięcia.
+        _promptTimer.Tick += (_, _) => film.CancelPrompt();
+        film.PromptChanged += (_, _) =>
+        {
+            _promptTimer.Stop();
+            if (film.IsPrompting)
+                _promptTimer.Start();
+            OnPropertyChanged(nameof(IsPromptVisible));
+        };
     }
+
+    /// <summary>Po długim „do tyłu” na pilocie: co zrobi drugie długie naciśnięcie.</summary>
+    public bool IsPromptVisible => _film.IsPrompting;
 
     public VideoFrames Frames { get; }
 

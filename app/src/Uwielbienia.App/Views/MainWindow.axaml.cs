@@ -101,7 +101,7 @@ public partial class MainWindow : Window
         if (e.Source is TextBox || IsInEditor(e.Source))
             return;
 
-        e.Handled = LiveKeyboard.Handle(e, vm.Control, vm.Projection, vm.Video);
+        e.Handled = LiveKeyboard.Handle(e, vm.Control, vm.Projection, vm.Video, vm.Film);
     }
 
     private void OnKeyUpTunnel(object? sender, KeyEventArgs e)
@@ -120,7 +120,7 @@ public partial class MainWindow : Window
         {
             case Key.PageDown or Key.PageUp or Key.F5:
                 // piloty do prezentacji działają także przy otwartym oknie
-                return e.Handled = LiveKeyboard.Handle(e, ViewModel.Control, ViewModel.Projection, ViewModel.Video);
+                return e.Handled = LiveKeyboard.Handle(e, ViewModel.Control, ViewModel.Projection, ViewModel.Video, ViewModel.Film);
             case Key.Escape:
                 add.CloseCommand.Execute(null);
                 break;

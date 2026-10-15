@@ -235,4 +235,86 @@ public sealed class VideoTests : IDisposable
         Assert.Equal(1, changes);
         Assert.Single(type.Present(item)!.Slides);
     }
+
+    private sealed class ManualTime : TimeProvider
+    {
+        public DateTimeOffset Now { get; set; } = new(2026, 10, 15, 12, 0, 0, TimeSpan.Zero);
+
+        public override DateTimeOffset GetUtcNow() => Now;
+    }
+
+    /// <summary>Plan: tekst, film, tekst; na ekranie film. Pilot przy filmie: <see cref="FilmRemote"/>.</summary>
+    private (FilmRemote Remote, ManualTime Time, LiveItem Before, LiveItem After) OnFilm()
+    {
+        var before = Text();
+        var film = Present(Video("film.mp4"));
+        var after = Text();
+        _session.SetPlaylist([before, film, after]);
+        _session.Show(film);
+        var time = new ManualTime();
+        return (new FilmRemote(_session, _session, _player, time), time, before, after);
+    }
+
+    [Fact]
+    public void Remote_short_presses_only_skip_and_long_forward_pauses()
+    {
+        var (remote, _, _, _) = OnFilm();
+
+        Assert.True(remote.Forward());
+        Assert.True(remote.Forward());
+        Assert.True(remote.Back());
+        Assert.True(remote.HoldForward());
+
+        Assert.Equal(["open film.mp4", "seek", "seek", "seek", "pause"], _player.Calls);
+        Assert.IsType<VideoSlide>(_session.State.Slide);
+    }
+
+    [Fact]
+    public void Long_back_then_long_back_goes_to_the_previous_item_and_long_forward_to_the_next()
+    {
+        var (remote, _, before, after) = OnFilm();
+
+        remote.HoldBack();
+        Assert.True(remote.IsPrompting);
+        remote.HoldBack();
+        Assert.Same(before, _session.State.Item);
+        Assert.False(remote.IsPrompting);
+
+        _session.Show(_session.State.Item!); // znowu …
+        _session.NextItem();                  // … film
+        remote.HoldBack();
+        remote.HoldForward();
+        Assert.Same(after, _session.State.Item);
+    }
+
+    [Fact]
+    public void Prompt_expires_and_any_other_press_cancels_it()
+    {
+        var (remote, time, _, _) = OnFilm();
+
+        remote.HoldBack();
+        time.Now += FilmRemote.PromptTime + TimeSpan.FromSeconds(1);
+        remote.HoldForward();                 // po czasie — zwykła pauza
+        Assert.IsType<VideoSlide>(_session.State.Slide);
+
+        remote.HoldBack();
+        remote.Forward();                     // inny przycisk — przewija i zamyka podpowiedź
+        Assert.False(remote.IsPrompting);
+        remote.HoldForward();
+        Assert.IsType<VideoSlide>(_session.State.Slide);
+    }
+
+    [Fact]
+    public void Without_a_film_the_remote_keys_do_their_usual_thing()
+    {
+        var text = Text();
+        _session.SetPlaylist([text]);
+        _session.Show(text);
+        var remote = new FilmRemote(_session, _session, _player);
+
+        Assert.False(remote.Forward());
+        Assert.False(remote.Back());
+        Assert.False(remote.HoldForward());
+        Assert.False(remote.HoldBack());
+    }
 }

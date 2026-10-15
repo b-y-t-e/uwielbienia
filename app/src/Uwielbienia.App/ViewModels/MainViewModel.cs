@@ -31,9 +31,11 @@ public sealed partial class MainViewModel : ObservableObject
         PlanAddViewModel planAdd,
         PlanActions planActions,
         ProjectionCalibration calibration,
-        IVideoPlayer video)
+        IVideoPlayer video,
+        FilmRemote film)
     {
         Video = video;
+        Film = film;
         PlanAdd = planAdd;
         Live = live;
         Plan = plan;
@@ -107,6 +109,9 @@ public sealed partial class MainViewModel : ObservableObject
     public ILiveControl Control { get; }
 
     public IVideoPlayer Video { get; }
+
+    /// <summary>Pilot przy filmie (±15 s, pauza, wyjście z filmu) — wspólny dla okna operatora i projekcji.</summary>
+    public FilmRemote Film { get; }
 
     public string? LibraryWarning { get; }
 

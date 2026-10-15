@@ -65,14 +65,18 @@ Zasada: **Plan** decyduje, co i w jakiej kolejności, **Pieśń** służy do czy
 
 | Klawisz / gest | Działanie |
 |---|---|
-| `Spacja`, `→`, `PageDown`, `↓` | następny slajd; po ostatnim slajdzie → pierwszy slajd następnej pozycji planu. Przy filmie `Spacja` = pauza / wznowienie |
-| `Backspace`, `←`, `PageUp`, `↑` | poprzedni slajd |
+| `→`, `PageDown`, `↓` (pilot: krótko do przodu) | następny slajd; po ostatnim slajdzie → pierwszy slajd następnej pozycji planu. Przy filmie +15 s |
+| `Backspace`, `←`, `PageUp`, `↑` (pilot: krótko do tyłu) | poprzedni slajd. Przy filmie −15 s |
+| `Spacja` | następny slajd. Przy filmie pauza / wznowienie |
+| `Ctrl`+`PageDown` / `Ctrl`+`PageUp` | następna / poprzednia pozycja planu (od pierwszego slajdu) |
+| `B` (pilot: długo do przodu) | czarny ekran (włącz/wyłącz), jak w PowerPoint. Przy filmie pauza / wznowienie |
+| `Shift`+`F5` / `Escape` (pilot: długo do tyłu — na zmianę) | `Shift`+`F5` włącza projekcję (nigdy nie wyłącza), `Escape` zamyka okno / tryb jednego ekranu. Przy filmie oba to samo: podpowiedź na 4 s: potem długo do tyłu = poprzednia, długo do przodu = następna pozycja planu |
 | Dwuklik w planie | pokaż pieśń na ekranie — jedyny sposób w oknie operatora |
-| `B` lub `.` | czarny ekran (włącz/wyłącz), jak w PowerPoint |
+| `.` | czarny ekran (włącz/wyłącz), także przy filmie |
 | `Shift`+`1`–`9` | skok do n-tego slajdu bieżącej pieśni (same cyfry zaczynają wyszukiwanie numeru) |
 | Pisanie cyfr lub liter | **szybki wybór**: `47` albo `jezus mój` → okno „Dodaj do planu”, `Enter` = dodaj zaraz za pieśnią na ekranie. W trybie jednego ekranu (nakładka na projekcji) `Enter` pokazuje od razu, a pieśń trafia do planu zaraz za bieżącą; `Ctrl+Enter` = dodaj jako następną |
 | `F5` | włącz/wyłącz okno projekcji |
-| Pilot do prezentacji | działa od razu — wysyła `PageUp` / `PageDown` |
+| Pilot do prezentacji | działa od razu — krótko wysyła `PageUp` / `PageDown`, przytrzymany zwykle `B` / na zmianę `Shift`+`F5` i `Escape` |
 
 Szybki wybór to odpowiedź na sytuację „alarmową” i uwielbienie bez planu. Numer ze
 śpiewnika wystarcza, a wyszukiwarka ignoruje polskie znaki i interpunkcję.
