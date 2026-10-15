@@ -22,6 +22,10 @@ public sealed class PresentationTests : IDisposable
 
     private sealed class FakeExporter : ISlideExporter
     {
+        public string Name => "Fake";
+
+        public bool IsAvailable => true;
+
         public TaskCompletionSource Release { get; set; } = new();
 
         public int Slides { get; set; } = 3;

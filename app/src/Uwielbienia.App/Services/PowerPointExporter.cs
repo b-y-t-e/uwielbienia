@@ -7,9 +7,31 @@ namespace Uwielbienia.App.Services;
 /// <summary>
 /// Slajdy prezentacji jako PNG przez zainstalowany PowerPoint (automatyzacja COM, bez okna) — to samo
 /// co pps_viewer. Własny wątek STA, bo COM PowerPointa tego wymaga; pomija slajdy ukryte w pokazie.
+/// Tylko z ważną licencją Office (<see cref="OfficeLicense"/>) — po wygaśnięciu subskrypcji eksport przejmuje
+/// następny program z <see cref="SlideExporterChain"/>.
 /// </summary>
 public sealed class PowerPointExporter : ISlideExporter
 {
+    public string Name => "PowerPoint";
+
+    public bool IsAvailable =>
+        OperatingSystem.IsWindows() && Type.GetTypeFromProgID("PowerPoint.Application") is not null && HasLicense();
+
+    private static bool HasLicense()
+    {
+        var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Microsoft", "Office", "Licenses", "5");
+        try
+        {
+            var files = Directory.Exists(folder) ? Directory.EnumerateFiles(folder).Select(File.ReadAllBytes).ToList() : [];
+            return OfficeLicense.IsActive(files, DateTimeOffset.UtcNow);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return true;
+        }
+    }
+
     public Task ExportAsync(string presentation, string outDir, int width, IProgress<string> progress)
     {
         var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

@@ -216,11 +216,17 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
 - **Prezentacje** (`PresentationPlanItem`: folder + tytuł). `SlideshowLibrary` kopiuje plik
   PowerPoint (`.pptx .ppt .pps .ppsx .pptm .ppsm .odp`) albo obrazy (`.png .jpg .jpeg .bmp .webp`,
   kilka = jedna prezentacja) do `prezentacje/{id8}-{slug}/` — plan działa po wyjęciu pendrive'a.
-  Slajdy prezentacji eksportuje raz, w tle, `PowerPointExporter` (`ISlideExporter`, App/Services —
-  jak w pps_viewer: automatyzacja COM PowerPointa na wątku STA, PNG 1920 px, bez slajdów ukrytych)
-  do `slajdy/` (najpierw `slajdy.tmp`, potem znacznik `.complete`). Do tego czasu pozycja nie ma
+  Slajdy prezentacji eksportuje raz, w tle, do `slajdy/` (najpierw `slajdy.tmp`, potem znacznik
+  `.complete`; PNG 1920 px, bez slajdów ukrytych) `SlideExporterChain` (Core) — pierwszy dostępny
+  `ISlideExporter` (App/Services), a gdy zawiedzie, następny: `PowerPointExporter` (automatyzacja COM
+  na wątku STA, jak w pps_viewer; **tylko z ważną licencją Office** — `OfficeLicense` czyta `ExpiresOn`
+  z `%LOCALAPPDATA%\Microsoft\Office\Licenses\5`, bo po wygaśnięciu subskrypcji PowerPoint może
+  zatrzymać eksport oknem aktywacji) → `DeckCraftExporter` (`C:\Program Files\DeckCraft\deckcraft-cli.exe`:
+  `info` + `render --all --scale`, ułamek sekundy) → `LibreOfficeExporter` (`soffice --headless
+  --convert-to pdf` z osobnym profilem, strony PDF → PNG przez PDFium/`Docnet.Core`; Linux). Bez
+  żadnego z nich — komunikat w planie, można dodać obrazy. Do końca eksportu pozycja nie ma
   slajdów, a plan pokazuje uwagę („Slajd 3 z 20…”, błąd + „Spróbuj ponownie”); `Changed` po
-  zakończeniu podmienia ją na ekranie. Bez PowerPointa — dziś tylko obrazy (TODO niżej). Slajd to
+  zakończeniu podmienia ją na ekranie. Slajd to
   `ImageSlide` (plik obrazu); obrazy wczytuje w tle `SlideImages` (pamięć podręczna, następny
   slajd zawczasu, miniatury dla operatora).
 - **Przeciąganie** (plan, części pieśni): `ListReorderDrag` — zwykłe przeciąganie myszą ze
@@ -359,15 +365,5 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 
 ### Do zrobienia (TODO)
 
-- **Prezentacje bez Microsoft Office (Linux i Windows bez PowerPointa):** eksport slajdów przez
-  LibreOffice w trybie headless — druga implementacja `ISlideExporter` (np. `LibreOfficeExporter`),
-  wybierana, gdy PowerPoint jest niedostępny (`Type.GetTypeFromProgID("PowerPoint.Application")`
-  zwraca `null`; na Linuksie zawsze). Szukać `soffice` w `PATH` i typowych miejscach
-  (`C:\Program Files\LibreOffice\program\soffice.exe`, `/usr/bin/soffice`, `/usr/lib/libreoffice/program/soffice`,
-  flatpak/snap). Konwersja `soffice --headless --convert-to pdf --outdir <tmp> <plik>` (osobny
-  profil `-env:UserInstallation=file:///<tmp>/profil`, żeby nie kolidować z otwartym LibreOffice),
-  potem PDF → PNG 1920 px na slajd (biblioteka do renderowania PDF, np. PDFium/Docnet — ta sama
-  posłuży do dodawania PDF jako prezentacji). Postęp przez `IProgress` jak w `PowerPointExporter`;
-  gdy nie ma ani PowerPointa, ani LibreOffice — czytelny komunikat w planie („Zainstaluj
-  LibreOffice albo dodaj slajdy jako obrazy”). Test z fałszywym `ISlideExporter` + ręczna próba na
-  Linuksie.
+- **LibreOffice na Linuksie:** eksport (`LibreOfficeExporter`) sprawdzony na Windows (LibreOffice 26.2);
+  ręczna próba na Linuksie (ścieżki `soffice`, natywny PDFium z `Docnet.Core` w pakiecie linux-x64).

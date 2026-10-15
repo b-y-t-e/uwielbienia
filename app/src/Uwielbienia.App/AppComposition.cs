@@ -48,7 +48,9 @@ public static class AppComposition
         services.AddSingleton<SongPlanItemType>();
         services.AddSingleton<IPlanItemType>(sp => sp.GetRequiredService<SongPlanItemType>());
         services.AddSingleton<ISongPresenter>(sp => sp.GetRequiredService<SongPlanItemType>());
-        services.AddSingleton<ISlideExporter, PowerPointExporter>();
+        // eksport slajdów: PowerPoint (z ważną licencją) → DeckCraft → LibreOffice; zawodzi jeden — próbuje następny
+        services.AddSingleton<ISlideExporter>(_ => new SlideExporterChain(
+            [new PowerPointExporter(), new DeckCraftExporter(), new LibreOfficeExporter()]));
         services.AddSingleton<ISlideshowLibrary>(sp => new SlideshowLibrary(
             sp.GetRequiredService<AppPaths>().Presentations,
             sp.GetRequiredService<ISlideExporter>(),

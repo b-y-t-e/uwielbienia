@@ -2,9 +2,15 @@ using Uwielbienia.Core.Songs;
 
 namespace Uwielbienia.Core.Slideshows;
 
-/// <summary>Zamienia plik prezentacji na obrazy slajdów (na Windows — przez PowerPointa).</summary>
+/// <summary>Zamienia plik prezentacji na obrazy slajdów (PowerPoint, DeckCraft, LibreOffice — <see cref="SlideExporterChain"/>).</summary>
 public interface ISlideExporter
 {
+    /// <summary>Nazwa programu, np. „PowerPoint”.</summary>
+    string Name { get; }
+
+    /// <summary>Program jest zainstalowany i można go użyć (PowerPoint: z ważną licencją).</summary>
+    bool IsAvailable { get; }
+
     /// <summary>Zapisuje widoczne slajdy w <paramref name="outDir"/> jako PNG (<c>slide001.png</c>…) o szerokości <paramref name="width"/>.</summary>
     Task ExportAsync(string presentation, string outDir, int width, IProgress<string> progress);
 }
