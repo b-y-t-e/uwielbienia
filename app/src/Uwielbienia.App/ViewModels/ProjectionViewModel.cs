@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Uwielbienia.App.Services;
 using Uwielbienia.Core.Presentation;
+using Uwielbienia.Core.Videos;
 
 namespace Uwielbienia.App.ViewModels;
 
@@ -10,8 +11,11 @@ public sealed partial class ProjectionViewModel(
     SearchViewModel quickPick,
     ILiveControl control,
     IProjectionController projection,
-    ProjectionCalibration calibration) : ObservableObject
+    ProjectionCalibration calibration,
+    IVideoPlayer video) : ObservableObject
 {
+    public IVideoPlayer Video { get; } = video;
+
     public ProjectionCalibration Calibration { get; } = calibration;
 
     public LiveViewModel Live { get; } = live;

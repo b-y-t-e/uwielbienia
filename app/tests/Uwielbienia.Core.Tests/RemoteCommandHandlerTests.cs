@@ -21,11 +21,13 @@ public sealed class RemoteCommandHandlerTests : IDisposable
     public RemoteCommandHandlerTests()
     {
         var songs = new SongPlanItemType(Library, new SectionSlideBuilder());
-        _plan = new ActivePlan(new JsonPlanStore(_plans), new PlanItemTypes([songs]), _session);
+        var types = new PlanItemTypes([songs, new Videos.VideoPlanItemType()]);
+        _plan = new ActivePlan(new JsonPlanStore(_plans), types, _session);
         _plan.Open(Plan.Create("Test", null)
             .Insert(0, SongPlanItem.For(Library.Songs.First(s => s.Number == 47).Id))
-            .Insert(1, SongPlanItem.For(Library.Songs.First(s => s.Number == 94).Id)));
-        _handler = new RemoteCommandHandler(_session, _session, _plan, Library, new SongSearch(Library), songs, new ImmediateDispatcher());
+            .Insert(1, SongPlanItem.For(Library.Songs.First(s => s.Number == 94).Id))
+            .Insert(2, VideoPlanItem.For(Path.Combine(Path.GetTempPath(), "film.mp4"))));
+        _handler = new RemoteCommandHandler(_session, _session, _plan, Library, new SongSearch(Library), songs, new ImmediateDispatcher(), types);
     }
 
     private async Task<JsonElement> Send(string json) =>
@@ -36,7 +38,9 @@ public sealed class RemoteCommandHandlerTests : IDisposable
     {
         var reply = await Send("""{"cmd":"hello"}""");
         Assert.True(reply.GetProperty("ok").GetBoolean());
-        Assert.Equal(2, reply.GetProperty("plan").GetProperty("items").GetArrayLength());
+        var items = reply.GetProperty("plan").GetProperty("items").EnumerateArray().ToList();
+        // rodzaj pozycji z opisu planu (PlanItemKind) — film to „video”, nie „text”
+        Assert.Equal(["song", "song", "video"], items.Select(i => i.GetProperty("kind").GetString()));
         Assert.Equal("state", reply.GetProperty("state").GetProperty("type").GetString());
     }
 

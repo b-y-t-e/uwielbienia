@@ -54,6 +54,7 @@ async function command(cmd, extra = {}) {
   try {
     const reply = JSON.parse(await link.request(JSON.stringify({ cmd, ...extra })));
     if (reply.state) receive({ ...reply.state, type: "state" });
+    if (reply.video) receive({ ...reply.video, type: "video" });
     return reply;
   } catch {
     setStatus("failed", "Polecenie nie dotarło");
@@ -68,8 +69,42 @@ function receive(message) {
     if (state && message.version < state.version) return; // starsza wiadomość po nowszej
     state = message;
     renderState();
+  } else if (message.type === "video") {
+    video = { ...message, receivedAt: performance.now() };
+    renderVideo();
   }
 }
+
+// ---------- film ----------
+
+let video = null;
+const formatTime = (seconds) => {
+  const s = Math.max(0, Math.floor(seconds));
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = String(s % 60).padStart(2, "0");
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${r}` : `${m}:${r}`;
+};
+
+// Film na ekranie: zamiast tekstu czas, pasek postępu, pauza i ±15 s (stan z aplikacji co sekundę, między
+// wiadomościami czas płynie lokalnie).
+function renderVideo() {
+  const show = !!state?.isVideo;
+  $("videoPanel").hidden = !show;
+  ui.currentLines.hidden = show;
+  if (!show) return;
+  const v = video ?? { isPlaying: false, position: 0, duration: 0 };
+  const elapsed = v.isPlaying ? (performance.now() - (v.receivedAt ?? 0)) / 1000 : 0;
+  const position = Math.min(v.duration || Infinity, v.position + elapsed);
+  $("videoTime").textContent = formatTime(position);
+  $("videoDuration").textContent = v.duration ? `z ${formatTime(v.duration)}` : "";
+  $("videoProgress").style.width = v.duration ? `${(100 * position) / v.duration}%` : "0%";
+  $("videoToggle").textContent = v.isPlaying ? "Pauza" : "Odtwórz";
+  $("videoError").hidden = !v.error;
+  $("videoError").textContent = v.error ?? "";
+}
+setInterval(() => { if (video?.isPlaying && state?.isVideo) renderVideo(); }, 250);
+$("videoToggle").onclick = () => command("videoToggle");
+$("videoBack").onclick = () => command("videoSkip", { seconds: -15 });
+$("videoForward").onclick = () => command("videoSkip", { seconds: 15 });
 
 // ---------- widok ----------
 
@@ -137,6 +172,7 @@ function renderState() {
   const nextLines = (s.nextLines ?? []).slice(0, 2);
   ui.nextLabel.textContent = s.next ? `Dalej: ${s.next}` : "";
   ui.nextLines.replaceChildren(...nextLines.map(chordLine));
+  renderVideo();
   fitAll();
   renderDisplay();
 }

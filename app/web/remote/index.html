@@ -54,6 +54,18 @@
         <span id="blankBadge" class="badge" hidden>Ekran wygaszony</span>
       </div>
       <div id="currentLines" class="lines"></div>
+      <!-- Film na ekranie: czas, postęp i sterowanie zamiast tekstu -->
+      <div id="videoPanel" class="video-panel" hidden>
+        <div id="videoTime" class="video-time">0:00</div>
+        <div class="video-progress"><div id="videoProgress"></div></div>
+        <div id="videoDuration" class="video-duration"></div>
+        <div class="video-buttons">
+          <button id="videoBack">−15 s</button>
+          <button id="videoToggle" class="video-toggle">Pauza</button>
+          <button id="videoForward">+15 s</button>
+        </div>
+        <p id="videoError" class="video-error" hidden></p>
+      </div>
     </section>
 
     <section class="upcoming">

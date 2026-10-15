@@ -4,9 +4,11 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Uwielbienia.App.Services;
 using Uwielbienia.App.ViewModels;
 using Uwielbienia.Core.Presentation;
+using Uwielbienia.Core.Videos;
 
 namespace Uwielbienia.App.Views;
 
@@ -39,9 +41,11 @@ public partial class ProjectionWindow : Window
         DataContext = viewModel;
         // Dopasowanie jest wspólne dla kolejnych okien projekcji — zamknięte okno musi się odpiąć.
         viewModel.Calibration.PropertyChanged += OnCalibrationChanged;
+        viewModel.Video.StatusChanged += OnVideoChanged;
         Closed += (_, _) =>
         {
             viewModel.Calibration.PropertyChanged -= OnCalibrationChanged;
+            viewModel.Video.StatusChanged -= OnVideoChanged;
             _hideHandles.Stop();
         };
         UpdateWarp();
@@ -89,8 +93,11 @@ public partial class ProjectionWindow : Window
     private void UpdateHandles()
     {
         Handles.IsVisible = HandlesVisible;
+        VideoBar.IsVisible = HandlesVisible && DataContext is ProjectionViewModel { Video: var video } && video.HasVideo();
         UpdateCursor();
     }
+
+    private void OnVideoChanged(object? sender, EventArgs e) => UpdateHandles();
 
     /// <summary>Jak w pps_viewer: ruch myszą nad obrazem pokazuje uchwyty i kursor na 3 s.</summary>
     private void ShowHandlesTemporarily()
@@ -137,6 +144,9 @@ public partial class ProjectionWindow : Window
     {
         base.OnPointerPressed(e);
         if (ViewModel.IsQuickPickOpen || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+            return;
+        // pasek filmu przewija film — nie przesuwa narożnika i nie pauzuje
+        if (e.Source is Visual source && (source == VideoBar || VideoBar.IsVisualAncestorOf(source)))
             return;
         var p = e.GetPosition(Handles);
         if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
@@ -225,9 +235,14 @@ public partial class ProjectionWindow : Window
         return Enumerable.Range(0, 4).MinBy(i => Point.Distance(corners[i], p));
     }
 
-    /// <summary>Tryb jednego ekranu: kliknięcie w prawą połowę = dalej, w lewą = wstecz.</summary>
+    /// <summary>
+    /// Tryb jednego ekranu: kliknięcie w prawą połowę = dalej, w lewą = wstecz; przy filmie — jak w każdym
+    /// odtwarzaczu — pauza / wznowienie (slajd zmienia się tylko świadomie: przyciski, klawisze, pilot).
+    /// </summary>
     private void Tap(double x)
     {
+        if (ViewModel.Video.TogglePause())
+            return;
         if (x > Bounds.Width / 2)
             ViewModel.Control.Next();
         else
@@ -250,7 +265,7 @@ public partial class ProjectionWindow : Window
             e.Handled = true;
             return;
         }
-        e.Handled = LiveKeyboard.Handle(e, vm.Control, vm.Projection);
+        e.Handled = LiveKeyboard.Handle(e, vm.Control, vm.Projection, vm.Video);
     }
 
     /// <summary>

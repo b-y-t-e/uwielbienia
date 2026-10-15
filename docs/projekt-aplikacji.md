@@ -65,7 +65,7 @@ Zasada: **Plan** decyduje, co i w jakiej kolejności, **Pieśń** służy do czy
 
 | Klawisz / gest | Działanie |
 |---|---|
-| `Spacja`, `→`, `PageDown`, `↓` | następny slajd; po ostatnim slajdzie → pierwszy slajd następnej pozycji planu |
+| `Spacja`, `→`, `PageDown`, `↓` | następny slajd; po ostatnim slajdzie → pierwszy slajd następnej pozycji planu. Przy filmie `Spacja` = pauza / wznowienie |
 | `Backspace`, `←`, `PageUp`, `↑` | poprzedni slajd |
 | Dwuklik w planie | pokaż pieśń na ekranie — jedyny sposób w oknie operatora |
 | `B` lub `.` | czarny ekran (włącz/wyłącz), jak w PowerPoint |
@@ -78,7 +78,7 @@ Szybki wybór to odpowiedź na sytuację „alarmową” i uwielbienie bez planu
 śpiewnika wystarcza, a wyszukiwarka ignoruje polskie znaki i interpunkcję.
 
 **Tryb jednego urządzenia (S2)** działa tak samo z klawiatury. Na ekranie dotykowym:
-- stuknięcie prawej / lewej połowy ekranu = następny / poprzedni slajd;
+- stuknięcie prawej / lewej połowy ekranu = następny / poprzedni slajd (przy filmie: pauza / wznowienie);
 - przeciągnięcie od dolnej krawędzi = szuflada z planem i wyszukiwarką; tekst na
   ekranie zostaje, dopóki nie wybierzesz nowej pieśni.
 

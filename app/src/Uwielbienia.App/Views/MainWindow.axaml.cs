@@ -9,7 +9,9 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Uwielbienia.App.Services;
 using Uwielbienia.App.ViewModels;
+using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Slideshows;
+using Uwielbienia.Core.Videos;
 
 namespace Uwielbienia.App.Views;
 
@@ -53,6 +55,12 @@ public partial class MainWindow : Window
 
     private MainViewModel ViewModel => (MainViewModel)DataContext!;
 
+    /// <summary>Kliknięcie w podgląd filmu w kolumnie „Na ekranie” — pauza / wznowienie.</summary>
+    private void OnVideoPreviewTapped(object? sender, TappedEventArgs e)
+    {
+        ViewModel.Video.TogglePause();
+    }
+
     /// <summary>Kursor nad nagłówkiem części: strzałki przeciągania tylko tam, gdzie kolejność można zmienić.</summary>
     public static readonly IValueConverter DragCursor =
         new FuncValueConverter<bool, Cursor>(canDrag => canDrag ? new Cursor(StandardCursorType.SizeNorthSouth) : Cursor.Default);
@@ -93,7 +101,7 @@ public partial class MainWindow : Window
         if (e.Source is TextBox || IsInEditor(e.Source))
             return;
 
-        e.Handled = LiveKeyboard.Handle(e, vm.Control, vm.Projection);
+        e.Handled = LiveKeyboard.Handle(e, vm.Control, vm.Projection, vm.Video);
     }
 
     private void OnKeyUpTunnel(object? sender, KeyEventArgs e)
@@ -112,7 +120,7 @@ public partial class MainWindow : Window
         {
             case Key.PageDown or Key.PageUp or Key.F5:
                 // piloty do prezentacji działają także przy otwartym oknie
-                return e.Handled = LiveKeyboard.Handle(e, ViewModel.Control, ViewModel.Projection);
+                return e.Handled = LiveKeyboard.Handle(e, ViewModel.Control, ViewModel.Projection, ViewModel.Video);
             case Key.Escape:
                 add.CloseCommand.Execute(null);
                 break;
@@ -185,14 +193,32 @@ public partial class MainWindow : Window
             await ViewModel.PlanAdd.AddPresentationAsync(paths);
     }
 
+    /// <summary>„+ Film”: filmy w dowolnym formacie, który zna VLC; każdy to osobna pozycja planu.</summary>
+    private async void OnAddVideoClick(object? sender, RoutedEventArgs e)
+    {
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Film",
+            AllowMultiple = true,
+            FileTypeFilter =
+            [
+                new FilePickerFileType("Filmy") { Patterns = [.. VideoPlanItemType.Extensions.Select(ext => "*" + ext)] },
+                new FilePickerFileType("Wszystkie pliki") { Patterns = ["*"] },
+            ],
+        });
+        var videos = files.Select(f => f.TryGetLocalPath()).OfType<string>().Select(VideoPlanItem.For).ToList();
+        if (videos.Count > 0)
+            ViewModel.PlanAdd.AddVideos(videos);
+    }
+
     private static List<string> DroppedFiles(DragEventArgs e) =>
         (e.DataTransfer.TryGetFiles() ?? []).Select(f => f.TryGetLocalPath()).OfType<string>()
-            .Where(SlideshowLibrary.IsSupported).ToList();
+            .Where(f => SlideshowLibrary.IsSupported(f) || VideoPlanItemType.IsSupported(f)).ToList();
 
     private void OnPlanDragOver(object? sender, DragEventArgs e) =>
         e.DragEffects = DroppedFiles(e).Count > 0 ? DragDropEffects.Copy : DragDropEffects.None;
 
-    /// <summary>Upuszczona prezentacja (albo obrazy) trafia za wiersz pod kursorem albo na koniec planu.</summary>
+    /// <summary>Upuszczona prezentacja (albo obrazy, filmy) trafia za wiersz pod kursorem albo na koniec planu.</summary>
     private async void OnPlanDrop(object? sender, DragEventArgs e)
     {
         var files = DroppedFiles(e);

@@ -102,9 +102,10 @@
                           <TextBlock Classes="number" Text="{Binding Number}" IsVisible="{Binding IsSong}" />
                           <Ellipse Classes="textDot" IsVisible="{Binding IsText}" />
                           <Border Classes="slideMark" IsVisible="{Binding IsPresentation}" />
+                          <Path Classes="videoMark" IsVisible="{Binding IsVideo}" />
                         </Panel>
                         <StackPanel Grid.Column="2" VerticalAlignment="Center">
-                          <TextBlock Classes="bodyStrong" Classes.textItem="{Binding IsText}" Classes.presentationItem="{Binding IsPresentation}"
+                          <TextBlock Classes="bodyStrong" Classes.textItem="{Binding IsText}" Classes.presentationItem="{Binding IsMedia}"
                                      Text="{Binding Title}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
                           <TextBlock Classes="caption" Text="{Binding Note}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Note}"
                                      IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}" />
@@ -192,6 +193,21 @@
                         </ItemsControl>
                       </ScrollViewer>
                     </DockPanel>
+                  </DataTemplate>
+                </ContentControl.ContentTemplate>
+              </ContentControl>
+              <!-- Film: plik wskazany na dysku (nie jest kopiowany). -->
+              <ContentControl Content="{Binding Preview.Video}" IsVisible="{Binding Preview.HasVideo}">
+                <ContentControl.ContentTemplate>
+                  <DataTemplate x:DataType="vm:VideoDetailsViewModel">
+                    <StackPanel>
+                      <TextBlock Classes="songTitle" Text="{Binding Title}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Title}" />
+                      <TextBlock Classes="caption" Text="{Binding File}" TextWrapping="Wrap" />
+                      <TextBlock Classes="caption failed" Text="Nie ma tego pliku. Gdy wróci na swoje miejsce (np. podłączony pendrive), film będzie gotowy sam." TextWrapping="Wrap"
+                                 Margin="0,8,0,0" IsVisible="{Binding IsMissing}" />
+                      <TextBlock Classes="caption failed" Text="{Binding Unavailable}" TextWrapping="Wrap" Margin="0,8,0,0"
+                                 IsVisible="{Binding Unavailable, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    </StackPanel>
                   </DataTemplate>
                 </ContentControl.ContentTemplate>
               </ContentControl>
@@ -319,6 +335,28 @@
                       <Border Classes="slideThumb" IsVisible="{Binding Live.HasCurrentImage}" Margin="0,0,0,4">
                         <Image Source="{Binding Live.CurrentImage^}" Stretch="Uniform" />
                       </Border>
+                      <!-- Film: ten sam obraz co na rzutniku, pauza (spacja), przewijanie i czas. -->
+                      <StackPanel IsVisible="{Binding Live.HasCurrentVideo}" Spacing="8" Margin="0,0,0,4">
+                        <!-- Kliknięcie w film = pauza / wznowienie (jak w odtwarzaczu i na rzutniku). -->
+                        <Border Classes="slideThumb" Background="Transparent" Cursor="Hand" Tapped="OnVideoPreviewTapped">
+                          <v:VideoSurface Frames="{Binding Live.Video.Frames}" />
+                        </Border>
+                        <Grid ColumnDefinitions="Auto,6,Auto,6,Auto,10,*,8,Auto">
+                          <Button Content="−15 s" Command="{Binding Live.Video.SkipBackCommand}" ToolTip.Tip="15 sekund wstecz" />
+                          <Button Grid.Column="2" Command="{Binding Live.Video.TogglePauseCommand}" ToolTip.Tip="Spacja albo kliknięcie w film" MinWidth="96">
+                            <Panel>
+                              <TextBlock Text="Pauza" IsVisible="{Binding Live.Video.IsPlaying}" />
+                              <TextBlock Text="Odtwórz" IsVisible="{Binding !Live.Video.IsPlaying}" />
+                            </Panel>
+                          </Button>
+                          <Button Grid.Column="4" Content="+15 s" Command="{Binding Live.Video.SkipForwardCommand}" ToolTip.Tip="15 sekund do przodu" />
+                          <Slider Grid.Column="6" Minimum="0" Maximum="{Binding Live.Video.DurationSeconds}"
+                                  Value="{Binding Live.Video.PositionSeconds}" VerticalAlignment="Center" Focusable="False" />
+                          <TextBlock Grid.Column="8" Classes="caption" Text="{Binding Live.Video.TimeText}" VerticalAlignment="Center" />
+                        </Grid>
+                        <TextBlock Classes="caption failed" Text="{Binding Live.Video.Error}" TextWrapping="Wrap"
+                                   IsVisible="{Binding Live.Video.Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                      </StackPanel>
                       <ItemsControl ItemsSource="{Binding Live.CurrentLines}">
                         <ItemsControl.ItemTemplate>
                           <DataTemplate x:DataType="p:SlideLine">
@@ -374,7 +412,7 @@
     <!-- Dodaj do planu: wyszukiwarka pieśni i tekstów; wybór od razu wstawia w miejsce wskazane w planie. -->
     <Border x:Name="PlanAddScrim" ZIndex="90" Background="{DynamicResource ScrimBrush}" IsVisible="{Binding PlanAdd.IsOpen}"
             PointerPressed="OnPlanAddScrimPressed">
-      <Border Classes="panel dialog" Width="560" MaxHeight="640" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,96,0,24">
+      <Border Classes="panel dialog" Width="640" MaxHeight="640" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,96,0,24">
         <DockPanel>
           <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
             <TextBlock Classes="heading" Text="Dodaj do planu" VerticalAlignment="Center" />
@@ -385,8 +423,10 @@
           <Grid DockPanel.Dock="Bottom" ColumnDefinitions="Auto,8,Auto,8,Auto,*,Auto" Margin="0,12,0,0">
             <Button Content="+ Nowa pieśń" Command="{Binding PlanAdd.NewSongCommand}" />
             <Button Grid.Column="2" Content="+ Nowy tekst" Command="{Binding PlanAdd.NewTextCommand}" />
-            <Button Grid.Column="4" Content="+ Prezentacja" Click="OnAddPresentationClick"
-                    ToolTip.Tip="Plik PowerPoint albo obrazy slajdów" />
+            <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="8">
+              <Button Content="+ Prezentacja" Click="OnAddPresentationClick" ToolTip.Tip="Plik PowerPoint albo obrazy slajdów" />
+              <Button Content="+ Film" Click="OnAddVideoClick" ToolTip.Tip="mp4, mkv, avi, mov… — plik zostaje na swoim miejscu" />
+            </StackPanel>
             <Button Grid.Column="6" Classes="primary" Content="Wybierz" Command="{Binding PlanAdd.AddCommand}"
                     CommandParameter="{x:Null}" IsEnabled="{Binding PlanAdd.HasSelection}" />
           </Grid>
@@ -458,6 +498,11 @@
       <Setter Property="CornerRadius" Value="2" />
       <Setter Property="BorderThickness" Value="1.5" />
       <Setter Property="BorderBrush" Value="{DynamicResource PresentationItemBrush}" />
+    </Style>
+    <!-- Film: znak odtwarzania zamiast numeru, w kolorze prezentacji. -->
+    <Style Selector="Path.videoMark">
+      <Setter Property="Data" Value="M 0,0 L 10,6 L 0,12 Z" />
+      <Setter Property="Fill" Value="{DynamicResource PresentationItemBrush}" />
     </Style>
     <Style Selector="Border.slideThumb">
       <Setter Property="Background" Value="Black" />

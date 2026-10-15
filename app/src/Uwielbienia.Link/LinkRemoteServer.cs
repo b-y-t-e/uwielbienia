@@ -2,6 +2,7 @@ using Tailcat.Link;
 using Tailcat.Link.Storage;
 using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Presentation;
+using Uwielbienia.Core.Videos;
 
 namespace Uwielbienia.Link;
 
@@ -40,9 +41,12 @@ public sealed class LinkRemoteServer(
     RemoteServerOptions options,
     RemoteCommandHandler handler,
     ILiveStateSource live,
-    ActivePlan plan) : IRemoteServer
+    ActivePlan plan,
+    IVideoPlayer? video = null) : IRemoteServer
 {
     private ILinkHost? _host;
+    private VideoMessage? _lastVideo;
+    private DateTime _lastVideoSent;
 
     public RemoteServerStatus Status { get; private set; } = RemoteServerStatus.Off;
 
@@ -77,6 +81,8 @@ public sealed class LinkRemoteServer(
         _host.PeerLeft += (_, _) => Changed?.Invoke(this, EventArgs.Empty);
         live.StateChanged += (_, state) => Broadcast(StateMessage.From(state));
         plan.Changed += (_, _) => Broadcast(handler.CurrentPlan());
+        if (video is not null)
+            video.StatusChanged += (_, _) => BroadcastVideo();
         SetStatus(RemoteServerStatus.Ready);
     }
 
@@ -97,11 +103,30 @@ public sealed class LinkRemoteServer(
     private async Task<ReadOnlyMemory<byte>> HandleAsync(ReadOnlyMemory<byte> request) =>
         await handler.HandleAsync(request);
 
+    /// <summary>
+    /// Stan filmu do telefonów: od razu przy pauzie, starcie, końcu, błędzie i każdej zmianie miejsca zatrzymanego filmu
+    /// (±15 s, suwak — inaczej telefon zostałby ze starym czasem, bo nic więcej nie przyjdzie); czas grającego filmu
+    /// najwyżej raz na sekundę (następna sekunda i tak go poprawi).
+    /// </summary>
+    private void BroadcastVideo()
+    {
+        if (handler.CurrentVideo() is not { } message)
+            return;
+        var onlyTime = _lastVideo is not null && message with { Position = _lastVideo.Position } == _lastVideo;
+        if (onlyTime && message.IsPlaying && DateTime.UtcNow - _lastVideoSent < TimeSpan.FromSeconds(1))
+            return;
+        _lastVideo = message;
+        _lastVideoSent = DateTime.UtcNow;
+        Broadcast(message);
+    }
+
     private void OnPeerJoined(object? sender, PeerEventArgs e)
     {
         Changed?.Invoke(this, EventArgs.Empty);
         _ = SendAsync(e.Peer, handler.CurrentPlan());
         _ = SendAsync(e.Peer, StateMessage.From(live.State));
+        if (handler.CurrentVideo() is { } videoState)
+            _ = SendAsync(e.Peer, videoState);
     }
 
     private void Broadcast<T>(T message)

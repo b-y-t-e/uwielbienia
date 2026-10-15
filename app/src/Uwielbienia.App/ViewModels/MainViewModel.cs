@@ -7,6 +7,7 @@ using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Presentation;
 using Uwielbienia.Core.Songs;
 using Uwielbienia.Core.Updates;
+using Uwielbienia.Core.Videos;
 
 namespace Uwielbienia.App.ViewModels;
 
@@ -29,8 +30,10 @@ public sealed partial class MainViewModel : ObservableObject
         ISongLibrary library,
         PlanAddViewModel planAdd,
         PlanActions planActions,
-        ProjectionCalibration calibration)
+        ProjectionCalibration calibration,
+        IVideoPlayer video)
     {
+        Video = video;
         PlanAdd = planAdd;
         Live = live;
         Plan = plan;
@@ -45,6 +48,9 @@ public sealed partial class MainViewModel : ObservableObject
 
         plan.ItemSelected += (_, item) => ShowDetails(item, library, preview);
         plan.SelectionCleared += (_, _) => preview.Clear();
+        // Przy starcie lista planu zaznacza pierwszą pozycję, zanim ten model zacznie słuchać — pokaż ją od razu.
+        if (plan.Selected is { } selected)
+            ShowDetails(selected, library, preview);
         // „Nowa pieśń / Nowy tekst” z okna dodawania: edytor w kolumnie „Pieśń”, po zapisie — w wybrane miejsce planu.
         planAdd.NewRequested += (_, request) =>
             preview.StartNew(request.Kind, song => planActions.InsertAt(song, request.Index));
@@ -77,6 +83,9 @@ public sealed partial class MainViewModel : ObservableObject
             case PresentationPlanItem presentation:
                 preview.ShowPresentation(presentation);
                 break;
+            case VideoPlanItem video:
+                preview.ShowVideo(video, item.Note);
+                break;
             default:
                 preview.Clear();
                 break;
@@ -96,6 +105,8 @@ public sealed partial class MainViewModel : ObservableObject
     public IProjectionController Projection { get; }
 
     public ILiveControl Control { get; }
+
+    public IVideoPlayer Video { get; }
 
     public string? LibraryWarning { get; }
 

@@ -21,6 +21,10 @@ public record Slide(string SectionCode, string Label, IReadOnlyList<SlideLine> L
 /// <param name="Number">Numer slajdu od 1.</param>
 public sealed record ImageSlide(string ImageFile, int Number) : Slide($"S{Number}", $"Slajd {Number}", []);
 
+/// <summary>Film na cały ekran; odtwarza go <see cref="Videos.IVideoPlayer"/>, gdy slajd jest na ekranie.</summary>
+/// <param name="File">Pełna ścieżka pliku filmu.</param>
+public sealed record VideoSlide(string File) : Slide("F", "Film", []);
+
 /// <summary>Wers slajdu.</summary>
 /// <param name="Text">Tekst do wyświetlenia (bez znaczników).</param>
 /// <param name="Chords">Akordy (tylko dla operatora; nigdy na ekranie projekcji).</param>

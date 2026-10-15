@@ -53,12 +53,14 @@ public sealed record Plan(
 }
 
 /// <summary>
-/// Pozycja planu: pieśń lub tekst (<see cref="SongPlanItem"/>), prezentacja (<see cref="PresentationPlanItem"/>).
+/// Pozycja planu: pieśń lub tekst (<see cref="SongPlanItem"/>), prezentacja (<see cref="PresentationPlanItem"/>),
+/// film (<see cref="VideoPlanItem"/>).
 /// Nowy rodzaj = nowy rekord z <see cref="JsonDerivedTypeAttribute"/> (CLAUDE.md: „Nowy rodzaj elementu”).
 /// </summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(SongPlanItem), "song")]
 [JsonDerivedType(typeof(PresentationPlanItem), "presentation")]
+[JsonDerivedType(typeof(VideoPlanItem), "video")]
 public abstract record PlanItem(Guid Id)
 {
     public abstract PlanItem WithNewId();
@@ -146,5 +148,14 @@ public sealed record SongPlanItem(
 /// <param name="Folder">Folder prezentacji w katalogu aplikacji (<see cref="Slideshows.ISlideshowLibrary"/>).</param>
 public sealed record PresentationPlanItem(Guid Id, string Folder, string Title) : PlanItem(Id)
 {
+    public override PlanItem WithNewId() => this with { Id = Guid.NewGuid() };
+}
+
+/// <summary>Film wskazany na dysku (nie jest kopiowany — pliki filmów bywają bardzo duże).</summary>
+/// <param name="File">Pełna ścieżka pliku filmu.</param>
+public sealed record VideoPlanItem(Guid Id, string File, string Title) : PlanItem(Id)
+{
+    public static VideoPlanItem For(string file) => new(Guid.NewGuid(), file, Path.GetFileNameWithoutExtension(file));
+
     public override PlanItem WithNewId() => this with { Id = Guid.NewGuid() };
 }

@@ -7,6 +7,7 @@ using Uwielbienia.App.ViewModels;
 using Uwielbienia.App.Views;
 using Uwielbienia.Core.Updates;
 using Uwielbienia.Link;
+using Uwielbienia.Core.Videos;
 
 namespace Uwielbienia.App;
 
@@ -24,6 +25,8 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             _services = AppComposition.Build(new AppPaths());
+            // Film gra, gdy jego slajd jest na ekranie — nasłuchuje od początku.
+            _services.GetRequiredService<VideoDirector>();
             _services.GetRequiredService<PlansViewModel>().OpenInitial();
 
             var window = _services.GetRequiredService<MainWindow>();

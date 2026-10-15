@@ -3,6 +3,7 @@ using Uwielbienia.Core;
 using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Presentation;
 using Uwielbienia.Core.Songs;
+using Uwielbienia.Core.Videos;
 
 namespace Uwielbienia.Link;
 
@@ -14,7 +15,9 @@ public sealed class RemoteCommandHandler(
     ISongLibrary library,
     ISongSearch search,
     ISongPresenter songs,
-    IUiDispatcher dispatcher)
+    IUiDispatcher dispatcher,
+    IPlanItemTypes itemTypes,
+    IVideoPlayer? video = null)
 {
     public async Task<byte[]> HandleAsync(ReadOnlyMemory<byte> request)
     {
@@ -39,7 +42,13 @@ public sealed class RemoteCommandHandler(
         switch (command.Cmd)
         {
             case "hello":
-                return new CommandReply(true, State: StateMessage.From(live.State), Plan: CurrentPlan());
+                return new CommandReply(true, State: StateMessage.From(live.State), Plan: CurrentPlan(), Video: CurrentVideo());
+            case "videoToggle" when video is not null:
+                video.TogglePause();
+                return new CommandReply(true, Video: CurrentVideo());
+            case "videoSkip" when video is not null && command.Seconds is { } seconds:
+                video.Skip(TimeSpan.FromSeconds(Math.Clamp(seconds, -600, 600)));
+                return new CommandReply(true, Video: CurrentVideo());
             case "next":
                 control.Next();
                 break;
@@ -67,5 +76,7 @@ public sealed class RemoteCommandHandler(
         return new CommandReply(true, State: StateMessage.From(live.State));
     }
 
-    public PlanMessage CurrentPlan() => PlanMessage.From(plan.Plan, plan.Playlist);
+    public PlanMessage CurrentPlan() => PlanMessage.From(plan.Plan, plan.Playlist, itemTypes);
+
+    public VideoMessage? CurrentVideo() => video is null ? null : VideoMessage.From(video.Status);
 }

@@ -14,10 +14,12 @@ using Uwielbienia.Core.Slideshows;
 using Uwielbienia.Core.Songs;
 
 // Renderuje okna aplikacji do PNG bez wyświetlania ich na ekranie — do przeglądu wyglądu.
-// Użycie: dotnet run --project tools/Uwielbienia.Screenshots -- <katalog_wyjściowy> [light]
+// Użycie: dotnet run --project tools/Uwielbienia.Screenshots -- <katalog_wyjściowy> [light] [--video <plik filmu>]
+// Z --video film gra naprawdę (VLC) — rzutnik i „Na ekranie” pokazują jego klatki.
 
 var output = args.Length > 0 ? args[0] : Path.Combine(Path.GetTempPath(), "uwielbienia-shots");
 var light = args.Contains("light");
+var videoArg = Array.IndexOf(args, "--video") is var at and >= 0 && at + 1 < args.Length ? args[at + 1] : null;
 Directory.CreateDirectory(output);
 
 AppBuilder.Configure<App>()
@@ -40,6 +42,7 @@ foreach (var number in new[] { 47, 94, 30, 36, 117, 128, 24, 143, 59 })
 var slideFiles = Enumerable.Range(1, 3).Select(i => DrawSlide(i, Path.Combine(root, $"ogloszenia-{i}.png"))).ToList();
 var imported = services.GetRequiredService<ISlideshowLibrary>().ImportAsync(slideFiles).GetAwaiter().GetResult();
 plan = plan.Insert(3, new PresentationPlanItem(Guid.NewGuid(), imported.Folder, "Ogłoszenia parafialne"));
+plan = plan.Insert(5, new VideoPlanItem(Guid.NewGuid(), videoArg ?? Path.Combine(root, "swiadectwo.mp4"), "Świadectwo Ani"));
 services.GetRequiredService<IPlanStore>().Save(plan);
 active.Open(plan);
 
@@ -115,6 +118,29 @@ control.Show(active.Playlist.First(i => i.Slides.FirstOrDefault() is ImageSlide)
 Save(window, "prezentacja", settle: true);
 Save(projection, "projekcja-prezentacja", settle: true);
 
+// Film: kolumna „Pieśń”, „Na ekranie” (podgląd, pauza, suwak) i rzutnik — także z „Dopasuj obraz”.
+services.GetRequiredService<Uwielbienia.Core.Videos.VideoDirector>();
+main.Plan.Selected = main.Plan.Items.First(i => i.IsVideo);
+if (videoArg is not null)
+{
+    control.Show(active.Playlist.First(i => i.Slides.FirstOrDefault() is VideoSlide));
+    for (var i = 0; i < 3000 / 20; i++)
+    {
+        Dispatcher.UIThread.RunJobs();
+        Thread.Sleep(20);
+    }
+    Save(window, "film", settle: true);
+    Save(projection, "projekcja-film", settle: true);
+    services.GetRequiredService<ProjectionCalibration>().TrySet([new(0.06, 0.04), new(0.95, 0.09), new(0.9, 0.93), new(0.1, 0.97)]);
+    Save(projection, "projekcja-film-dopasowanie", settle: true);
+    services.GetRequiredService<ProjectionCalibration>().ResetCommand.Execute(null);
+    Console.WriteLine("FILM " + services.GetRequiredService<Uwielbienia.Core.Videos.IVideoPlayer>().Status);
+}
+else
+{
+    Save(window, "film-brak-pliku", settle: true);
+}
+
 // Dopasowanie obrazu: przekrzywiony czworokąt z siatką i uchwytami.
 var calibration = services.GetRequiredService<ProjectionCalibration>();
 calibration.TrySet([new(0.06, 0.04), new(0.95, 0.09), new(0.9, 0.93), new(0.1, 0.97)]);
@@ -150,6 +176,7 @@ projection.IsSameScreen = true;
 Save(projection, "projekcja-szybki-wybor");
 
 Console.WriteLine(output);
+control.Clear();
 Directory.Delete(root, recursive: true);
 
 void Save(Window w, string name, bool settle = false)

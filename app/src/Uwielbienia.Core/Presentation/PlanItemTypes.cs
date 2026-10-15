@@ -11,6 +11,8 @@ public enum PlanItemKind
     Text,
     /// <summary>Prezentacja: slajdy-obrazy (znak slajdu zamiast numeru).</summary>
     Presentation,
+    /// <summary>Film (znak odtwarzania zamiast numeru).</summary>
+    Video,
 }
 
 /// <summary>Jak pozycja wygląda na liście planu.</summary>

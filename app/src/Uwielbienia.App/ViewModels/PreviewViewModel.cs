@@ -5,6 +5,7 @@ using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Presentation;
 using Uwielbienia.Core.Slideshows;
 using Uwielbienia.Core.Songs;
+using Uwielbienia.Core.Videos;
 
 namespace Uwielbienia.App.ViewModels;
 
@@ -16,6 +17,7 @@ namespace Uwielbienia.App.ViewModels;
 public sealed partial class PreviewViewModel : ObservableObject
 {
     private readonly ISlideBuilder _slides;
+    private readonly IVideoPlayer _video;
     private readonly ActivePlan _plan;
     private readonly PlanActions _planActions;
     private readonly ISongLibrary _library;
@@ -30,9 +32,11 @@ public sealed partial class PreviewViewModel : ObservableObject
         PlanActions planActions,
         ISongLibrary library,
         ISongEditor editor,
-        ISlideshowLibrary slideshows)
+        ISlideshowLibrary slideshows,
+        IVideoPlayer video)
     {
         _slideshows = slideshows;
+        _video = video;
         Parts.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasRemovedSections));
         _slides = slides;
         _plan = plan;
@@ -61,11 +65,18 @@ public sealed partial class PreviewViewModel : ObservableObject
 
     public bool HasPresentation => Presentation is not null;
 
+    /// <summary>Wybrany w planie film.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasVideo), nameof(ColumnTitle), nameof(IsEmpty), nameof(HasChordsToggle))]
+    public partial VideoDetailsViewModel? Video { get; private set; }
+
+    public bool HasVideo => Video is not null;
+
     /// <summary>Nic nie jest wybrane w planie.</summary>
-    public bool IsEmpty => Song is null && Presentation is null;
+    public bool IsEmpty => Song is null && Presentation is null && Video is null;
 
     /// <summary>Przełącznik akordów ma sens tylko przy pieśni.</summary>
-    public bool HasChordsToggle => Presentation is null && !IsText;
+    public bool HasChordsToggle => Presentation is null && Video is null && !IsText;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsEditing), nameof(IsViewing), nameof(ColumnTitle))]
@@ -74,7 +85,7 @@ public sealed partial class PreviewViewModel : ObservableObject
     public bool IsEditing => Editor is not null;
 
     /// <summary>Nagłówek kolumny: rodzaj wybranej pozycji, a w trakcie edycji — co jest edytowane.</summary>
-    public string ColumnTitle => Editor?.Heading ?? (Presentation is not null ? "Prezentacja" : IsText ? "Tekst" : "Pieśń");
+    public string ColumnTitle => Editor?.Heading ?? (Presentation is not null ? "Prezentacja" : Video is not null ? "Film" : IsText ? "Tekst" : "Pieśń");
 
     public bool IsViewing => Editor is null;
 
@@ -122,6 +133,7 @@ public sealed partial class PreviewViewModel : ObservableObject
         _planItem = planItem;
         IsFromPlan = true;
         Presentation = null;
+        Video = null;
         Load(song, planItem);
     }
 
@@ -134,9 +146,20 @@ public sealed partial class PreviewViewModel : ObservableObject
         Presentation = new PresentationViewModel(item, _slideshows);
     }
 
+    /// <param name="note">Uwaga z planu (np. brak pliku) — ta sama co w wierszu planu, odświeżana razem z nim.</param>
+    public void ShowVideo(VideoPlanItem item, string? note)
+    {
+        if (Video?.Item == item && Video.Note == note)
+            return;
+        Clear();
+        IsFromPlan = true;
+        Video = new VideoDetailsViewModel(item, note, _video);
+    }
+
     public void ShowSong(Song song)
     {
         Presentation = null;
+        Video = null;
         _planItem = null;
         IsFromPlan = false;
         Load(song, null);
@@ -229,6 +252,7 @@ public sealed partial class PreviewViewModel : ObservableObject
         IsFromPlan = false;
         Song = null;
         Presentation = null;
+        Video = null;
         Parts.Clear();
     }
 

@@ -161,7 +161,7 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
 
 | Projekt | Rola |
 |---|---|
-| `src/Uwielbienia.Core` | logika bez UI: pieśni (`Songs/`), plany (`Plans/`), ekran (`Presentation/`), prezentacje (`Slideshows/`), aktualizacje (`Updates/`) |
+| `src/Uwielbienia.Core` | logika bez UI: pieśni (`Songs/`), plany (`Plans/`), ekran (`Presentation/`), prezentacje (`Slideshows/`), filmy (`Videos/`), aktualizacje (`Updates/`) |
 | `src/Uwielbienia.Link` | tailcat-link: protokół JSON (`RemoteProtocol`), polecenia z telefonu (`RemoteCommandHandler`), serwer (`LinkRemoteServer`) |
 | `src/Uwielbienia.App` | Avalonia: widoki (`Views/`), modele widoków (`ViewModels/`), usługi okienkowe (`Services/`), motywy (`Themes/`), czcionki, korzeń DI `AppComposition` |
 | `src/Uwielbienia.Desktop` | program Windows/Linux (`Program.cs`, Velopack) |
@@ -215,7 +215,7 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   (`PlanItemTypes` — rejestr wszystkich `IPlanItemType`) daje opis na liście (`PlanItemInfo`:
   tytuł, numer, `PlanItemKind`, uwaga) i slajdy (`LiveItem`), a jego `Changed` (zmieniona treść)
   przebudowuje plan. Rodzaje: `SongPlanItemType` (pieśń i tekst; też `ISongPresenter` — pieśń
-  spoza planu na ekran) i `PresentationPlanItemType` (prezentacja).
+  spoza planu na ekran), `PresentationPlanItemType` (prezentacja) i `VideoPlanItemType` (film).
 - **Prezentacje** (`PresentationPlanItem`: folder + tytuł). `SlideshowLibrary` kopiuje plik
   PowerPoint (`.pptx .ppt .pps .ppsx .pptm .ppsm .odp`) albo obrazy (`.png .jpg .jpeg .bmp .webp`,
   kilka = jedna prezentacja) do `prezentacje/{id8}-{slug}/` — plan działa po wyjęciu pendrive'a.
@@ -232,6 +232,25 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   zakończeniu podmienia ją na ekranie. Slajd to
   `ImageSlide` (plik obrazu); obrazy wczytuje w tle `SlideImages` (pamięć podręczna, następny
   slajd zawczasu, miniatury dla operatora).
+- **Filmy** (`VideoPlanItem`: ścieżka pliku + tytuł; plik tylko wskazany, nie kopiowany — brak pliku =
+  uwaga w planie i pozycja bez slajdów). Jeden slajd `VideoSlide`. `VideoDirector` (Core) steruje
+  `IVideoPlayer` według `LiveState`: wejście na film = odtwarzanie, zejście = `Stop`; przerwany film po
+  powrocie wznawia się od tego miejsca (osobno dla każdej pozycji planu), od początku gra nowy albo
+  obejrzany do końca; czarny ekran = pauza (wznowienie, chyba że operator sam zatrzymał); pod czarnym
+  ekranem nic filmu nie wznawia (`IVideoPlayer.IsHeld`) — w sali nie gra dźwięk filmu, którego nie widać. `VlcVideoPlayer` (App/Services,
+  LibVLCSharp; każdy format VLC, dźwięk na domyślne urządzenie) **nie używa natywnego okna** VLC —
+  dekoduje klatki (BGRA, najwyżej 1920 px) wprost do `WriteableBitmap` w `VideoFrames`, a rysuje je
+  `VideoSurface` (zwykła kontrolka): rzutnik (`ProjectedVideo` w `SlideView`) i podgląd w kolumnie
+  „Na ekranie” — dzięki temu film podlega „Dopasuj obraz” i przenikaniu. Przy filmie spacja i kliknięcie
+  w obraz (rzutnik w trybie jednego ekranu, podgląd w „Na ekranie”) = pauza / wznowienie jak w odtwarzaczu
+  (jedna reguła: `VideoPlayerExtensions.TogglePause` — zwraca `false`, gdy filmu nie ma); slajd zmieniają tylko przyciski, strzałki, PageUp/PageDown, pilot.
+  „−15 s” / „+15 s” (`IVideoPlayer.Skip`, w granicach filmu) w „Na ekranie” i na telefonie. Na rzutniku pasek
+  postępu z suwakiem (`ProjectionWindow` → `VideoBar`, w warstwie `Warped` — z tą samą perspektywą co film)
+  widać tylko razem z uchwytami „Dopasuj obraz” (ruch myszy / tryb K). Brak odtwarzacza
+  (`IVideoPlayer.Unavailable`, np. VLC na Linuksie) widać już po zaznaczeniu filmu w planie. VLC: Windows — pakiet `VideoLAN.LibVLC.Windows`
+  (`app/Vlc.props`: tylko x64, bez wtyczek nagrywania / transmisji / lua; `build.py` pakuje go do .exe
+  z jednego pliku), Linux — VLC z systemu (bez niego czytelny komunikat przy filmie). Próba z
+  prawdziwym plikiem: `dotnet run --project app/tools/Uwielbienia.Screenshots -- <katalog> --video <plik>`.
 - **Przeciąganie** (plan, części pieśni, części w edytorze — za uchwyt ⠿): `ListReorderDrag` — zwykłe przeciąganie myszą ze
   znacznikiem miejsca i przewijaniem przy krawędzi; wiersze implementują `IReorderableItem`.
 - **Ekran.** `LiveSession` to jedyne źródło prawdy: polecenia przez `ILiveControl` (klawiatura —
@@ -268,7 +287,9 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   edycji — telefon można dać dziecku. Tryb „Ekran” (przeglądarka jako drugi ekran; przycisk tylko na
   komputerze z myszą) rysuje slajd jak rzutnik (`renderSlide`: płótno 16:9 w jednostkach `cqw`,
   wymiary i kolory jak `SlideView`). Stan niesie wersy z akordami (`LineMessage`: `Chords`, `TitleLength`,
-  `Chorus`, `PartStart`), `ShowTitle` i `NextLines`. Polecenia `blank` / `goto` / `showItem` /
+  `Chorus`, `PartStart`), `ShowTitle`, `NextLines` i `IsVideo`; przy filmie telefon pokazuje czas, pasek postępu,
+  pauzę i ±15 s (wiadomość `video` — `VideoMessage`, czas najwyżej raz na sekundę; polecenia `videoToggle`,
+  `videoSkip`). Polecenia `blank` / `goto` / `showItem` /
   `showSong` / `search` zostają w protokole, strona ich nie używa. Podgląd bez aplikacji: kopia strony
   z udawanym `lib/tailcat/index.js`.
 - **Aktualizacje.** `UpdateService` + `VelopackReleaseFeed`: tylko instalacja z
@@ -293,7 +314,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
    (podmiana na żywo) działa dla pól rekordu; kolekcje porównuje tylko `Lines`.
 4. **Lista planu** (`MainWindow.axaml`, wiersz planu i „Dodaj do planu”): znacznik i kolor wg
    `PlanItemKind` (numer; kropka + `TextItemBrush` dla `Text`; znak slajdu + `PresentationItemBrush`
-   dla `Presentation`). `PlanItemInfo.Note` = uwaga pod tytułem.
+   dla `Presentation`; trójkąt odtwarzania w tym samym kolorze dla `Video`). `PlanItemInfo.Note` = uwaga pod tytułem.
 5. **Kolumna „Pieśń”:** `MainViewModel.ShowDetails` wybiera widok dla zaznaczonej pozycji;
    nowy rodzaj dostaje własny model widoku i szablon (wzorzec: `PresentationViewModel`).
 6. **Dodawanie:** przycisk w oknie „Dodaj do planu” (`PlanAddViewModel`) tworzący pozycję i
@@ -315,8 +336,8 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 - Każda czynność ma jedno miejsce:
   - dodawanie do planu tylko z planu: „+”, prawy klik („Dodaj przed… / po…”) albo pisanie
     gdziekolwiek w oknie → okno „Dodaj do planu” (`PlanAddViewModel`: zaznacz + „Wybierz”, Enter,
-    dwuklik; „+ Nowa pieśń / + Nowy tekst / + Prezentacja”); plik prezentacji (lub obrazy)
-    upuszczony na plan trafia za wiersz pod kursorem;
+    dwuklik; „+ Nowa pieśń / + Nowy tekst / + Prezentacja / + Film”); plik prezentacji (lub obrazy,
+    filmy) upuszczony na plan trafia za wiersz pod kursorem;
   - na ekran wyłącznie dwuklikiem albo prawym klikiem („Pokaż na ekranie”) w planie;
   - kolejność: przeciąganie w planie; usuwanie: ✕ / prawy klik (z potwierdzeniem);
   - „Duplikuj” (prawy klik w planie): niezależna kopia zaraz za oryginałem — pieśń lub tekst jako nowa
@@ -350,7 +371,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 
 - Paleta „nocny granat + świeca” (`Themes/Palette.axaml`, jasny i ciemny). Akcenty mają stałe
   znaczenie: świeca (`CandleBrush`) = to, co jest na ekranie; `ChordBrush` = akordy;
-  `TextItemBrush` = teksty w planie; `PresentationItemBrush` = prezentacje w planie;
+  `TextItemBrush` = teksty w planie; `PresentationItemBrush` = prezentacje i filmy w planie;
   `DangerBrush` = usuwanie i błędy. Typografia operatora: skala
   13/15/18/24 (`Themes/Controls.axaml`). Kroje: Atkinson Hyperlegible Next (interfejs), Literata
   (tytuły, tekst na rzutniku).

@@ -8,6 +8,7 @@ using Uwielbienia.Core.Presentation;
 using Uwielbienia.Core.Slideshows;
 using Uwielbienia.Core.Songs;
 using Uwielbienia.Core.Updates;
+using Uwielbienia.Core.Videos;
 using Uwielbienia.Link;
 
 namespace Uwielbienia.App;
@@ -56,6 +57,7 @@ public static class AppComposition
             sp.GetRequiredService<ISlideExporter>(),
             sp.GetRequiredService<IUiDispatcher>()));
         services.AddSingleton<IPlanItemType, PresentationPlanItemType>();
+        services.AddSingleton<IPlanItemType, VideoPlanItemType>();
         services.AddSingleton<IPlanItemTypes, PlanItemTypes>();
         services.AddSingleton<LiveSession>();
         services.AddSingleton<ILiveControl>(sp => sp.GetRequiredService<LiveSession>());
@@ -63,6 +65,12 @@ public static class AppComposition
         services.AddSingleton<ActivePlan>();
         services.AddSingleton<PlanActions>();
         services.AddSingleton<IUiDispatcher, AvaloniaUiDispatcher>();
+
+        // filmy: jeden odtwarzacz; gra, gdy film jest na ekranie (VideoDirector)
+        services.AddSingleton<VideoFrames>();
+        services.AddSingleton<VlcVideoPlayer>();
+        services.AddSingleton<IVideoPlayer>(sp => sp.GetRequiredService<VlcVideoPlayer>());
+        services.AddSingleton<VideoDirector>();
 
         // połączenia (telefon / przeglądarka)
         services.AddSingleton(sp => new RemoteServerOptions(
@@ -75,6 +83,7 @@ public static class AppComposition
         // okna i modele widoków
         services.AddSingleton<ProjectionAppearance>();
         services.AddSingleton<ProjectionCalibration>();
+        services.AddSingleton<VideoControlsViewModel>();
         services.AddSingleton<LiveViewModel>();
         services.AddSingleton<PlanViewModel>();
         services.AddSingleton<PlanAddViewModel>();
@@ -91,7 +100,8 @@ public static class AppComposition
             ActivatorUtilities.CreateInstance<SearchViewModel>(sp),
             sp.GetRequiredService<ILiveControl>(),
             sp.GetRequiredService<IProjectionController>(),
-            sp.GetRequiredService<ProjectionCalibration>())));
+            sp.GetRequiredService<ProjectionCalibration>(),
+            sp.GetRequiredService<IVideoPlayer>())));
 
         return services.BuildServiceProvider();
     }

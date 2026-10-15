@@ -59,6 +59,7 @@ def publish(rid: str, ver: str) -> Path:
         "-c", "Release", "-r", rid, "--self-contained",
         "-p:PublishSingleFile=true",
         "-p:IncludeNativeLibrariesForSelfExtract=true",
+        "-p:IncludeAllContentForSelfExtract=true",  # VLC (libvlc/ z wtyczkami) w środku .exe
         "-p:EnableCompressionInSingleFile=true",
         "-p:DebugType=none",
         f"-p:Version={ver}",

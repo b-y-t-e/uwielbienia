@@ -12,25 +12,30 @@ public sealed partial class LiveViewModel : ObservableObject
 {
     private readonly ILiveControl _control;
 
-    public LiveViewModel(ILiveStateSource source, ILiveControl control, ProjectionAppearance appearance)
+    public LiveViewModel(ILiveStateSource source, ILiveControl control, ProjectionAppearance appearance, VideoControlsViewModel video)
     {
         _control = control;
         Appearance = appearance;
+        Video = video;
         source.StateChanged += (_, state) => Apply(state);
         Apply(source.State);
     }
 
     public ProjectionAppearance Appearance { get; }
 
+    /// <summary>Film na ekranie: podgląd i sterowanie odtwarzaniem.</summary>
+    public VideoControlsViewModel Video { get; }
+
     [ObservableProperty]
     public partial LiveState State { get; private set; } = LiveState.Empty;
 
     public Slide? VisibleSlide => State.VisibleSlide;
 
-    /// <summary>Strona rzutnika: slajd i — na pierwszym slajdzie pieśni — jej tytuł; slajd prezentacji — obraz.</summary>
+    /// <summary>Strona rzutnika: slajd i — na pierwszym slajdzie pieśni — jej tytuł; slajd prezentacji — obraz; film.</summary>
     public ProjectedPage? Page => State.VisibleSlide switch
     {
         ImageSlide image => new ProjectedImage(image),
+        VideoSlide video => new ProjectedVideo(video, Video.Frames),
         { } slide when State.Item is { } item => new ProjectedPage(slide, State.SlideIndex == 0 && item.ShowTitle ? item.Title : null),
         _ => null,
     };
@@ -69,6 +74,8 @@ public sealed partial class LiveViewModel : ObservableObject
     public bool HasCurrentImage => CurrentTab?.Slide is ImageSlide;
 
     public bool HasNextImage => NextTab?.Slide is ImageSlide;
+
+    public bool HasCurrentVideo => CurrentTab?.Slide is VideoSlide;
 
     public string? CurrentLabel => CurrentTab?.Label ?? (HasItem && Slides.Count == 0 ? State.Item?.Note ?? "Brak slajdów" : null);
 
@@ -125,6 +132,7 @@ public sealed partial class LiveViewModel : ObservableObject
         OnPropertyChanged(nameof(NextImage));
         OnPropertyChanged(nameof(HasCurrentImage));
         OnPropertyChanged(nameof(HasNextImage));
+        OnPropertyChanged(nameof(HasCurrentVideo));
         OnPropertyChanged(nameof(CurrentLabel));
         OnPropertyChanged(nameof(UpcomingLabel));
         OnPropertyChanged(nameof(HasUpcoming));
@@ -147,6 +155,9 @@ public sealed record ProjectedImage(ImageSlide Image) : ProjectedPage(Image, nul
 {
     public Task<Bitmap?> Picture => SlideImages.LoadAsync(Image.ImageFile);
 }
+
+/// <summary>Film na rzutniku: klatki na cały ekran na czarnym tle.</summary>
+public sealed record ProjectedVideo(VideoSlide Video, VideoFrames Frames) : ProjectedPage(Video, null);
 
 public sealed partial class SlideTabViewModel(int index, Slide slide) : ObservableObject
 {

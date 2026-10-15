@@ -25,6 +25,14 @@ plik PowerPoint (`.pptx`, `.pps`, `.ppt`…) albo obrazy slajdów. Plik jest kop
 aplikacji, a slajdy przygotowuje w tle zainstalowany PowerPoint (Windows) — postęp widać w planie.
 Bez PowerPointa można dodać slajdy zapisane jako obrazy.
 
+**Filmy:** „+ Film” (albo upuszczenie pliku na plan) dodaje film w dowolnym formacie, który zna
+VLC (`.mp4`, `.mkv`, `.avi`, `.mov`, `.wmv`, `.webm`…). Plik nie jest kopiowany — plan go tylko
+wskazuje, więc musi zostać na swoim miejscu (brak pliku widać w planie). Film gra, gdy jest na
+ekranie: spacja — pauza / odtwarzanie, suwak w kolumnie „Na ekranie” przewija, B (czarny ekran)
+pauzuje, „Dalej” przechodzi do następnej pozycji. Dźwięk idzie na domyślne urządzenie systemu,
+obraz podlega „Dopasuj obraz”. VLC jest w instalacji Windows; na Linuksie trzeba go zainstalować
+(`sudo apt install vlc`).
+
 **Dopasowanie obrazu do ekranu w sali** (jak w pps_viewer) — myszą wprost na ekranie projekcji:
 ruch myszy pokazuje na 3 s ramkę i narożniki. Przeciąganie w dowolnym miejscu przesuwa najbliższy
 narożnik (narożniki bywają poza ekranem w sali), z Shift — cały obraz. Kółko myszy zmienia wielkość, Shift+kółko szerokość, Ctrl+kółko wysokość.
@@ -37,7 +45,7 @@ Trzy kolumny (szerokość regulowana przeciąganiem, zapamiętywana):
 
 | Kolumna | Zawartość | Kod |
 |---|---|---|
-| **Plan** | pieśni, teksty i prezentacje: klik wybiera, dwuklik pokazuje, przeciąganie zmienia kolejność | `PlanViewModel` |
+| **Plan** | pieśni, teksty, prezentacje i filmy: klik wybiera, dwuklik pokazuje, przeciąganie zmienia kolejność | `PlanViewModel` |
 | **Pieśń** | pozycja zaznaczona w planie: tekst, akordy, pola wyboru części (na żywo dla granej), edycja; slajdy prezentacji | `PreviewViewModel`, `SongEditorViewModel`, `PresentationViewModel` |
 | **Na ekranie** | to, co widzi sala: postęp, bieżąca i następna część z akordami, Wstecz / Dalej | `LiveViewModel` |
 

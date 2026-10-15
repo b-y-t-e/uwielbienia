@@ -2,13 +2,15 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Presentation;
+using Uwielbienia.Core.Videos;
 
 namespace Uwielbienia.Link;
 
 // Protokół między aplikacją (host) a stroną www (pilot / ekran). Wszystko w JSON, camelCase.
 //
-// host → strona (notify):   {"type":"state", ...StateMessage} | {"type":"plan", ...PlanMessage}
-// strona → host (request):  {"cmd":"hello"|"next"|"prev"|"blank"|"goto"|"showItem"|"showSong"|"search", ...}
+// host → strona (notify):   {"type":"state", ...StateMessage} | {"type":"plan", ...PlanMessage} | {"type":"video", ...VideoMessage}
+// strona → host (request):  {"cmd":"hello"|"next"|"prev"|"blank"|"goto"|"showItem"|"showSong"|"search"
+//                                  |"videoToggle"|"videoSkip" (seconds: ±15), ...}
 //                           odpowiedź: CommandReply
 
 public sealed record RemoteCommand(
@@ -16,14 +18,16 @@ public sealed record RemoteCommand(
     int? Slide = null,
     Guid? ItemId = null,
     string? SongId = null,
-    string? Query = null);
+    string? Query = null,
+    int? Seconds = null);
 
 public sealed record CommandReply(
     bool Ok,
     string? Error = null,
     StateMessage? State = null,
     PlanMessage? Plan = null,
-    IReadOnlyList<SongHit>? Results = null);
+    IReadOnlyList<SongHit>? Results = null,
+    VideoMessage? Video = null);
 
 public sealed record StateMessage(
     long Version,
@@ -39,7 +43,8 @@ public sealed record StateMessage(
     bool IsBlank,
     string? Next,
     bool ShowTitle = false,
-    IReadOnlyList<LineMessage>? NextLines = null)
+    IReadOnlyList<LineMessage>? NextLines = null,
+    bool IsVideo = false)
 {
     public string Type => "state";
 
@@ -59,7 +64,8 @@ public sealed record StateMessage(
         // tylko slajd z tekstem (także sam tytuł bez wersów) — nie obraz ani film
         state.Item is { ShowTitle: true } && state.SlideIndex == 0 && state.Slide?.GetType() == typeof(Slide),
         // następny slajd tej samej pieśni — muzyk widzi, co nadchodzi (inna pieśń: tylko tytuł w Next)
-        state.Item is { } item && state.SlideIndex + 1 < item.Slides.Count ? LinesOf(item.Slides[state.SlideIndex + 1]) : null);
+        state.Item is { } item && state.SlideIndex + 1 < item.Slides.Count ? LinesOf(item.Slides[state.SlideIndex + 1]) : null,
+        state.Slide is VideoSlide);
 
     private static List<LineMessage> LinesOf(Slide? slide) =>
         slide?.Lines.Select(l => new LineMessage(l.Text, l.Repeat, l.IsChorus, l.StartsPart, l.TitleLength, l.Chords)).ToList() ?? [];
@@ -77,18 +83,32 @@ public sealed record LineMessage(
     int TitleLength = 0,
     string? Chords = null);
 
+/// <summary>Film na ekranie: telefon pokazuje czas, pasek postępu, pauzę i ±15 s. Wysyłane przy każdej zmianie stanu
+/// odtwarzacza, czas — najwyżej raz na sekundę.</summary>
+public sealed record VideoMessage(bool IsLoaded, bool IsPlaying, double Position, double Duration, string? Error)
+{
+    public string Type => "video";
+
+    public static VideoMessage From(VideoStatus status) => new(
+        status.File is not null, status.IsPlaying, Math.Round(status.Position.TotalSeconds, 1),
+        Math.Round(status.Duration.TotalSeconds, 1), status.Error);
+}
+
 public sealed record PlanMessage(string? Name, IReadOnlyList<PlanItemMessage> Items)
 {
     public string Type => "plan";
 
-    public static PlanMessage From(Plan? plan, IReadOnlyList<LiveItem> playlist) =>
-        new(plan?.Name, playlist.Select(i => new PlanItemMessage(i.PlanItemId!.Value, i.ContentId, i.Number, i.Title, Kind(plan, i))).ToList());
+    public static PlanMessage From(Plan? plan, IReadOnlyList<LiveItem> playlist, IPlanItemTypes itemTypes) =>
+        new(plan?.Name, playlist.Select(i => new PlanItemMessage(i.PlanItemId!.Value, i.ContentId, i.Number, i.Title, Kind(plan, i, itemTypes))).ToList());
 
-    /// <summary>Znacznik na liście jak w aplikacji: <c>song</c> (numer), <c>text</c> (kropka), <c>presentation</c> (znak slajdu).</summary>
-    private static string Kind(Plan? plan, LiveItem item) =>
-        plan?.Items.FirstOrDefault(p => p.Id == item.PlanItemId) is PresentationPlanItem ? "presentation"
-        : item.Number is null ? "text"
-        : "song";
+    /// <summary>
+    /// Znacznik na liście jak w aplikacji — z opisu pozycji (<see cref="PlanItemKind"/>): <c>song</c>, <c>text</c>,
+    /// <c>presentation</c>, <c>video</c>; nowy rodzaj pozycji działa bez zmian tutaj.
+    /// </summary>
+    private static string Kind(Plan? plan, LiveItem item, IPlanItemTypes itemTypes) =>
+        plan?.Items.FirstOrDefault(p => p.Id == item.PlanItemId) is { } planItem && itemTypes.Describe(planItem) is { } info
+            ? JsonNamingPolicy.CamelCase.ConvertName(info.Kind.ToString())
+            : "song";
 }
 
 public sealed record PlanItemMessage(Guid Id, string SongId, int? Number, string Title, string Kind = "song");

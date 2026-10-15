@@ -9,6 +9,7 @@
     <RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
     <Version>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\..\..\version.txt').Trim())</Version>
   </PropertyGroup>
+  <Import Project="..\..\Vlc.props" />
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" Version="$(AvaloniaVersion)" />
     <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.3">

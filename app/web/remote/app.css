@@ -117,6 +117,17 @@ input {
 /* pomiar szerokości wersów bez zawijania (app.js: avoidWrapping) */
 .lines.measure p { white-space: nowrap; width: max-content; }
 
+/* Film: czas, postęp i sterowanie w karcie bieżącego slajdu */
+.video-panel { display: grid; align-content: center; gap: .9rem; text-align: center; padding: .5rem 0; }
+.video-time { font: 600 3rem/1 "Literata", Georgia, serif; font-variant-numeric: tabular-nums; }
+.video-duration { color: var(--muted); font-size: var(--fs-small); margin-top: -.5rem; }
+.video-progress { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.video-progress div { height: 100%; width: 0; background: var(--candle); }
+.video-buttons { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: .5rem; }
+.video-buttons button { padding: 1rem .4rem; font-size: var(--fs-large); font-weight: 700; }
+.video-buttons .video-toggle { background: var(--candle-soft); box-shadow: inset 0 0 0 1.5px var(--candle); }
+.video-error { color: var(--danger); margin: 0; }
+
 .upcoming { padding: .75rem 1.1rem .2rem; }
 .next-label { color: var(--muted); font-size: var(--fs-small); margin-bottom: .25rem; }
 .upcoming .lines { color: var(--muted); }

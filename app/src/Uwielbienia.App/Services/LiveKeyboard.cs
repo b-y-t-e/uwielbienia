@@ -1,21 +1,24 @@
 using Avalonia.Input;
 using Uwielbienia.Core.Presentation;
+using Uwielbienia.Core.Videos;
 
 namespace Uwielbienia.App.Services;
 
 /// <summary>
 /// Jedna mapa klawiszy dla okna operatora i okna projekcji. Piloty do prezentacji wysyłają PageUp/PageDown,
-/// więc działają bez konfiguracji.
+/// więc działają bez konfiguracji. Przy filmie spacja to pauza / odtwarzanie (strzałki i pilot dalej przechodzą dalej).
 /// </summary>
 public static class LiveKeyboard
 {
-    public static bool Handle(KeyEventArgs e, ILiveControl control, IProjectionController projection)
+    public static bool Handle(KeyEventArgs e, ILiveControl control, IProjectionController projection, IVideoPlayer video)
     {
         if (e.KeyModifiers is not (KeyModifiers.None or KeyModifiers.Shift))
             return false;
 
         switch (e.Key)
         {
+            case Key.Space when video.TogglePause():
+                return true;
             case Key.Space or Key.Right or Key.Down or Key.PageDown:
                 control.Next();
                 return true;

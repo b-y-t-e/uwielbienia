@@ -22,6 +22,17 @@
                    SlideAccent="{Binding Live.Appearance.Accent}"
                    SlideTitle="{Binding Live.Appearance.Title}" />
       <v:CalibrationGrid IsVisible="{Binding Calibration.IsGridVisible}" />
+      <!-- Postęp filmu (przewijanie): tylko razem z uchwytami dopasowania obrazu — po ruchu myszą albo w trybie K,
+           więc sala go zwykle nie widzi. W obrębie dopasowanego obrazu (widać go na ekranie w sali). -->
+      <Border x:Name="VideoBar" IsVisible="False" VerticalAlignment="Bottom" Margin="60,0,60,40" Padding="18,8"
+              CornerRadius="12" Background="#B3201A14">
+        <Grid ColumnDefinitions="*,16,Auto">
+          <Slider Minimum="0" Maximum="{Binding Live.Video.DurationSeconds}" Value="{Binding Live.Video.PositionSeconds}"
+                  VerticalAlignment="Center" Focusable="False" />
+          <TextBlock Grid.Column="2" Text="{Binding Live.Video.TimeText}" VerticalAlignment="Center" FontSize="18"
+                     Foreground="#C9CCD8" FontFeatures="+tnum" />
+        </Grid>
+      </Border>
     </Panel>
     <!-- Uchwyty dopasowania: po ruchu myszą (3 s) albo w trybie kalibracji — widoczność ustawia kod. -->
     <v:CalibrationHandles x:Name="Handles" IsVisible="False"

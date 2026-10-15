@@ -14,8 +14,11 @@
         <TransitioningContentControl.PageTransition>
           <CrossFade Duration="0:0:0.15" />
         </TransitioningContentControl.PageTransition>
-        <!-- Strona wybierana wg rodzaju: slajd prezentacji (obraz na cały ekran) przed stroną z tekstem. -->
+        <!-- Strona wybierana wg rodzaju: slajd prezentacji (obraz na cały ekran) i film przed stroną z tekstem. -->
         <TransitioningContentControl.DataTemplates>
+          <DataTemplate DataType="vm:ProjectedVideo">
+            <v:VideoSurface Frames="{Binding Frames}" />
+          </DataTemplate>
           <DataTemplate DataType="vm:ProjectedImage">
             <Panel Background="Black">
               <Image Source="{Binding Picture^}" Stretch="Uniform" />

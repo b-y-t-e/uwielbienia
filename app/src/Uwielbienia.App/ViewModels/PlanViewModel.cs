@@ -157,10 +157,6 @@ public sealed partial class PlanViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Po otwarciu innego planu: zaznaczona pierwsza pieśń, a ekran z pieśnią spoza tego planu
-    /// jest czyszczony — „Dalej” zacznie wtedy od pierwszej pieśni nowego planu.
-    /// </summary>
-    /// <summary>
     /// Otwarty plan zaczyna od początku: na ekranie pierwszy slajd pierwszej pozycji, która ma slajdy (chyba że ekran
     /// już pokazuje coś z tego planu — np. ponowne otwarcie tego samego planu w trakcie).
     /// </summary>
@@ -205,6 +201,11 @@ public sealed partial class PlanItemViewModel(PlanItem item, PlanItemInfo info, 
     public bool IsText => Info.Kind == PlanItemKind.Text;
 
     public bool IsPresentation => Info.Kind == PlanItemKind.Presentation;
+
+    public bool IsVideo => Info.Kind == PlanItemKind.Video;
+
+    /// <summary>Prezentacja albo film — ten sam kolor w planie.</summary>
+    public bool IsMedia => IsPresentation || IsVideo;
 
     public string Title => Info.Title;
 

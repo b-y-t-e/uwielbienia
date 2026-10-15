@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Slideshows;
 using Uwielbienia.Core.Songs;
+using Uwielbienia.Core.Videos;
 
 namespace Uwielbienia.App.ViewModels;
 
@@ -48,7 +49,7 @@ public sealed partial class PlanAddViewModel(
         IsOpen = true;
     }
 
-    /// <summary>„+ Prezentacja”: wybrane pliki (PowerPoint albo obrazy) w zapamiętane miejsce planu.</summary>
+    /// <summary>„+ Prezentacja”: wybrane pliki (PowerPoint, obrazy) w zapamiętane miejsce planu („+ Film” — <see cref="AddVideos"/>).</summary>
     public async Task AddPresentationAsync(IReadOnlyList<string> files)
     {
         if (await AddFilesAsync(files, _index))
@@ -56,14 +57,22 @@ public sealed partial class PlanAddViewModel(
     }
 
     /// <summary>
-    /// Prezentacja z plików (także upuszczonych na plan) — kopiowana do folderu aplikacji, slajdy przygotowują się w tle.
+    /// Pliki wybrane albo upuszczone na plan: każdy film to osobna pozycja (plik tylko wskazany), pozostałe
+    /// pliki — jedna prezentacja kopiowana do folderu aplikacji (slajdy przygotowują się w tle).
     /// </summary>
     public async Task<bool> AddFilesAsync(IReadOnlyList<string> files, int index)
     {
         try
         {
-            var imported = await slideshows.ImportAsync(files);
-            actions.Insert(new PresentationPlanItem(Guid.NewGuid(), imported.Folder, imported.Title), index);
+            var videos = files.Where(VideoPlanItemType.IsSupported).ToList();
+            var slides = files.Except(videos).ToList();
+            // Najpierw prezentacja (może się nie udać), dopiero potem cała grupa do planu — błąd nie zostawia w planie
+            // połowy upuszczenia, więc ponowna próba nie doda filmów drugi raz.
+            var imported = slides.Count > 0 || videos.Count == 0 ? await slideshows.ImportAsync(slides) : null;
+            foreach (var video in videos)
+                actions.Insert(VideoPlanItem.For(video), index++);
+            if (imported is not null)
+                actions.Insert(new PresentationPlanItem(Guid.NewGuid(), imported.Folder, imported.Title), index);
             Error = null;
             return true;
         }
@@ -72,6 +81,15 @@ public sealed partial class PlanAddViewModel(
             Error = ex.Message;
             return false;
         }
+    }
+
+    /// <summary>„+ Film”: wybrane filmy (każdy osobno) w zapamiętane miejsce planu.</summary>
+    public void AddVideos(IReadOnlyList<VideoPlanItem> videos)
+    {
+        var index = _index;
+        foreach (var video in videos)
+            actions.Insert(video, index++);
+        IsOpen = false;
     }
 
     public bool HasSelection => Selected is not null;
