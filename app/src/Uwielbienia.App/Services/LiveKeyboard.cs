@@ -14,7 +14,7 @@ namespace Uwielbienia.App.Services;
 /// </summary>
 public static class LiveKeyboard
 {
-    public static bool Handle(KeyEventArgs e, ILiveControl control, IProjectionController projection, IVideoPlayer video, FilmRemote film)
+    public static bool Handle(KeyEventArgs e, ILiveControl control, IProjectionController projection, FilmRemote film)
     {
         if (e.KeyModifiers == KeyModifiers.Control && e.Key is Key.PageDown or Key.PageUp)
         {
@@ -57,7 +57,7 @@ public static class LiveKeyboard
         switch (e.Key)
         {
             case Key.Space:
-                if (!video.TogglePause())
+                if (!film.TogglePause())
                     control.Next();
                 return true;
             case Key.OemPeriod:

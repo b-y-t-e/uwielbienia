@@ -20,6 +20,8 @@ public partial class ProjectionWindow : Window
     private readonly DispatcherTimer _hideHandles = new() { Interval = TimeSpan.FromSeconds(3) };
     private Point? _lastPointer;
     private bool _handlesShown;
+    private bool _videoBarShown;
+    private readonly DispatcherTimer _hideVideoBar = new() { Interval = TimeSpan.FromSeconds(2.5) };
 
     public ProjectionWindow()
     {
@@ -33,6 +35,12 @@ public partial class ProjectionWindow : Window
             if (!IsDragging)
                 SetHandlesShown(false);
         };
+        _hideVideoBar.Tick += (_, _) =>
+        {
+            _hideVideoBar.Stop();
+            _videoBarShown = false;
+            UpdateHandles();
+        };
         UpdateCursor();
     }
 
@@ -42,8 +50,13 @@ public partial class ProjectionWindow : Window
         // Dopasowanie jest wspólne dla kolejnych okien projekcji — zamknięte okno musi się odpiąć.
         viewModel.Calibration.PropertyChanged += OnCalibrationChanged;
         viewModel.Video.StatusChanged += OnVideoChanged;
+        viewModel.Film.FilmChanged += OnFilmUsed;
+        viewModel.Live.PropertyChanged += OnLiveChanged;
         Closed += (_, _) =>
         {
+            viewModel.Film.FilmChanged -= OnFilmUsed;
+            viewModel.Live.PropertyChanged -= OnLiveChanged;
+            _hideVideoBar.Stop();
             viewModel.Calibration.PropertyChanged -= OnCalibrationChanged;
             viewModel.Video.StatusChanged -= OnVideoChanged;
             _hideHandles.Stop();
@@ -93,11 +106,29 @@ public partial class ProjectionWindow : Window
     private void UpdateHandles()
     {
         Handles.IsVisible = HandlesVisible;
-        VideoBar.IsVisible = HandlesVisible && DataContext is ProjectionViewModel { Video: var video } && video.HasVideo();
+        // po ±15 s / pauzie pasek na chwilę — ale nie na czarnym ekranie (sala by go zobaczyła)
+        VideoBar.IsVisible = DataContext is ProjectionViewModel { Video: var video, Live: var live } && video.HasVideo()
+                             && (HandlesVisible || (_videoBarShown && !live.IsBlank));
         UpdateCursor();
     }
 
     private void OnVideoChanged(object? sender, EventArgs e) => UpdateHandles();
+
+    /// <summary>Wygaszenie ekranu chowa pasek filmu od razu (zatrzymany film nie zgłosi przy tym żadnej zmiany).</summary>
+    private void OnLiveChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(LiveViewModel.IsBlank))
+            UpdateHandles();
+    }
+
+    /// <summary>±15 s albo pauza z klawiatury / pilota / kliknięcia — pasek postępu filmu na chwilę.</summary>
+    private void OnFilmUsed(object? sender, EventArgs e)
+    {
+        _videoBarShown = true;
+        _hideVideoBar.Stop();
+        _hideVideoBar.Start();
+        UpdateHandles();
+    }
 
     /// <summary>Jak w pps_viewer: ruch myszą nad obrazem pokazuje uchwyty i kursor na 3 s.</summary>
     private void ShowHandlesTemporarily()
@@ -241,7 +272,7 @@ public partial class ProjectionWindow : Window
     /// </summary>
     private void Tap(double x)
     {
-        if (ViewModel.Video.TogglePause())
+        if (ViewModel.Film.TogglePause())
             return;
         if (x > Bounds.Width / 2)
             ViewModel.Control.Next();
@@ -260,7 +291,7 @@ public partial class ProjectionWindow : Window
         if (HandleCalibrationKey(e))
             return;
         // najpierw sterowanie (przy filmie Escape z pilota to „długo do tyłu”), dopiero potem Esc = wróć do planu
-        if (LiveKeyboard.Handle(e, vm.Control, vm.Projection, vm.Video, vm.Film))
+        if (LiveKeyboard.Handle(e, vm.Control, vm.Projection, vm.Film))
         {
             e.Handled = true;
             return;

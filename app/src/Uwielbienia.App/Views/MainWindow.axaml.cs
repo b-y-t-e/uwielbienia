@@ -58,7 +58,7 @@ public partial class MainWindow : Window
     /// <summary>Kliknięcie w podgląd filmu w kolumnie „Na ekranie” — pauza / wznowienie.</summary>
     private void OnVideoPreviewTapped(object? sender, TappedEventArgs e)
     {
-        ViewModel.Video.TogglePause();
+        ViewModel.Film.TogglePause();
     }
 
     /// <summary>Kursor nad nagłówkiem części: strzałki przeciągania tylko tam, gdzie kolejność można zmienić.</summary>
@@ -101,7 +101,7 @@ public partial class MainWindow : Window
         if (e.Source is TextBox || IsInEditor(e.Source))
             return;
 
-        e.Handled = LiveKeyboard.Handle(e, vm.Control, vm.Projection, vm.Video, vm.Film);
+        e.Handled = LiveKeyboard.Handle(e, vm.Control, vm.Projection, vm.Film);
     }
 
     private void OnKeyUpTunnel(object? sender, KeyEventArgs e)
@@ -120,7 +120,7 @@ public partial class MainWindow : Window
         {
             case Key.PageDown or Key.PageUp or Key.F5:
                 // piloty do prezentacji działają także przy otwartym oknie
-                return e.Handled = LiveKeyboard.Handle(e, ViewModel.Control, ViewModel.Projection, ViewModel.Video, ViewModel.Film);
+                return e.Handled = LiveKeyboard.Handle(e, ViewModel.Control, ViewModel.Projection, ViewModel.Film);
             case Key.Escape:
                 add.CloseCommand.Execute(null);
                 break;

@@ -43,6 +43,9 @@ public sealed class FilmRemote
     /// <summary>Podpowiedź pojawiła się albo zniknęła.</summary>
     public event EventHandler? PromptChanged;
 
+    /// <summary>Przewinięto albo zapauzowano film — rzutnik pokazuje na chwilę pasek postępu (nie pod czarnym ekranem).</summary>
+    public event EventHandler? FilmChanged;
+
     /// <summary>Na ekranie jest film, który da się odtworzyć.</summary>
     private bool OnFilm => _live.State.Slide is VideoSlide && _player.HasVideo();
 
@@ -60,7 +63,25 @@ public sealed class FilmRemote
         if (TakePrompt())
             _control.NextItem();
         else
-            _player.TogglePause();
+            TogglePauseAndNotify();
+        return true;
+    }
+
+    /// <summary>Spacja albo kliknięcie w film: pauza / wznowienie; <c>false</c> = filmu nie ma.</summary>
+    public bool TogglePause()
+    {
+        CancelPrompt();
+        return TogglePauseAndNotify();
+    }
+
+    /// <summary>Pod czarnym ekranem film stoi bez zmian (<see cref="IVideoPlayer.IsHeld"/>) — wtedy bez sygnału.</summary>
+    private bool TogglePauseAndNotify()
+    {
+        var held = _player.IsHeld;
+        if (!_player.TogglePause())
+            return false;
+        if (!held)
+            FilmChanged?.Invoke(this, EventArgs.Empty);
         return true;
     }
 
@@ -94,6 +115,9 @@ public sealed class FilmRemote
         if (!OnFilm)
             return false;
         _player.Skip(by);
+        // pod czarnym ekranem przewija po cichu — sala tego nie widzi, więc i pasek się nie pokaże
+        if (!_player.IsHeld)
+            FilmChanged?.Invoke(this, EventArgs.Empty);
         return true;
     }
 

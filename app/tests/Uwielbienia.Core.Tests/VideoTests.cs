@@ -259,13 +259,17 @@ public sealed class VideoTests : IDisposable
     public void Remote_short_presses_only_skip_and_long_forward_pauses()
     {
         var (remote, _, _, _) = OnFilm();
+        var shown = 0; // rzutnik pokazuje wtedy na chwilę pasek postępu
+        remote.FilmChanged += (_, _) => shown++;
 
         Assert.True(remote.Forward());
         Assert.True(remote.Forward());
         Assert.True(remote.Back());
         Assert.True(remote.HoldForward());
+        Assert.True(remote.TogglePause());
 
-        Assert.Equal(["open film.mp4", "seek", "seek", "seek", "pause"], _player.Calls);
+        Assert.Equal(["open film.mp4", "seek", "seek", "seek", "pause", "resume"], _player.Calls);
+        Assert.Equal(5, shown);
         Assert.IsType<VideoSlide>(_session.State.Slide);
     }
 
@@ -316,5 +320,21 @@ public sealed class VideoTests : IDisposable
         Assert.False(remote.Back());
         Assert.False(remote.HoldForward());
         Assert.False(remote.HoldBack());
+    }
+
+    [Fact]
+    public void Pause_and_skip_under_black_screen_do_not_signal_a_change()
+    {
+        var (remote, _, _, _) = OnFilm();
+        var shown = 0;
+        remote.FilmChanged += (_, _) => shown++;
+
+        _session.ToggleBlank();
+        Assert.True(remote.TogglePause());
+        Assert.True(remote.HoldForward());
+        Assert.True(remote.Forward());
+        Assert.True(remote.Back());
+
+        Assert.Equal(0, shown);
     }
 }

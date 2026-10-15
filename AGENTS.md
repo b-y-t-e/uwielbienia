@@ -255,7 +255,8 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   „Dalej” / „Wstecz” (okno, telefon) zawsze zmieniają slajd / pozycję.
   „−15 s” / „+15 s” (`IVideoPlayer.Skip`, w granicach filmu) w „Na ekranie” i na telefonie. Na rzutniku pasek
   postępu z suwakiem (`ProjectionWindow` → `VideoBar`, w warstwie `Warped` — z tą samą perspektywą co film)
-  widać tylko razem z uchwytami „Dopasuj obraz” (ruch myszy / tryb K). Brak odtwarzacza
+  widać razem z uchwytami „Dopasuj obraz” (ruch myszy / tryb K) oraz przez 2,5 s po ±15 s albo pauzie z
+  klawiatury, pilota czy kliknięcia (`FilmRemote.FilmChanged`; nie na czarnym ekranie). Brak odtwarzacza
   (`IVideoPlayer.Unavailable`, np. VLC na Linuksie) widać już po zaznaczeniu filmu w planie. VLC: Windows — pakiet `VideoLAN.LibVLC.Windows`
   (`app/Vlc.props`: tylko x64, bez wtyczek nagrywania / transmisji / lua; `build.py` pakuje go do .exe
   z jednego pliku), Linux — VLC z systemu (bez niego czytelny komunikat przy filmie). Próba z
