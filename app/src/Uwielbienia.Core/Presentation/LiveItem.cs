@@ -54,7 +54,7 @@ public sealed partial class SongPlanItemType : IPlanItemType, ISongPresenter
 
     public LiveItem? Present(PlanItem item) =>
         item is SongPlanItem songItem && _library.Find(songItem.SongId) is { } song
-            ? Create(item.Id, song, songItem.Arrangement ?? song.Arrangement)
+            ? Create(item.Id, song, songItem.ArrangementFor(song))
             : null;
 
     public LiveItem Present(Song song) => Create(null, song, song.Arrangement);

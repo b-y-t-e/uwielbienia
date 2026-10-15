@@ -72,14 +72,16 @@ public sealed partial record SongDraft(SongKind Kind, string Title, string Categ
     {
         var sections = new List<Section>();
         var codeMap = new Dictionary<string, string>(StringComparer.Ordinal);
-        var counters = new Dictionary<string, int>(StringComparer.Ordinal);
-        foreach (var part in Parts)
+        var filled = Parts.Where(p => ParseLines(p.Text).Count > 0).ToList();
+        // Kod części zostaje taki sam po edycji (także po przestawieniu i usunięciu innych części), żeby plany,
+        // które go zapamiętały (pominięcia, kolejność), dalej wskazywały tę samą treść. Nowy kod — tylko
+        // nowa część albo zmieniony rodzaj.
+        var used = filled.Select(KeptCode).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        foreach (var part in filled)
         {
-            var lines = ParseLines(part.Text);
-            if (lines.Count == 0)
-                continue;
-            var (code, name) = Kind == SongKind.Text ? TextPartCode(sections.Count + 1) : SongPartCode(part, counters);
-            sections.Add(new Section(code, name, part.Repeat, lines));
+            var code = KeptCode(part) ?? NewCode(part, used);
+            var name = Kind == SongKind.Text ? $"Część {sections.Count + 1}" : SongPartName(part, code);
+            sections.Add(new Section(code, name, part.Repeat, ParseLines(part.Text)));
             if (part.OriginalCode is { } original)
                 codeMap[original] = code;
         }
@@ -123,19 +125,37 @@ public sealed partial record SongDraft(SongKind Kind, string Title, string Categ
         return parsed.Chords is null ? parsed : new SongLine(line.Trim(), null, 1, false, false, LineKind.Lyric);
     }
 
-    /// <summary>Części tekstu to po prostu kolejne slajdy: „Część 1”, „Część 2”…</summary>
-    private static (string Code, string Name) TextPartCode(int index) => ($"O{index}", $"Część {index}");
+    private string PartKind(DraftPart part) => Kind == SongKind.Text ? "O" : SongPartType.ForKind(part.Kind).Kind;
 
-    private (string Code, string Name) SongPartCode(DraftPart part, Dictionary<string, int> counters)
+    /// <summary>Dotychczasowy kod części, jeśli nadal pasuje do jej rodzaju (pierwsza część z tym kodem).</summary>
+    private string? KeptCode(DraftPart part) =>
+        part.OriginalCode is { } code && KindOf(code) == PartKind(part)
+                                     && Parts.First(p => p.OriginalCode == code && ParseLines(p.Text).Count > 0) == part
+            ? code
+            : null;
+
+    private static string KindOf(string code) => code.TrimEnd('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
+
+    /// <summary>Pierwszy wolny kod rodzaju: <c>V1</c>, <c>V2</c>…; <c>C</c>, <c>C2</c>…; tekst <c>O1</c>, <c>O2</c>…</summary>
+    private string NewCode(DraftPart part, HashSet<string> used)
     {
-        var type = SongPartType.ForKind(part.Kind);
-        var n = counters[type.Kind] = counters.GetValueOrDefault(type.Kind) + 1;
-        var code = type.Kind == "V" ? $"V{n}" : n == 1 ? type.Kind : $"{type.Kind}{n}";
-        var name = type.Kind == "V" || n > 1 ? $"{type.Name} {n}" : type.Name;
+        var kind = PartKind(part);
+        for (var n = 1; ; n++)
+        {
+            var code = kind is "V" or "O" ? $"{kind}{n}" : n == 1 ? kind : $"{kind}{n}";
+            if (used.Add(code))
+                return code;
+        }
+    }
+
+    private string SongPartName(DraftPart part, string code)
+    {
         // Własna nazwa części śpiewnika zostaje, dopóki część ma ten sam kod.
         if (part.OriginalCode == code && Original?.FindSection(code) is { } original)
-            name = original.Name;
-        return (code, name);
+            return original.Name;
+        var type = SongPartType.ForKind(KindOf(code));
+        var number = code[type.Kind.Length..];
+        return type.Kind == "V" || number.Length > 0 ? $"{type.Name} {(number.Length > 0 ? number : "1")}" : type.Name;
     }
 
     /// <summary>

@@ -231,7 +231,7 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   zakończeniu podmienia ją na ekranie. Slajd to
   `ImageSlide` (plik obrazu); obrazy wczytuje w tle `SlideImages` (pamięć podręczna, następny
   slajd zawczasu, miniatury dla operatora).
-- **Przeciąganie** (plan, części pieśni): `ListReorderDrag` — zwykłe przeciąganie myszą ze
+- **Przeciąganie** (plan, części pieśni, części w edytorze — za uchwyt ⠿): `ListReorderDrag` — zwykłe przeciąganie myszą ze
   znacznikiem miejsca i przewijaniem przy krawędzi; wiersze implementują `IReorderableItem`.
 - **Ekran.** `LiveSession` to jedyne źródło prawdy: polecenia przez `ILiveControl` (klawiatura —
   `LiveKeyboard`, przyciski, telefon), stan przez `ILiveStateSource` (`LiveState` — niezmienna
@@ -324,8 +324,14 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
   - edycja: „Edytuj” w kolumnie „Pieśń”;
   - układ pieśni w tym planie (lista części w kolumnie „Pieśń”): przeciąganie za nagłówek części,
     „⋯” / prawy klik („Powtórz”, „Usuń”), „Przywróć usuniętą część”, pole wyboru = pominięcie.
-    Zapis: `SongPlanItem.Layout` (pełny układ z pominięciami) i `Arrangement` (śpiewana część) —
-    `WithLayout` wraca do `null`, gdy układ jest taki jak w pliku pieśni.
+    Zapis: `SongPlanItem.Layout` (pełny układ z pominięciami), `Arrangement` (śpiewana część) i `Removed`
+    (części usunięte w tym planie) — `WithLayout` wraca do `null`, gdy układ jest taki jak w pliku pieśni.
+    Układ uzgadnia się z aktualną treścią przy każdym odczycie (`LayoutFor` / `ArrangementFor`): części,
+    których już nie ma, znikają; nowe (dopisane w edytorze, nowa wersja śpiewnika), nieusunięte w planie,
+    dochodzą na koniec jako śpiewane. Tekst ma kolejność z edytora — w planie tylko pominięcie i usunięcie
+    (bez przeciągania i „Powtórz”). Edytor zachowuje kody części między zapisami (`SongDraft`: nowy kod tylko
+    dla nowej części albo zmienionego rodzaju; nazwy części tekstu „Część n” wg kolejności), więc
+    zapamiętane w planach pominięcia zostają przy tej samej treści.
 - Kolumna „Pieśń” nie zmienia projekcji — wyjątek: zmiana układu części granej pieśni działa na
   żywo. Dla prezentacji pokazuje miniatury slajdów. Pusty ekran: kolumna „Na ekranie” bez przycisków.
 - Nakładki: „Plany” (`PlansViewModel` — zakładki Wydarzenia/Szablony, lista + formularz; nazwa

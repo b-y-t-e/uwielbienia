@@ -64,37 +64,77 @@ public abstract record PlanItem(Guid Id)
     public abstract PlanItem WithNewId();
 }
 
+/// <summary>Część w układzie pieśni: kod sekcji i czy jest śpiewana (odznaczona = pominięta).</summary>
+public sealed record LayoutEntry(string Code, bool Sung = true);
+
 /// <summary>Pieśń w planie z wybranymi częściami w wybranej kolejności.</summary>
 /// <param name="Arrangement">Kody sekcji do zaśpiewania; <c>null</c> = kolejność z pliku pieśni.</param>
 /// <param name="Layout">
 /// Pełny układ pieśni w tym planie (kolejność, powtórzenia, części pominięte); <c>null</c> = wynika z
 /// <paramref name="Arrangement"/> i kolejności z pliku. <paramref name="Arrangement"/> to zawsze jego śpiewana część.
 /// </param>
-/// <summary>Część w układzie pieśni: kod sekcji i czy jest śpiewana (odznaczona = pominięta).</summary>
-public sealed record LayoutEntry(string Code, bool Sung = true);
-
-public sealed record SongPlanItem(Guid Id, string SongId, IReadOnlyList<string>? Arrangement, IReadOnlyList<LayoutEntry>? Layout = null)
+/// <param name="Removed">
+/// Części usunięte z układu w tym planie („Usuń”). Odróżnia je od części dopisanych później w edytorze
+/// (albo w nowej wersji śpiewnika), które pojawiają się w układzie same. <c>null</c> = plan sprzed tego pola.
+/// </param>
+public sealed record SongPlanItem(
+    Guid Id,
+    string SongId,
+    IReadOnlyList<string>? Arrangement,
+    IReadOnlyList<LayoutEntry>? Layout = null,
+    IReadOnlyList<string>? Removed = null)
     : PlanItem(Id)
 {
-    /// <summary>Układ do wyświetlenia w kolumnie „Pieśń” — także dla planów sprzed zapisywania układu.</summary>
+    /// <summary>
+    /// Układ do wyświetlenia w kolumnie „Pieśń”, uzgodniony z aktualną treścią pieśni: bez części, których już nie
+    /// ma, z nowymi częściami (śpiewanymi, na końcu), które nie zostały usunięte w planie.
+    /// Tekst ma zawsze kolejność z edytora — plan pamięta tylko pominięte i usunięte części.
+    /// </summary>
     public IReadOnlyList<LayoutEntry> LayoutFor(Song song)
     {
-        if (Layout is not null)
-            return Layout;
-        if (Arrangement is null)
-            return song.Arrangement.Select(code => new LayoutEntry(code)).ToList();
-        // Dawniej zapisywano tylko śpiewane części w kolejności pliku — pozostałe są pominięte.
-        var remaining = Arrangement.ToList();
-        return song.Arrangement.Select(code => new LayoutEntry(code, remaining.Remove(code))).ToList();
+        if (Layout is null)
+        {
+            if (Arrangement is null)
+                return song.Arrangement.Select(code => new LayoutEntry(code)).ToList();
+            // Dawniej zapisywano tylko śpiewane części w kolejności pliku — pozostałe są pominięte.
+            var remaining = Arrangement.ToList();
+            return song.Arrangement.Select(code => new LayoutEntry(code, remaining.Remove(code))).ToList();
+        }
+
+        var existing = song.Sections.Select(s => s.Code).ToHashSet(StringComparer.Ordinal);
+        var removed = (Removed ?? []).ToHashSet(StringComparer.Ordinal);
+        var layout = Layout.Where(e => existing.Contains(e.Code)).ToList();
+        if (song.IsText)
+        {
+            var sung = layout.GroupBy(e => e.Code).ToDictionary(g => g.Key, g => g.First().Sung, StringComparer.Ordinal);
+            return song.Arrangement.Distinct().Where(code => !removed.Contains(code))
+                .Select(code => new LayoutEntry(code, sung.GetValueOrDefault(code, true))).ToList();
+        }
+
+        // nowe części na końcu układu (jak „Przywróć usuniętą część”), w kolejności z pliku
+        var known = layout.Select(e => e.Code).Concat(removed).ToHashSet(StringComparer.Ordinal);
+        layout.AddRange(song.Arrangement.Where(known.Add).Select(code => new LayoutEntry(code)));
+        return layout;
     }
 
-    /// <summary>Nowy układ; gdy jest taki jak w pliku pieśni, pozycja znowu podąża za plikiem.</summary>
+    /// <summary>Kody do zaśpiewania (ekran): śpiewana część uzgodnionego układu.</summary>
+    public IReadOnlyList<string> ArrangementFor(Song song) =>
+        Layout is null && Arrangement is null
+            ? song.Arrangement
+            : LayoutFor(song).Where(e => e.Sung).Select(e => e.Code).ToList();
+
+    /// <summary>
+    /// Nowy układ; części pieśni, których w nim nie ma, są usunięte w tym planie. Gdy układ jest taki jak w pliku
+    /// pieśni, pozycja znowu podąża za plikiem.
+    /// </summary>
     public SongPlanItem WithLayout(Song song, IReadOnlyList<LayoutEntry> layout)
     {
-        var isDefault = layout.All(e => e.Sung) && layout.Select(e => e.Code).SequenceEqual(song.Arrangement);
+        var removed = song.Arrangement.Distinct().Where(code => layout.All(e => e.Code != code)).ToList();
+        var isDefault = removed.Count == 0 && layout.All(e => e.Sung)
+                        && (song.IsText || layout.Select(e => e.Code).SequenceEqual(song.Arrangement));
         return isDefault
-            ? this with { Arrangement = null, Layout = null }
-            : this with { Arrangement = layout.Where(e => e.Sung).Select(e => e.Code).ToList(), Layout = layout };
+            ? this with { Arrangement = null, Layout = null, Removed = null }
+            : this with { Arrangement = layout.Where(e => e.Sung).Select(e => e.Code).ToList(), Layout = layout, Removed = removed };
     }
 
     public static SongPlanItem For(string songId) => new(Guid.NewGuid(), songId, null);

@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Data.Converters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
@@ -23,7 +24,8 @@ public partial class MainWindow : Window
         // Kolejność przeciąganiem: pozycje planu (cały wiersz poza ✕) i części pieśni (za nagłówek części).
         _ = new ListReorderDrag(PlanList, source => FindRow<PlanItemViewModel>(source, "planItem"),
             (item, index) => ViewModel.Plan.Reorder((PlanItemViewModel)item, index));
-        _ = new ListReorderDrag(PartsList, source => FindRow<SongPartViewModel>(source, "partHandle"),
+        _ = new ListReorderDrag(PartsList,
+            source => ViewModel.Preview.CanReorderParts ? FindRow<SongPartViewModel>(source, "partHandle") : null,
             (item, index) => ViewModel.Preview.MovePart((SongPartViewModel)item, index));
         PlanList.AddHandler(DragDrop.DragOverEvent, OnPlanDragOver);
         PlanList.AddHandler(DragDrop.DropEvent, OnPlanDrop);
@@ -50,6 +52,10 @@ public partial class MainWindow : Window
     }
 
     private MainViewModel ViewModel => (MainViewModel)DataContext!;
+
+    /// <summary>Kursor nad nagłówkiem części: strzałki przeciągania tylko tam, gdzie kolejność można zmienić.</summary>
+    public static readonly IValueConverter DragCursor =
+        new FuncValueConverter<bool, Cursor>(canDrag => canDrag ? new Cursor(StandardCursorType.SizeNorthSouth) : Cursor.Default);
 
     private bool IsOverlayOpen =>
         ViewModel.Plans.IsOpen || ViewModel.Remote.IsOpen || ViewModel.Plan.IsRemoveConfirmationOpen || ViewModel.PlanAdd.IsOpen;
@@ -231,7 +237,8 @@ public partial class MainWindow : Window
         if (sender is not Control { DataContext: SongPartViewModel part } button)
             return;
         var menu = new MenuFlyout { Placement = PlacementMode.BottomEdgeAlignedRight };
-        menu.Items.Add(new MenuItem { Header = "Powtórz", Command = ViewModel.Preview.DuplicatePartCommand, CommandParameter = part });
+        if (ViewModel.Preview.CanReorderParts)
+            menu.Items.Add(new MenuItem { Header = "Powtórz", Command = ViewModel.Preview.DuplicatePartCommand, CommandParameter = part });
         menu.Items.Add(new MenuItem { Header = "Usuń", Command = ViewModel.Preview.RemovePartCommand, CommandParameter = part });
         menu.ShowAt(button);
     }

@@ -49,7 +49,7 @@ public sealed partial class PreviewViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasSong), nameof(Title), nameof(Number), nameof(Category), nameof(OriginText), nameof(IsText), nameof(ColumnTitle))]
-    [NotifyPropertyChangedFor(nameof(IsEmpty), nameof(HasChordsToggle))]
+    [NotifyPropertyChangedFor(nameof(IsEmpty), nameof(HasChordsToggle), nameof(CanReorderParts))]
     public partial Song? Song { get; private set; }
 
     /// <summary>Wybrana w planie prezentacja (zamiast pieśni).</summary>
@@ -107,6 +107,9 @@ public sealed partial class PreviewViewModel : ObservableObject
 
     public bool HasRemovedSections => RemovedSections.Count > 0;
 
+    /// <summary>Kolejność i powtórzenia części ustala się w planie tylko dla pieśni; tekst ma kolejność z edytora.</summary>
+    public bool CanReorderParts => Song is { IsText: false };
+
     public void ShowPlanItem(SongPlanItem planItem, Song song)
     {
         // Plan przebudowuje się po każdym zapisie (np. zmianie układu) — ta sama pozycja z tym samym
@@ -144,7 +147,7 @@ public sealed partial class PreviewViewModel : ObservableObject
     public void MovePart(SongPartViewModel part, int newIndex)
     {
         var index = Parts.IndexOf(part);
-        if (index < 0 || newIndex == index)
+        if (index < 0 || newIndex == index || !CanReorderParts)
             return;
         Parts.Move(index, Math.Clamp(newIndex, 0, Parts.Count - 1));
         SaveLayout();
@@ -154,7 +157,7 @@ public sealed partial class PreviewViewModel : ObservableObject
     private void DuplicatePart(SongPartViewModel part)
     {
         var index = Parts.IndexOf(part);
-        if (index < 0 || Song is not { } song)
+        if (index < 0 || Song is not { } song || !CanReorderParts)
             return;
         Parts.Insert(index + 1, CreatePart(song, new LayoutEntry(part.Code, part.IsIncluded)));
         SaveLayout();
@@ -260,7 +263,7 @@ public sealed partial class PreviewViewModel : ObservableObject
     }
 
     private static bool SameLayout(SongPlanItem a, SongPlanItem b) =>
-        Same(a.Arrangement, b.Arrangement) && Same(a.Layout, b.Layout);
+        Same(a.Arrangement, b.Arrangement) && Same(a.Layout, b.Layout) && Same(a.Removed, b.Removed);
 
     private static bool Same<T>(IReadOnlyList<T>? a, IReadOnlyList<T>? b) =>
         a is null || b is null ? a is null && b is null : a.SequenceEqual(b);

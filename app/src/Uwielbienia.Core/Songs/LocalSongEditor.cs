@@ -85,7 +85,7 @@ public sealed class LocalSongEditor(string directory, ISongLibrary library) : IS
 
     private (string Id, int? Number) NewSongIdentity(string title)
     {
-        var number = Math.Max(FirstLocalNumber, library.Songs.Where(s => !s.IsText).Max(s => s.Number ?? 0) + 1);
+        var number = Math.Max(FirstLocalNumber, library.Songs.Where(s => !s.IsText).Select(s => s.Number ?? 0).DefaultIfEmpty(0).Max() + 1);
         return (NewId(number.ToString(CultureInfo.InvariantCulture), title), number);
     }
 

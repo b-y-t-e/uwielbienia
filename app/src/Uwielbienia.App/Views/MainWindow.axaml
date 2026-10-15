@@ -222,16 +222,19 @@
                                 HorizontalAlignment="Stretch" VerticalAlignment="Top" Margin="0,0,0,8" Padding="14,10">
                           <Border.ContextMenu>
                             <ContextMenu>
-                              <MenuItem Header="Powtórz" Click="OnPartDuplicate" />
+                              <MenuItem Header="Powtórz" Click="OnPartDuplicate"
+                                        IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).Preview.CanReorderParts}" />
                               <MenuItem Header="Usuń" Click="OnPartRemove" />
                             </ContextMenu>
                           </Border.ContextMenu>
                           <StackPanel Spacing="6">
                             <Grid ColumnDefinitions="*,Auto,Auto">
-                              <!-- Nagłówek części jest uchwytem do przeciągania. -->
+                              <!-- Nagłówek części jest uchwytem do przeciągania (tylko pieśń — tekst ma kolejność z edytora). -->
                               <StackPanel Classes="partHandle" Orientation="Horizontal" Spacing="8" Background="Transparent"
-                                          Cursor="SizeNorthSouth" VerticalAlignment="Center">
-                                <TextBlock Classes="caption" Text="⠿" VerticalAlignment="Center" />
+                                          Cursor="{Binding $parent[Window].((vm:MainViewModel)DataContext).Preview.CanReorderParts, Converter={x:Static v:MainWindow.DragCursor}}"
+                                          VerticalAlignment="Center">
+                                <TextBlock Classes="caption" Text="⠿" VerticalAlignment="Center"
+                                           IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).Preview.CanReorderParts}" />
                                 <TextBlock Classes="caption" FontWeight="SemiBold" Text="{Binding Name}" VerticalAlignment="Center" />
                               </StackPanel>
                               <Button Grid.Column="1" Classes="quiet partMenu" Content="⋯" ToolTip.Tip="Powtórz albo usuń"

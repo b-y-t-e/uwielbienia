@@ -75,6 +75,14 @@ public sealed partial class SongEditorViewModel : ObservableObject
     [RelayCommand]
     private void RemovePart(PartEditorViewModel part) => Parts.Remove(part);
 
+    /// <summary>Przeciąganie części za uchwyt (jak w planie); w tekście kolejność części = kolejność slajdów.</summary>
+    public void MovePart(PartEditorViewModel part, int newIndex)
+    {
+        var index = Parts.IndexOf(part);
+        if (index >= 0 && newIndex != index)
+            Parts.Move(index, Math.Clamp(newIndex, 0, Parts.Count - 1));
+    }
+
     [RelayCommand]
     private void Save()
     {
@@ -126,8 +134,17 @@ public sealed partial class SongEditorViewModel : ObservableObject
 
 /// <summary>Część w edytorze: rodzaj (pieśń) albo nazwa (tekst) i wersy — jeden wers w jednej linii.</summary>
 public sealed partial class PartEditorViewModel(SongPartType type, string name, string text, string? originalCode = null, int repeat = 1)
-    : ObservableObject
+    : ObservableObject, IReorderableItem
 {
+    [ObservableProperty]
+    public partial bool IsDragged { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsDropBefore { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsDropAfter { get; set; }
+
     [ObservableProperty]
     public partial SongPartType Type { get; set; } = type;
 
@@ -140,5 +157,15 @@ public sealed partial class PartEditorViewModel(SongPartType type, string name, 
     public static PartEditorViewModel From(DraftPart part) =>
         new(SongPartType.ForKind(part.Kind), part.Name, part.Text, part.OriginalCode, part.Repeat);
 
-    public DraftPart ToDraft() => new(Type.Kind, Name, Text, originalCode, repeat);
+    /// <summary>
+    /// Przy przenoszeniu części (przeciąganie) lista rodzajów chwilowo czyści wybór i wpisuje <c>null</c> —
+    /// rodzaj części zostaje wtedy poprzedni (inaczej zapis by się wywrócił).
+    /// </summary>
+    partial void OnTypeChanged(SongPartType oldValue, SongPartType newValue)
+    {
+        if (newValue is null && oldValue is not null)
+            Type = oldValue;
+    }
+
+    public DraftPart ToDraft() => new(Type.Kind, Name ?? "", Text ?? "", originalCode, repeat);
 }
