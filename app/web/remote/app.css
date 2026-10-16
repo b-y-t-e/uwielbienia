@@ -193,3 +193,33 @@ input {
 .display-exit { position: fixed; bottom: 1rem; right: 1rem; opacity: 0; background: #222; color: #fff; }
 .display:hover .display-exit { opacity: .6; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .display .slide-text { transition: none; } }
+
+/* ---------- dodawanie pieśni (tylko z uprawnieniem) ---------- */
+.add-song { color: var(--text); }
+.sheet {
+  position: fixed; inset: 0; z-index: 10; display: flex; flex-direction: column; gap: .6rem;
+  padding: max(.8rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
+  background: var(--ink);
+}
+.sheet[hidden] { display: none; }
+.sheet-search { display: flex; gap: .5rem; align-items: center; }
+.sheet-search input { flex: 1; min-width: 0; font-size: var(--fs-large); padding: .75rem .9rem; }
+.sheet-empty { margin: 1.5rem 0; text-align: center; color: var(--muted); }
+.results { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; display: grid; align-content: start; gap: .35rem; }
+.results button {
+  width: 100%; display: grid; grid-template-columns: 2.6rem minmax(0, 1fr); gap: .1rem .6rem; align-items: baseline;
+  text-align: left; padding: .7rem .8rem; background: var(--surface);
+}
+.results .hit-number { grid-row: span 2; color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+.results .hit-number.text::before { content: "•"; }
+.results .hit-title { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.results .hit-line { color: var(--muted); font-size: var(--fs-small); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.toast {
+  position: fixed; left: 1rem; right: 1rem; bottom: calc(env(safe-area-inset-bottom) + 6.5rem); z-index: 11;
+  display: flex; align-items: center; gap: .75rem; padding: .75rem .9rem; border-radius: var(--radius);
+  background: var(--raised); box-shadow: 0 6px 24px rgba(0, 0, 0, .35);
+}
+.toast[hidden] { display: none; }
+.toast span { flex: 1; min-width: 0; }
+.toast .quiet { color: var(--candle); font-weight: 700; }
+.icon-button[hidden] { display: none; }

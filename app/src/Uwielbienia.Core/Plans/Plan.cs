@@ -36,6 +36,10 @@ public sealed record Plan(
         return WithItems(items);
     }
 
+    /// <summary>Wstawia zaraz za pozycją <paramref name="itemId"/> (np. tą na ekranie), a gdy jej nie ma — na koniec.</summary>
+    public Plan InsertAfter(Guid? itemId, PlanItem item) =>
+        Insert(itemId is { } id && IndexOf(id) is >= 0 and var index ? index + 1 : Items.Count, item);
+
     public Plan Remove(Guid itemId) => WithItems(Items.Where(i => i.Id != itemId).ToList());
 
     public Plan Replace(PlanItem item) => WithItems(Items.Select(i => i.Id == item.Id ? item : i).ToList());

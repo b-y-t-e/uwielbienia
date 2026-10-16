@@ -15,7 +15,7 @@ Dane użytkownika (plany, ustawienia, sparowane urządzenia, własne pieśni i t
 prezentacje w `prezentacje/`): `%APPDATA%\Uwielbienia` (Linux: `~/.config/Uwielbienia`).
 
 **Plan, pieśni i teksty:** do planu dodaje się z planu — „+” w nagłówku albo prawy klik na pozycji
-(„Dodaj przed… / po…”, „Pokaż na ekranie”, „Usuń z planu”). Okno „Dodaj do planu” wyszukuje
+(„Dodaj powyżej / poniżej”, „Duplikuj”, „Pokaż na ekranie”, „Usuń z planu”). Okno „Dodaj do planu” wyszukuje
 pieśni i teksty i pozwala utworzyć nową pieśń albo tekst (część Mszy, modlitwa, ogłoszenie — bez
 akordów). „Edytuj” w kolumnie „Pieśń” zmienia wybraną. Zapis jest tylko na tym komputerze; zmieniona pieśń
 śpiewnika ma „Przywróć oryginał”.

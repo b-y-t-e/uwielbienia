@@ -127,11 +127,7 @@ public sealed class PlanActions(ActivePlan plan, ILiveStateSource live)
     public SongPlanItem AddAfterLive(Song song, IReadOnlyList<string>? arrangement = null)
     {
         var item = SongPlanItem.For(song.Id) with { Arrangement = arrangement };
-        plan.Update(p =>
-        {
-            var liveIndex = live.State.Item?.PlanItemId is { } id ? p.IndexOf(id) : -1;
-            return p.Insert(liveIndex >= 0 ? liveIndex + 1 : p.Items.Count, item);
-        });
+        plan.Update(p => p.InsertAfter(live.State.Item?.PlanItemId, item));
         ItemAdded?.Invoke(this, item);
         return item;
     }
@@ -144,7 +140,7 @@ public sealed class PlanActions(ActivePlan plan, ILiveStateSource live)
         return item;
     }
 
-    /// <summary>Wstawia pieśń lub tekst w podane miejsce planu („Dodaj przed / po” w planie).</summary>
+    /// <summary>Wstawia pieśń lub tekst w podane miejsce planu („Dodaj powyżej / poniżej” w planie).</summary>
     public SongPlanItem InsertAt(Song song, int index) => Insert(SongPlanItem.For(song.Id), index);
 
     public SongPlanItem AddToEnd(Song song, IReadOnlyList<string>? arrangement = null)

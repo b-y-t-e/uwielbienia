@@ -9,9 +9,12 @@ namespace Uwielbienia.Link;
 // Protokół między aplikacją (host) a stroną www (pilot / ekran). Wszystko w JSON, camelCase.
 //
 // host → strona (notify):   {"type":"state", ...StateMessage} | {"type":"plan", ...PlanMessage} | {"type":"video", ...VideoMessage}
+//                           | {"type":"device", ...DeviceMessage} (operator zmienił uprawnienia tego urządzenia)
 // strona → host (request):  {"cmd":"hello"|"next"|"prev"|"blank"|"goto"|"showItem"|"showSong"|"search"
 //                                  |"videoToggle"|"videoSkip" (seconds: ±15)
-//                                  |"videoOffset" (milliseconds: ±100 — obraz później / wcześniej względem dźwięku), ...}
+//                                  |"videoOffset" (milliseconds: ±100 — obraz później / wcześniej względem dźwięku)
+//                                  |"addNext" (songId — pieśń zaraz za tą na ekranie; tylko z uprawnieniem)
+//                                  |"undoAdd" (itemId — cofnięcie własnego dodania, póki pieśni nie ma na ekranie), ...}
 //                           odpowiedź: CommandReply
 
 public sealed record RemoteCommand(
@@ -29,7 +32,17 @@ public sealed record CommandReply(
     StateMessage? State = null,
     PlanMessage? Plan = null,
     IReadOnlyList<SongHit>? Results = null,
-    VideoMessage? Video = null);
+    VideoMessage? Video = null,
+    DeviceMessage? Device = null,
+    PlanItemMessage? Added = null);
+
+/// <summary>Co wolno temu urządzeniu: z uprawnieniem telefon pokazuje „+” (dodaj pieśń jako następną).</summary>
+public sealed record DeviceMessage(bool CanAddSongs)
+{
+    public string Type => "device";
+
+    public static DeviceMessage From(RemoteCaller caller) => new(caller.CanAddSongs);
+}
 
 public sealed record StateMessage(
     long Version,

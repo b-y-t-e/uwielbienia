@@ -9,7 +9,7 @@ using Uwielbienia.Core.Videos;
 namespace Uwielbienia.App.ViewModels;
 
 /// <summary>
-/// „Dodaj do planu” — okno z wyszukiwarką pieśni i tekstów otwierane z planu („+”, „Dodaj przed / po”).
+/// „Dodaj do planu” — okno z wyszukiwarką pieśni i tekstów otwierane z planu („+”, „Dodaj powyżej / poniżej”).
 /// Wybrana pozycja trafia w zapamiętane miejsce; „Nowa pieśń / Nowy tekst” tworzy ją i wstawia tam samo.
 /// </summary>
 public sealed partial class PlanAddViewModel(

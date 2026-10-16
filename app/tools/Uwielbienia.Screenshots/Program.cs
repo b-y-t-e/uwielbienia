@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Microsoft.Extensions.DependencyInjection;
 using Uwielbienia.App;
 using Uwielbienia.App.Services;
@@ -57,6 +58,32 @@ window.Width = 1600;
 window.Height = 960;
 window.Show();
 Save(window, "operator");
+
+// prawy klik na pozycji planu (menu w osobnym oknie podręcznym — zrzut jego okna)
+if (window.GetVisualDescendants().OfType<Grid>().FirstOrDefault(g => g.ContextMenu is not null && g.DataContext is PlanItemViewModel) is { } row)
+{
+    row.ContextMenu!.Open(row);
+    Dispatcher.UIThread.RunJobs();
+    // kursor nad „Usuń z planu” — kolor usuwania zostaje pod kursorem
+    if (row.ContextMenu.Items.OfType<MenuItem>().LastOrDefault() is { } remove)
+        ((Avalonia.Controls.IPseudoClasses)remove.Classes).Set(":pointerover", true);
+    AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+    if (TopLevel.GetTopLevel(row.ContextMenu) is Window popupHost && !ReferenceEquals(popupHost, window))
+        Save(popupHost, "plan-menu");
+    else
+        Save(window, "plan-menu");
+    row.ContextMenu.Close();
+}
+
+// Okno „Telefon” ze sparowanymi urządzeniami (serwer udawany — bez sieci).
+{
+    var server = new ShotRemoteServer();
+    var remoteWindow = new Window { Width = 900, Height = 960, Content = new RemoteOverlay { DataContext = new RemoteViewModel(server) } };
+    remoteWindow.Show();
+    server.Raise();
+    Save(remoteWindow, "telefon");
+    remoteWindow.Close();
+}
 
 window.Width = 1180;
 window.Height = 720;
@@ -223,4 +250,41 @@ static string DrawSlide(int number, string file)
     bitmap.Render(slide);
     bitmap.Save(file, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
     return file;
+}
+
+sealed class ShotRemoteServer : Uwielbienia.Link.IRemoteServer
+{
+    private readonly Dictionary<string, bool> _canAdd = new() { ["a"] = true, ["b"] = false };
+
+    public Uwielbienia.Link.RemoteServerStatus Status => Uwielbienia.Link.RemoteServerStatus.Ready;
+
+    public int ConnectedDevices => 1;
+
+    public string? LastError => null;
+    public string? DevicesError => null;
+
+    public IReadOnlyList<Uwielbienia.Link.RemoteDevice> Devices =>
+    [
+        new("a", "telefon", new DateTimeOffset(2026, 9, 12, 18, 0, 0, TimeSpan.Zero), true, _canAdd["a"]),
+        new("b", "telefon", new DateTimeOffset(2026, 10, 2, 18, 0, 0, TimeSpan.Zero), false, _canAdd["b"]),
+    ];
+
+    public event EventHandler? Changed;
+
+    public void Raise() => Changed?.Invoke(this, EventArgs.Empty);
+
+    public void SetCanAddSongs(string deviceKey, bool allowed)
+    {
+        _canAdd[deviceKey] = allowed;
+        Raise();
+    }
+
+    public Task ForgetAsync(string deviceKey, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    public Task StartAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    public Task<Uwielbienia.Link.RemoteInvitation> InviteAsync(CancellationToken cancellationToken = default) =>
+        throw new NotSupportedException();
+
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

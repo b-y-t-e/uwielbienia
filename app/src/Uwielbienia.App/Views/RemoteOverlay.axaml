@@ -26,6 +26,36 @@
           <TextBlock Text="{Binding StatusText}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" />
           <Button Grid.Column="1" Content="Nowy kod" Command="{Binding InviteCommand}" />
         </Grid>
+        <!-- Domyślnie telefon tylko zmienia slajdy (można dać dziecku); dodawanie pieśni operator włącza osobno. -->
+        <StackPanel Spacing="4" IsVisible="{Binding HasPairedDevices}">
+          <Border Height="1" Background="{DynamicResource HairlineBrush}" Margin="0,2,0,6" />
+          <ItemsControl ItemsSource="{Binding Devices}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:RemoteDeviceViewModel">
+                <Grid ColumnDefinitions="Auto,10,*,Auto,8,Auto" Margin="0,4">
+                  <Ellipse Width="8" Height="8" VerticalAlignment="Center"
+                           Fill="{DynamicResource MutedBrush}" IsVisible="{Binding !IsConnected}" />
+                  <Ellipse Width="8" Height="8" VerticalAlignment="Center"
+                           Fill="{DynamicResource TextBrush}" IsVisible="{Binding IsConnected}" />
+                  <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                    <TextBlock Classes="caption" Text="{Binding Details}" />
+                  </StackPanel>
+                  <CheckBox Grid.Column="3" Content="Dodaje pieśni" IsChecked="{Binding CanAddSongs}" VerticalAlignment="Center"
+                            ToolTip.Tip="Telefon może dodać pieśń z wyszukiwarki jako następną w planie" />
+                  <Panel Grid.Column="5" VerticalAlignment="Center">
+                    <Button Classes="quiet removeItem" Content="Zapomnij" Command="{Binding ForgetCommand}"
+                            IsVisible="{Binding !IsConfirmingForget}" ToolTip.Tip="Rozparuj — połączy się znowu dopiero po nowym kodzie" />
+                    <Button Classes="danger" Content="Zapomnieć?" Command="{Binding ForgetCommand}"
+                            IsVisible="{Binding IsConfirmingForget}" />
+                  </Panel>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+          <TextBlock Text="{Binding DevicesError}" Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap"
+                     IsVisible="{Binding DevicesError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        </StackPanel>
         <TextBlock Classes="caption" TextWrapping="Wrap"
                    Text="Sparowane urządzenie łączy się samo przy każdym uruchomieniu. Połączenie jest szyfrowane i przechodzi przez publiczny serwer pośredniczący." />
       </StackPanel>

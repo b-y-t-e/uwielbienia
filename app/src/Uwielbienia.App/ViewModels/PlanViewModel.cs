@@ -6,6 +6,7 @@ using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Presentation;
 using Uwielbienia.Core.Slideshows;
 using Uwielbienia.Core.Songs;
+using Uwielbienia.Link;
 
 namespace Uwielbienia.App.ViewModels;
 
@@ -31,7 +32,8 @@ public sealed partial class PlanViewModel : ObservableObject
         PlanActions actions,
         ISongLibrary library,
         ISongEditor editor,
-        ISlideshowLibrary slideshows)
+        ISlideshowLibrary slideshows,
+        IRemoteAdditions? remote = null)
     {
         _library = library;
         _editor = editor;
@@ -45,6 +47,10 @@ public sealed partial class PlanViewModel : ObservableObject
         plan.Opened += (_, _) => StartFromBeginning();
         actions.ItemAdded += (_, added) => Selected = Items.FirstOrDefault(i => i.Id == added.Id) ?? Selected;
         live.StateChanged += (_, _) => MarkLive();
+        // Pieśń dodana z telefonu: wyróżniona przez kilka sekund (zaznaczenie operatora się nie zmienia).
+        _addedTimer.Tick += (_, _) => ExpireAddedRemotely();
+        if (remote is not null)
+            remote.ItemAdded += (_, added) => MarkAddedRemotely(added.Id);
         Rebuild();
         // Przy starcie ostatni plan otwiera się, zanim powstanie ta lista (Opened już minęło).
         if (plan.Plan is not null)
@@ -136,6 +142,36 @@ public sealed partial class PlanViewModel : ObservableObject
     [RelayCommand]
     private void CancelRemove() => PendingRemoval = null;
 
+    public static readonly TimeSpan AddedRemotelyTime = TimeSpan.FromSeconds(8);
+
+    private readonly Avalonia.Threading.DispatcherTimer _addedTimer = new() { Interval = TimeSpan.FromSeconds(1) };
+
+    /// <summary>Pieśni dodane z telefonu i chwila, do której każda jest wyróżniona (każda ma własny czas).</summary>
+    private readonly Dictionary<Guid, DateTime> _addedRemotely = [];
+
+    private void MarkAddedRemotely(Guid id)
+    {
+        _addedRemotely[id] = DateTime.UtcNow + AddedRemotelyTime;
+        _addedTimer.Start();
+        MarkAddedItem();
+    }
+
+    private void ExpireAddedRemotely()
+    {
+        var now = DateTime.UtcNow;
+        foreach (var id in _addedRemotely.Where(a => a.Value <= now).Select(a => a.Key).ToList())
+            _addedRemotely.Remove(id);
+        if (_addedRemotely.Count == 0)
+            _addedTimer.Stop();
+        MarkAddedItem();
+    }
+
+    private void MarkAddedItem()
+    {
+        foreach (var item in Items)
+            item.IsAddedRemotely = _addedRemotely.ContainsKey(item.Id);
+    }
+
     private void Rebuild()
     {
         var selectedId = Selected?.Id;
@@ -151,6 +187,7 @@ public sealed partial class PlanViewModel : ObservableObject
         if (selectedId is not null && Selected is null)
             SelectionCleared?.Invoke(this, EventArgs.Empty);
         MarkLive();
+        MarkAddedItem();
         OnPropertyChanged(nameof(Name));
         OnPropertyChanged(nameof(DateText));
         OnPropertyChanged(nameof(IsEmpty));
@@ -214,6 +251,10 @@ public sealed partial class PlanItemViewModel(PlanItem item, PlanItemInfo info, 
 
     [ObservableProperty]
     public partial bool IsLive { get; set; }
+
+    /// <summary>Pieśń przed chwilą dodana z telefonu.</summary>
+    [ObservableProperty]
+    public partial bool IsAddedRemotely { get; set; }
 
     /// <summary>Wiersz jest właśnie przeciągany.</summary>
     [ObservableProperty]

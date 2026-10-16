@@ -7,7 +7,16 @@ using Uwielbienia.Core.Videos;
 
 namespace Uwielbienia.Link;
 
-/// <summary>Zamienia polecenia ze strony www na wywołania <see cref="ILiveControl"/>. Nie wie nic o sieci.</summary>
+/// <summary>Źródło pieśni dodanych z telefonu — plan w oknie operatora na chwilę je podświetla.</summary>
+public interface IRemoteAdditions
+{
+    event EventHandler<PlanItem>? ItemAdded;
+}
+
+/// <summary>
+/// Zamienia polecenia ze strony www na wywołania <see cref="ILiveControl"/>. Nie wie nic o sieci — kto pyta i co mu
+/// wolno, podaje <see cref="RemoteCaller"/>.
+/// </summary>
 public sealed class RemoteCommandHandler(
     ILiveControl control,
     ILiveStateSource live,
@@ -17,9 +26,15 @@ public sealed class RemoteCommandHandler(
     ISongPresenter songs,
     IUiDispatcher dispatcher,
     IPlanItemTypes itemTypes,
-    IVideoPlayer? video = null)
+    IVideoPlayer? video = null,
+    UndoableAdditions? undoable = null) : IRemoteAdditions
 {
-    public async Task<byte[]> HandleAsync(ReadOnlyMemory<byte> request)
+    private readonly UndoableAdditions _undoable = undoable ?? new(live);
+
+    /// <summary>Telefon dodał pieśń do planu — plan w oknie operatora na chwilę ją podświetla.</summary>
+    public event EventHandler<PlanItem>? ItemAdded;
+
+    public async Task<byte[]> HandleAsync(ReadOnlyMemory<byte> request, RemoteCaller? caller = null)
     {
         RemoteCommand? command;
         try
@@ -33,16 +48,23 @@ public sealed class RemoteCommandHandler(
 
         var reply = command is null
             ? new CommandReply(false, "Nieczytelne polecenie.")
-            : await dispatcher.InvokeAsync(() => Execute(command));
+            : await dispatcher.InvokeAsync(() => Execute(command, caller ?? RemoteCaller.Pilot));
         return RemoteJson.Serialize(reply);
     }
 
-    private CommandReply Execute(RemoteCommand command)
+    private CommandReply Execute(RemoteCommand command, RemoteCaller caller)
     {
         switch (command.Cmd)
         {
             case "hello":
-                return new CommandReply(true, State: StateMessage.From(live.State), Plan: CurrentPlan(), Video: CurrentVideo());
+                return new CommandReply(true, State: StateMessage.From(live.State), Plan: CurrentPlan(), Video: CurrentVideo(),
+                    Device: DeviceMessage.From(caller));
+            case "addNext" or "undoAdd" when !caller.CanAddSongs:
+                return new CommandReply(false, "To urządzenie nie może dodawać pieśni.");
+            case "addNext":
+                return AddNext(command.SongId);
+            case "undoAdd" when command.ItemId is { } added:
+                return UndoAdd(added);
             case "videoToggle" when video is not null:
                 video.TogglePause();
                 return new CommandReply(true, Video: CurrentVideo());
@@ -78,6 +100,32 @@ public sealed class RemoteCommandHandler(
                 return new CommandReply(false, $"Nieznane polecenie: {command.Cmd}");
         }
         return new CommandReply(true, State: StateMessage.From(live.State));
+    }
+
+    /// <summary>Pieśń lub tekst zaraz za pozycją na ekranie (na koniec, gdy ekran pokazuje coś spoza planu).</summary>
+    private CommandReply AddNext(string? songId)
+    {
+        if (plan.Plan is null)
+            return new CommandReply(false, "W aplikacji nie ma otwartego planu.");
+        if (songId is null || library.Find(songId) is not { } song)
+            return new CommandReply(false, "Nie ma takiej pieśni.");
+        var item = SongPlanItem.For(song.Id);
+        plan.Update(p => p.InsertAfter(live.State.Item?.PlanItemId, item));
+        _undoable.Add(item.Id);
+        ItemAdded?.Invoke(this, item);
+        return new CommandReply(true, Added: new PlanItemMessage(item.Id, song.Id, song.Number, song.DisplayTitle,
+            song.IsText ? "text" : "song"));
+    }
+
+    /// <summary>„Cofnij” po dodaniu: tylko własne dodanie z telefonu i tylko póki pieśni nie pokazano.</summary>
+    private CommandReply UndoAdd(Guid itemId)
+    {
+        if (!_undoable.TryTake(itemId))
+            return new CommandReply(false, "Tej pieśni nie da się już cofnąć.");
+        if (plan.Plan?.IndexOf(itemId) is not >= 0)
+            return new CommandReply(false, "Tej pieśni nie ma już w planie.");
+        plan.Update(p => p.Remove(itemId));
+        return new CommandReply(true);
     }
 
     public PlanMessage CurrentPlan() => PlanMessage.From(plan.Plan, plan.Playlist, itemTypes);

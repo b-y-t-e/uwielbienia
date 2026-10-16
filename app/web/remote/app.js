@@ -1,8 +1,8 @@
 // Pilot i ekran w przeglądarce dla aplikacji „Uwielbienia”.
-// Protokół: app/src/Uwielbienia.Link/RemoteProtocol.cs — host wysyła {type:"state"|"plan"},
-// strona pyta poleceniami {cmd:"hello"|"next"|"prev"}. Telefon tylko zmienia slajdy: bez planu,
-// wyszukiwania i gaszenia ekranu (to zostaje w aplikacji) — dziecko nic nie zepsuje, a muzyk widzi
-// bieżący i następny slajd z akordami bez dotykania telefonu.
+// Protokół: app/src/Uwielbienia.Link/RemoteProtocol.cs — host wysyła {type:"state"|"plan"|"video"|"device"},
+// strona pyta poleceniami {cmd:"hello"|"next"|"prev"|…}. Telefon zmienia slajdy: bez planu i gaszenia
+// ekranu (to zostaje w aplikacji) — dziecko nic nie zepsuje, a muzyk widzi bieżący i następny slajd z
+// akordami bez dotykania telefonu. Dodawanie pieśni („+”) tylko z uprawnieniem nadanym w aplikacji.
 
 import { TailcatLink, PairingRefusedError } from "./lib/tailcat/index.js";
 
@@ -55,6 +55,7 @@ async function command(cmd, extra = {}) {
     const reply = JSON.parse(await link.request(JSON.stringify({ cmd, ...extra })));
     if (reply.state) receive({ ...reply.state, type: "state" });
     if (reply.video) receive({ ...reply.video, type: "video" });
+    if (reply.device) receive({ ...reply.device, type: "device" });
     return reply;
   } catch {
     setStatus("failed", "Polecenie nie dotarło");
@@ -69,6 +70,8 @@ function receive(message) {
     if (state && message.version < state.version) return; // starsza wiadomość po nowszej
     state = message;
     renderState();
+  } else if (message.type === "device") {
+    setCanAddSongs(!!message.canAddSongs);
   } else if (message.type === "video") {
     video = { ...message, receivedAt: performance.now() };
     renderVideo();
@@ -304,8 +307,99 @@ $("leaveDisplay").onclick = () => {
 };
 ui.display.addEventListener("dblclick", () => document.documentElement.requestFullscreen?.().catch(() => {}));
 
+// ---------- dodawanie pieśni (tylko z uprawnieniem z okna „Telefon”) ----------
+// Telefon bez uprawnienia nic nie dodaje (można dać dziecku). Z uprawnieniem: „+” → wyszukiwarka → dotknięcie wyniku
+// = pieśń zaraz za tą na ekranie; ekran się nie zmienia, a „Cofnij” przez chwilę wycofuje pomyłkę.
+
+const addSheet = $("addSheet"), addQuery = $("addQuery");
+let searchTimer = 0, searchSeq = 0, toastTimer = 0;
+
+function setCanAddSongs(allowed) {
+  $("addSong").hidden = !allowed;
+  if (!allowed) closeAddSheet();
+}
+
+function openAddSheet() {
+  addSheet.hidden = false;
+  addQuery.value = "";
+  addQuery.focus();
+  search("");
+}
+
+function closeAddSheet() {
+  addSheet.hidden = true;
+  addQuery.blur();
+}
+
+async function search(query) {
+  const seq = ++searchSeq;
+  const reply = await command("search", { query });
+  if (seq !== searchSeq || !reply?.ok) return; // starsza odpowiedź po nowszym wpisaniu
+  const hits = reply.results ?? [];
+  $("addResults").replaceChildren(...hits.map(hitItem));
+  $("addEmpty").hidden = hits.length > 0 || query.trim() === "";
+}
+
+function hitItem(hit) {
+  const span = (className, textContent) => Object.assign(document.createElement("span"), { className, textContent });
+  const button = document.createElement("button");
+  button.append(
+    span("hit-number" + (hit.isText ? " text" : ""), hit.isText ? "" : String(hit.number ?? "")),
+    span("hit-title", hit.title),
+    span("hit-line", hit.firstLine));
+  button.onclick = () => addNext(hit);
+  const li = document.createElement("li");
+  li.append(button);
+  return li;
+}
+
+// Odpowiedź idzie przez serwer pośredniczący — kolejne dotknięcia do tego czasu nie dodają pieśni drugi raz.
+let adding = false;
+
+async function addNext(hit) {
+  if (adding) return;
+  adding = true;
+  let reply;
+  try {
+    reply = await command("addNext", { songId: hit.songId });
+  } finally {
+    adding = false;
+  }
+  if (!reply) return;
+  if (!reply.ok) { showToast(reply.error ?? "Nie udało się dodać."); return; }
+  closeAddSheet();
+  const added = reply.added;
+  showToast(`Następna: ${added.number ? added.number + " " : ""}${added.title}`, () => undoAdd(added.id));
+}
+
+async function undoAdd(itemId) {
+  const reply = await command("undoAdd", { itemId });
+  if (reply) showToast(reply.ok ? "Cofnięto." : reply.error ?? "Nie udało się cofnąć.");
+}
+
+function showToast(text, undo = null) {
+  clearTimeout(toastTimer);
+  $("toastText").textContent = text;
+  $("toastUndo").hidden = !undo;
+  $("toastUndo").onclick = () => { $("toast").hidden = true; undo?.(); };
+  $("toast").hidden = false;
+  toastTimer = setTimeout(() => { $("toast").hidden = true; }, undo ? 5000 : 2500);
+}
+
+$("addSong").onclick = openAddSheet;
+$("addCancel").onclick = closeAddSheet;
+addQuery.addEventListener("input", () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => search(addQuery.value), 150);
+});
+$("addForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  addQuery.blur(); // Enter chowa klawiaturę — wyniki widać w całości
+});
+
 // Klawiatura (np. laptop z przeglądarką jako pilot lub ekran)
 document.addEventListener("keydown", (e) => {
+  if (!addSheet.hidden) { if (e.key === "Escape") closeAddSheet(); return; }
   if (e.target instanceof HTMLInputElement || !link) return;
   if ([" ", "ArrowRight", "ArrowDown", "PageDown"].includes(e.key)) { command("next"); e.preventDefault(); }
   else if (["Backspace", "ArrowLeft", "ArrowUp", "PageUp"].includes(e.key)) { command("prev"); e.preventDefault(); }

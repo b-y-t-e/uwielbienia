@@ -36,6 +36,10 @@
       <span id="nowNumber" class="number"></span>
       <span id="nowTitle" class="now-title">Ekran jest pusty</span>
       <span id="status" class="status" data-state="connecting" role="status">Łączenie…</span>
+      <!-- tylko z uprawnieniem z okna „Telefon” w aplikacji: pieśń jako następna w planie -->
+      <button id="addSong" class="icon-button add-song" aria-label="Dodaj pieśń jako następną" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+      </button>
       <button id="chordsToggle" class="toggle" aria-pressed="true">Akordy</button>
       <button id="themeToggle" class="icon-button" aria-label="Jasny wygląd">
         <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
@@ -86,6 +90,22 @@
       <button id="prev" class="big">Wstecz</button>
       <button id="next" class="big primary">Dalej</button>
     </footer>
+
+    <!-- Dodaj pieśń: wyszukiwarka na cały ekran; dotknięcie wyniku = pieśń zaraz za tą na ekranie -->
+    <section id="addSheet" class="sheet" role="dialog" aria-label="Dodaj pieśń jako następną" hidden>
+      <form id="addForm" class="sheet-search" role="search">
+        <input id="addQuery" type="search" enterkeyhint="search" autocomplete="off" spellcheck="false"
+               placeholder="Numer albo słowa pieśni">
+        <button id="addCancel" type="button" class="quiet">Anuluj</button>
+      </form>
+      <ul id="addResults" class="results"></ul>
+      <p id="addEmpty" class="sheet-empty" hidden>Nic nie znaleziono.</p>
+    </section>
+
+    <div id="toast" class="toast" role="status" hidden>
+      <span id="toastText"></span>
+      <button id="toastUndo" class="quiet" hidden>Cofnij</button>
+    </div>
   </main>
 
   <!-- Ekran: przeglądarka jako drugi ekran (np. drugi komputer podłączony do rzutnika) -->

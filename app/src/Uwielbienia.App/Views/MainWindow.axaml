@@ -77,21 +77,37 @@
               <!-- Prawy klik w pustym miejscu listy. -->
               <ListBox.ContextMenu>
                 <ContextMenu>
-                  <MenuItem Header="Dodaj…" Click="OnPlanAddClick" />
+                  <MenuItem Header="Dodaj" Click="OnPlanAddClick">
+                    <MenuItem.Icon><Path Classes="menuIcon" Data="M8,3 V13 M3,8 H13" /></MenuItem.Icon>
+                  </MenuItem>
                 </ContextMenu>
               </ListBox.ContextMenu>
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:PlanItemViewModel">
                   <Grid ColumnDefinitions="*,Auto" Classes.dragged="{Binding IsDragged}">
+                    <!-- Pieśń dodana właśnie z telefonu: obwódka na kilka sekund, żeby operator ją zauważył. -->
+                    <Border Grid.ColumnSpan="2" Margin="-6,-2" CornerRadius="8" BorderThickness="1.5"
+                            BorderBrush="{DynamicResource ChordBrush}" IsVisible="{Binding IsAddedRemotely}"
+                            ToolTip.Tip="Dodane z telefonu" />
                     <!-- Prawy klik na pozycji planu. -->
                     <Grid.ContextMenu>
                       <ContextMenu>
-                        <MenuItem Header="Pokaż na ekranie" Click="OnPlanMenuShow" />
-                        <MenuItem Header="Dodaj przed…" Click="OnPlanMenuAddBefore" />
-                        <MenuItem Header="Dodaj po…" Click="OnPlanMenuAddAfter" />
-                        <MenuItem Header="Duplikuj" Click="OnPlanMenuDuplicate" />
+                        <MenuItem Header="Pokaż na ekranie" Click="OnPlanMenuShow">
+                          <MenuItem.Icon><Path Classes="menuIcon" Data="M2,3 H14 V11 H2 Z M6,14 H10 M8,11 V14" /></MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Header="Dodaj powyżej" Click="OnPlanMenuAddBefore">
+                          <MenuItem.Icon><Path Classes="menuIcon" Data="M3,13 H13 M8,3 V9 M5,6 H11" /></MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Header="Dodaj poniżej" Click="OnPlanMenuAddAfter">
+                          <MenuItem.Icon><Path Classes="menuIcon" Data="M3,3 H13 M8,7 V13 M5,10 H11" /></MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Header="Duplikuj" Click="OnPlanMenuDuplicate">
+                          <MenuItem.Icon><Path Classes="menuIcon" Data="M5.5,5.5 H13.5 V13.5 H5.5 Z M3,10.5 V2.5 H10.5" /></MenuItem.Icon>
+                        </MenuItem>
                         <Separator />
-                        <MenuItem Header="Usuń z planu" Click="OnPlanMenuRemove" />
+                        <MenuItem Header="Usuń z planu" Click="OnPlanMenuRemove" Classes="danger">
+                          <MenuItem.Icon><Path Classes="menuIcon" Data="{StaticResource DeleteIcon}" /></MenuItem.Icon>
+                        </MenuItem>
                       </ContextMenu>
                     </Grid.ContextMenu>
                     <Button Classes="quiet planItem" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
@@ -109,6 +125,8 @@
                                      Text="{Binding Title}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
                           <TextBlock Classes="caption" Text="{Binding Note}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Note}"
                                      IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                          <TextBlock Classes="caption" Text="Dodane z telefonu" Foreground="{DynamicResource ChordBrush}"
+                                     IsVisible="{Binding IsAddedRemotely}" />
                         </StackPanel>
                       </Grid>
                     </Button>
@@ -239,8 +257,12 @@
                           <Border.ContextMenu>
                             <ContextMenu>
                               <MenuItem Header="Powtórz" Click="OnPartDuplicate"
-                                        IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).Preview.CanReorderParts}" />
-                              <MenuItem Header="Usuń" Click="OnPartRemove" />
+                                        IsVisible="{Binding $parent[Window].((vm:MainViewModel)DataContext).Preview.CanReorderParts}">
+                                <MenuItem.Icon><Path Classes="menuIcon" Data="M2.5,8 V6.5 A3,3 0 0 1 5.5,3.5 H13 M10.5,1 L13,3.5 L10.5,6 M13.5,8 V9.5 A3,3 0 0 1 10.5,12.5 H3 M5.5,15 L3,12.5 L5.5,10" /></MenuItem.Icon>
+                              </MenuItem>
+                              <MenuItem Header="Usuń" Click="OnPartRemove" Classes="danger">
+                                <MenuItem.Icon><Path Classes="menuIcon" Data="{StaticResource DeleteIcon}" /></MenuItem.Icon>
+                              </MenuItem>
                             </ContextMenu>
                           </Border.ContextMenu>
                           <StackPanel Spacing="6">

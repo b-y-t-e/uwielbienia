@@ -17,13 +17,32 @@ public enum RemoteServerStatus
 /// <summary>Zaproszenie do sparowania telefonu/przeglądarki: kod i gotowy adres strony (do kodu QR).</summary>
 public sealed record RemoteInvitation(string Code, Uri PageUrl, DateTimeOffset ExpiresAt);
 
-public interface IRemoteServer : IAsyncDisposable
+/// <summary>Sparowane urządzenie w oknie „Telefon”: nazwa (tylko podpowiedź), połączenie i uprawnienia.</summary>
+public sealed record RemoteDevice(string Key, string Name, DateTimeOffset PairedAt, bool IsConnected, bool CanAddSongs);
+
+/// <summary>Uprawnienia sparowanych urządzeń i ich zapominanie (wiersz urządzenia w oknie „Telefon”).</summary>
+public interface IRemoteDeviceManager
+{
+    /// <summary>Pozwala urządzeniu dodawać pieśni do planu (albo odbiera) — telefon dostaje to od razu.</summary>
+    void SetCanAddSongs(string deviceKey, bool allowed);
+
+    /// <summary>Rozparowuje urządzenie: rozłącza je i odrzuca, dopóki nie zeskanuje nowego kodu.</summary>
+    Task ForgetAsync(string deviceKey, CancellationToken cancellationToken = default);
+}
+
+public interface IRemoteServer : IRemoteDeviceManager, IAsyncDisposable
 {
     RemoteServerStatus Status { get; }
 
     int ConnectedDevices { get; }
 
     string? LastError { get; }
+
+    /// <summary>Sparowane urządzenia (także niepołączone), od najstarszego.</summary>
+    IReadOnlyList<RemoteDevice> Devices { get; }
+
+    /// <summary>Ostatnia nieudana zmiana na liście urządzeń (uprawnienie, „Zapomnij”); <c>null</c> po udanej.</summary>
+    string? DevicesError { get; }
 
     event EventHandler? Changed;
 
@@ -42,8 +61,10 @@ public sealed class LinkRemoteServer(
     RemoteCommandHandler handler,
     ILiveStateSource live,
     ActivePlan plan,
+    IDevicePermissions permissions,
     IVideoPlayer? video = null) : IRemoteServer
 {
+    private readonly IDevicePermissions _permissions = permissions;
     private ILinkHost? _host;
     private VideoMessage? _lastVideo;
     private DateTime _lastVideoSent;
@@ -54,7 +75,53 @@ public sealed class LinkRemoteServer(
 
     public string? LastError { get; private set; }
 
+    public IReadOnlyList<RemoteDevice> Devices => _host?.Peers
+        .OrderBy(p => p.PairedAt)
+        .Select(p => new RemoteDevice(KeyOf(p), p.Name ?? "urządzenie", p.PairedAt, p.IsConnected, _permissions.CanAddSongs(KeyOf(p))))
+        .ToList() ?? [];
+
     public event EventHandler? Changed;
+
+    public string? DevicesError { get; private set; }
+
+    public void SetCanAddSongs(string deviceKey, bool allowed)
+    {
+        DevicesError = _permissions.SetCanAddSongs(deviceKey, allowed) ? null : PermissionsNotSaved;
+        if (DevicesError is null && _host?.Peers.FirstOrDefault(p => KeyOf(p) == deviceKey) is { IsConnected: true } peer)
+            _ = SendAsync(peer, DeviceMessage.From(CallerOf(peer)));
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    public async Task ForgetAsync(string deviceKey, CancellationToken cancellationToken = default)
+    {
+        if (_host?.Peers.FirstOrDefault(p => KeyOf(p) == deviceKey) is not { } peer)
+            return;
+        // najpierw uprawnienie: po ponownym sparowaniu urządzenie zaczyna od zera — tylko zmiana slajdów
+        DevicesError = _permissions.SetCanAddSongs(deviceKey, false) ? null : PermissionsNotSaved;
+        if (DevicesError is null)
+            DevicesError = await TryForgetPeerAsync(_host, peer, cancellationToken);
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    private const string PermissionsNotSaved = "Nie udało się zapisać uprawnień urządzenia.";
+
+    /// <summary>Błąd zapisu stanu połączeń nie może zamknąć aplikacji w trakcie nabożeństwa — wraca jako komunikat.</summary>
+    private static async Task<string?> TryForgetPeerAsync(ILinkHost host, ILinkPeer peer, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await host.ForgetPeerAsync(peer, cancellationToken);
+            return null;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            return $"Nie udało się zapomnieć urządzenia: {ex.Message}";
+        }
+    }
+
+    private static string KeyOf(ILinkPeer peer) => peer.Key.ToString();
+
+    private RemoteCaller CallerOf(ILinkPeer peer) => new(_permissions.CanAddSongs(KeyOf(peer)));
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
@@ -76,7 +143,7 @@ public sealed class LinkRemoteServer(
             return;
         }
 
-        _host.SetRequestHandler((_, request, _) => HandleAsync(request));
+        _host.SetRequestHandler((peer, request, _) => HandleAsync(peer, request));
         _host.PeerJoined += OnPeerJoined;
         _host.PeerLeft += (_, _) => Changed?.Invoke(this, EventArgs.Empty);
         live.StateChanged += (_, state) => Broadcast(StateMessage.From(state));
@@ -100,8 +167,8 @@ public sealed class LinkRemoteServer(
         return new RemoteInvitation(code, new Uri(options.PageUrl, "#code=" + Uri.EscapeDataString(code)), invitation.ExpiresAt);
     }
 
-    private async Task<ReadOnlyMemory<byte>> HandleAsync(ReadOnlyMemory<byte> request) =>
-        await handler.HandleAsync(request);
+    private async Task<ReadOnlyMemory<byte>> HandleAsync(ILinkPeer peer, ReadOnlyMemory<byte> request) =>
+        await handler.HandleAsync(request, CallerOf(peer));
 
     /// <summary>
     /// Stan filmu do telefonów: od razu przy pauzie, starcie, końcu, błędzie i każdej zmianie miejsca zatrzymanego filmu
@@ -125,6 +192,7 @@ public sealed class LinkRemoteServer(
         Changed?.Invoke(this, EventArgs.Empty);
         _ = SendAsync(e.Peer, handler.CurrentPlan());
         _ = SendAsync(e.Peer, StateMessage.From(live.State));
+        _ = SendAsync(e.Peer, DeviceMessage.From(CallerOf(e.Peer)));
         if (handler.CurrentVideo() is { } videoState)
             _ = SendAsync(e.Peer, videoState);
     }

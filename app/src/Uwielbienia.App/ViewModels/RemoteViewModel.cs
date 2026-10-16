@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -49,6 +50,13 @@ public sealed partial class RemoteViewModel : ObservableObject
 
     public bool HasDevices => _server.ConnectedDevices > 0;
 
+    /// <summary>Sparowane urządzenia z uprawnieniem „Dodaje pieśni”.</summary>
+    public ObservableCollection<RemoteDeviceViewModel> Devices { get; } = [];
+
+    public bool HasPairedDevices => Devices.Count > 0;
+
+    public string? DevicesError => _server.DevicesError;
+
     /// <summary>Uruchamia połączenia w tle przy starcie — sparowane wcześniej telefony łączą się same.</summary>
     public async Task StartAsync() => await _server.StartAsync();
 
@@ -86,8 +94,47 @@ public sealed partial class RemoteViewModel : ObservableObject
 
     private void Refresh()
     {
+        Devices.Clear();
+        foreach (var device in _server.Devices)
+            Devices.Add(new RemoteDeviceViewModel(device, _server));
+        OnPropertyChanged(nameof(HasPairedDevices));
+        OnPropertyChanged(nameof(DevicesError));
         OnPropertyChanged(nameof(StatusText));
         OnPropertyChanged(nameof(BadgeText));
         OnPropertyChanged(nameof(HasDevices));
+    }
+}
+
+/// <summary>
+/// Wiersz urządzenia w oknie „Telefon”; przełącznik od razu zmienia uprawnienie (telefon pokazuje albo chowa „+”).
+/// „Zapomnij” pyta raz („Zapomnieć?”), drugie kliknięcie rozparowuje.
+/// </summary>
+public sealed partial class RemoteDeviceViewModel(RemoteDevice device, IRemoteDeviceManager server) : ObservableObject
+{
+    [ObservableProperty]
+    public partial bool IsConfirmingForget { get; private set; }
+
+    [RelayCommand]
+    private async Task Forget()
+    {
+        if (!IsConfirmingForget)
+        {
+            IsConfirmingForget = true;
+            return;
+        }
+        await server.ForgetAsync(device.Key);
+    }
+
+    public string Name => device.Name;
+
+    public bool IsConnected => device.IsConnected;
+
+    public string Details => (device.IsConnected ? "połączone" : "niepołączone") +
+        $" · sparowane {device.PairedAt.ToLocalTime():d MMM}";
+
+    public bool CanAddSongs
+    {
+        get => device.CanAddSongs;
+        set => server.SetCanAddSongs(device.Key, value);
     }
 }

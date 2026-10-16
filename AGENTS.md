@@ -295,21 +295,33 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   dokładnie, Esc = koniec kalibracji. Kliknięcie bez przeciągania w trybie jednego ekranu = dalej /
   wstecz (prawa / lewa połowa). Zapis: `AppSettings.ProjectionCorners` (8 liczb 0..1).
 - **Telefon / przeglądarka.** `RemoteViewModel` paruje przez kod QR (tailcat-link, połączenie
-  szyfrowane); sparowane urządzenia łączą się same przy starcie. **Telefon tylko zmienia slajdy** —
+  szyfrowane); sparowane urządzenia łączą się same przy starcie. **Telefon zmienia slajdy** (dodawanie pieśni —
+  tylko z uprawnieniem, niżej) —
   jeden prosty widok (`web/remote`, tokeny kolorów i kroje jak w aplikacji): bieżący slajd z akordami
   jak w śpiewniku (tekst Literatą, refren jej kursywą `fonts/Literata-Italic.ttf`, zawinięty wers wcięty;
   24 px, mniej tylko gdy slajd się nie mieści — cały widoczny bez przewijania, bo muzyk gra i nie dotyka
   telefonu — i lekko zmniejszany, żeby wersy się nie zawijały; przełączniki „Akordy” i jasny / ciemny wygląd telefonu zapamiętane w przeglądarce), początek następnego
   slajdu, Wstecz / Dalej; ekran telefonu się nie wygasza. Rozmiary jak w aplikacji: 13 / 15 / 18 / 24
-  (`--fs-*`), tekst pieśni 24 px lub mniej, akordy i „×N” 0,6 tego rozmiaru. Bez planu, wyszukiwania, gaszenia ekranu i
-  edycji — telefon można dać dziecku. Tryb „Ekran” (przeglądarka jako drugi ekran; przycisk tylko na
+  (`--fs-*`), tekst pieśni 24 px lub mniej, akordy i „×N” 0,6 tego rozmiaru. Bez planu, gaszenia ekranu i edycji, a bez uprawnienia (niżej) także bez wyszukiwania
+  — telefon można dać dziecku. Tryb „Ekran” (przeglądarka jako drugi ekran; przycisk tylko na
   komputerze z myszą) rysuje slajd jak rzutnik (`renderSlide`: płótno 16:9 w jednostkach `cqw`,
   wymiary i kolory jak `SlideView`). Stan niesie wersy z akordami (`LineMessage`: `Chords`, `TitleLength`,
   `Chorus`, `PartStart`), `ShowTitle`, `NextLines` i `IsVideo`; przy filmie telefon pokazuje czas, pasek postępu,
   pauzę, ±15 s i obraz ±100 ms (wiadomość `video` — `VideoMessage` z `PictureOffsetMs`, czas najwyżej raz na sekundę;
   polecenia `videoToggle`, `videoSkip`, `videoOffset`). Polecenia `blank` / `goto` / `showItem` /
-  `showSong` / `search` zostają w protokole, strona ich nie używa. Podgląd bez aplikacji: kopia strony
+  `showSong` zostają w protokole, strona ich nie używa. Podgląd bez aplikacji: kopia strony
   z udawanym `lib/tailcat/index.js`.
+  **Dodawanie pieśni z telefonu** — uprawnienie urządzenia, domyślnie wyłączone: okno „Telefon” (`RemoteOverlay`) ma listę
+  sparowanych urządzeń (`IRemoteServer.Devices`, `RemoteDeviceViewModel`) z polem „Dodaje pieśni” i „Zapomnij”
+  (drugie kliknięcie „Zapomnieć?” rozparowuje — `ForgetAsync`, uprawnienie znika; wraca tylko z nowym kodem). Uprawnienie jest przy
+  kluczu urządzenia (`ILinkPeer.Key` — nazwy nic nie uwierzytelnia), zapis `DevicePermissions` w
+  `polaczenia/uprawnienia.json`; `LinkRemoteServer` podaje je w każdym poleceniu jako `RemoteCaller`, a zmianę wysyła od razu
+  (wiadomość `device` — `DeviceMessage`, też w odpowiedzi na `hello`). Z uprawnieniem telefon ma „+” w nagłówku → wyszukiwarka
+  na cały ekran (`search`, jak w aplikacji: numer albo słowa) → dotknięcie wyniku = `addNext`: pieśń zaraz za tą na ekranie
+  (`Plan.InsertAfter`; bez planu — błąd), ekran się nie zmienia; komunikat „Następna: …” z „Cofnij” przez 5 s (`undoAdd` —
+  tylko własne dodanie z telefonu i tylko póki pieśni nie pokazano). W oknie operatora dodana pieśń ma przez 8 s obwódkę
+  i „Dodane z telefonu” (`RemoteCommandHandler.ItemAdded` → `PlanItemViewModel.IsAddedRemotely`); zaznaczenie operatora
+  się nie zmienia.
 - **Aktualizacje.** `UpdateService` + `VelopackReleaseFeed`: tylko instalacja z
   `Uwielbienia-win-Setup.exe` sprawdza GitHub Releases, pobiera w tle i proponuje „Aktualizuj”.
 - **Start** (`App.OnFrameworkInitializationCompleted`): DI → otwarcie ostatniego planu →
@@ -352,7 +364,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
   czytanie i edycja — `PreviewViewModel`, `SongEditorViewModel`) · **Na ekranie** (to, co widzi
   sala — `LiveViewModel`). Nie używamy nazw „Podgląd”, „Prowadzenie”, „Zarządzanie”.
 - Każda czynność ma jedno miejsce:
-  - dodawanie do planu tylko z planu: „+”, prawy klik („Dodaj przed… / po…”) albo pisanie
+  - dodawanie do planu tylko z planu: „+”, prawy klik („Dodaj powyżej / poniżej”) albo pisanie
     gdziekolwiek w oknie → okno „Dodaj do planu” (`PlanAddViewModel`: zaznacz + „Wybierz”, Enter,
     dwuklik; „Nowa pieśń / Nowy tekst / Prezentacja / Obraz / Film”, z ikonami; „Obraz” = każdy wybrany obraz
     osobną pozycją, na cały ekran — jednoslajdowa prezentacja); plik prezentacji (lub obrazy,
@@ -384,7 +396,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 `ustawienia.json` (`AppSettings`: motyw okna i ekranu, akordy, szerokości kolumn, ostatni plan,
 `MaxLinesPerSlide`, `JoinVerseAndChorus`, opcjonalny folder pieśni, narożniki „Dopasuj obraz”, `PictureOffsetMs`), `plany/`, `teksty/`,
 `prezentacje/` (kopie prezentacji i ich slajdy; nieużywane nie są dziś usuwane), `polaczenia/`
-(tailcat-link), `aktualizacje.log`.
+(tailcat-link; `uprawnienia.json` — urządzenia, które mogą dodawać pieśni), `aktualizacje.log`.
 
 ### Wygląd
 
