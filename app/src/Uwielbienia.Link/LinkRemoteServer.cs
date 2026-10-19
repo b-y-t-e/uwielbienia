@@ -2,6 +2,7 @@ using Tailcat.Link;
 using Tailcat.Link.Storage;
 using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Presentation;
+using Uwielbienia.Core.Kiosks;
 using Uwielbienia.Core.Videos;
 
 namespace Uwielbienia.Link;
@@ -62,7 +63,8 @@ public sealed class LinkRemoteServer(
     ILiveStateSource live,
     ActivePlan plan,
     IDevicePermissions permissions,
-    IVideoPlayer? video = null) : IRemoteServer
+    IVideoPlayer? video = null,
+    KioskRotation? kiosk = null) : IRemoteServer
 {
     private readonly IDevicePermissions _permissions = permissions;
     private ILinkHost? _host;
@@ -150,6 +152,8 @@ public sealed class LinkRemoteServer(
         plan.Changed += (_, _) => Broadcast(handler.CurrentPlan());
         if (video is not null)
             video.StatusChanged += (_, _) => BroadcastVideo();
+        if (kiosk is not null)
+            kiosk.Changed += (_, _) => _ = BroadcastKioskAsync();
         SetStatus(RemoteServerStatus.Ready);
     }
 
@@ -187,6 +191,16 @@ public sealed class LinkRemoteServer(
         Broadcast(message);
     }
 
+    private int _kioskVersion;
+
+    /// <summary>Nowy element kiosku do telefonów; podgląd obrazu powstaje w tle — starszy, gotowy później, nie nadpisuje nowszego.</summary>
+    private async Task BroadcastKioskAsync()
+    {
+        var version = ++_kioskVersion;
+        if (await handler.CurrentKioskAsync() is { } message && version == _kioskVersion)
+            Broadcast(message);
+    }
+
     private void OnPeerJoined(object? sender, PeerEventArgs e)
     {
         Changed?.Invoke(this, EventArgs.Empty);
@@ -195,6 +209,13 @@ public sealed class LinkRemoteServer(
         _ = SendAsync(e.Peer, DeviceMessage.From(CallerOf(e.Peer)));
         if (handler.CurrentVideo() is { } videoState)
             _ = SendAsync(e.Peer, videoState);
+        _ = SendKioskAsync(e.Peer);
+    }
+
+    private async Task SendKioskAsync(ILinkPeer peer)
+    {
+        if (await handler.CurrentKioskAsync() is { } message)
+            await SendAsync(peer, message);
     }
 
     private void Broadcast<T>(T message)

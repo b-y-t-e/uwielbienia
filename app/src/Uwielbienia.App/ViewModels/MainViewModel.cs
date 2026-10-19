@@ -88,6 +88,9 @@ public sealed partial class MainViewModel : ObservableObject
             case VideoPlanItem video:
                 preview.ShowVideo(video, item.Note);
                 break;
+            case KioskPlanItem kiosk:
+                preview.ShowKiosk(kiosk);
+                break;
             default:
                 preview.Clear();
                 break;

@@ -5,6 +5,21 @@
              xmlns:vm="using:Uwielbienia.App.ViewModels"
              x:Class="Uwielbienia.App.Views.SlideView"
              x:Name="Root">
+  <UserControl.Resources>
+    <!-- Napis kiosku (tytuł nad tekstem); wielkość liter z FontSize miejsca, w którym stoi. -->
+    <DataTemplate x:Key="KioskCaption" x:DataType="vm:KioskFramePage">
+      <StackPanel HorizontalAlignment="Center">
+        <StackPanel IsVisible="{Binding HasTitle}" HorizontalAlignment="Center">
+          <TextBlock Text="{Binding Title}" TextAlignment="Center" TextWrapping="Wrap"
+                     FontFamily="{StaticResource TitleFont}" Foreground="{Binding #Root.SlideTitle}" />
+          <Border Height="4" CornerRadius="2" Margin="0,14,0,0" Background="{Binding #Root.SlideAccent}" />
+        </StackPanel>
+        <TextBlock Text="{Binding Text}" IsVisible="{Binding HasBody}" TextAlignment="Center" TextWrapping="Wrap"
+                   FontFamily="{StaticResource TitleFont}" Foreground="{Binding #Root.SlideForeground}"
+                   Margin="{Binding HasTitle, Converter={x:Static v:SlideConverters.PartGap}, ConverterParameter=36}" />
+      </StackPanel>
+    </DataTemplate>
+  </UserControl.Resources>
   <!-- Slajd renderowany na wirtualnym płótnie 1920×1080 i skalowany w całości, więc wygląda
        tak samo na każdym rzutniku. Tekst: Literata (szeryfowa, do czytania na ekranie, pełne
        polskie znaki) — spokojniejsza z daleka niż krój interfejsu. -->
@@ -23,6 +38,43 @@
             <Panel Background="Black">
               <Image Source="{Binding Picture^}" Stretch="Uniform" />
             </Panel>
+          </DataTemplate>
+          <!-- Kiosk: elementy zmieniają się same, z efektem przejścia wybranym w kiosku (cała strona zostaje ta sama).
+               Zdjęcia powoli się przybliżają (SlowZoom) — w ramce, która przycina obraz do jego miejsca. -->
+          <DataTemplate DataType="vm:ProjectedKiosk">
+            <TransitioningContentControl Content="{Binding Playback.Frame}" PageTransition="{Binding Playback.Transition}">
+              <TransitioningContentControl.DataTemplates>
+                <DataTemplate DataType="vm:KioskFramePage">
+                  <!-- Napis jak tekst pieśni: Literata, tytuł w kolorze tytułu z linią; obok obrazu i pod nim mniejszy. -->
+                  <Panel Background="{Binding #Root.SlideBackground}">
+                    <Panel IsVisible="{Binding IsImageOnly}" Background="Black" ClipToBounds="True">
+                      <Image Source="{Binding Picture}" Stretch="Uniform" v:SlowZoom.Duration="{Binding ZoomDuration}" />
+                    </Panel>
+                    <Viewbox IsVisible="{Binding IsTextOnly}" StretchDirection="DownOnly" Margin="140,40" VerticalAlignment="Center">
+                      <ContentControl Width="1640" FontSize="86" Content="{Binding}" ContentTemplate="{StaticResource KioskCaption}" />
+                    </Viewbox>
+                    <!-- obraz pionowy (do ok. 3:2): napis z prawej -->
+                    <Grid IsVisible="{Binding IsTextRight}" ColumnDefinitions="*,640" Margin="40">
+                      <Border ClipToBounds="True" Margin="0,0,48,0" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <Image Source="{Binding Picture}" Stretch="Uniform" v:SlowZoom.Duration="{Binding ZoomDuration}" />
+                      </Border>
+                      <Viewbox Grid.Column="1" StretchDirection="DownOnly" VerticalAlignment="Center">
+                        <ContentControl Width="600" FontSize="60" Content="{Binding}" ContentTemplate="{StaticResource KioskCaption}" />
+                      </Viewbox>
+                    </Grid>
+                    <!-- obraz poziomy: napis pod spodem -->
+                    <Grid IsVisible="{Binding IsTextBelow}" RowDefinitions="*,300" Margin="40,40,40,30">
+                      <Border ClipToBounds="True" Margin="0,0,0,24" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Image Source="{Binding Picture}" Stretch="Uniform" v:SlowZoom.Duration="{Binding ZoomDuration}" />
+                      </Border>
+                      <Viewbox Grid.Row="1" StretchDirection="DownOnly" VerticalAlignment="Center">
+                        <ContentControl Width="1640" FontSize="60" Content="{Binding}" ContentTemplate="{StaticResource KioskCaption}" />
+                      </Viewbox>
+                    </Grid>
+                  </Panel>
+                </DataTemplate>
+              </TransitioningContentControl.DataTemplates>
+            </TransitioningContentControl>
           </DataTemplate>
           <DataTemplate DataType="vm:ProjectedPage">
             <Panel>

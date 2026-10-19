@@ -13,6 +13,8 @@ public enum PlanItemKind
     Presentation,
     /// <summary>Film (znak odtwarzania zamiast numeru).</summary>
     Video,
+    /// <summary>Kiosk: obrazy i napisy zmieniające się same (znak kiosku zamiast numeru).</summary>
+    Kiosk,
 }
 
 /// <summary>Jak pozycja wygląda na liście planu.</summary>

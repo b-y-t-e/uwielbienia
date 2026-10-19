@@ -44,6 +44,24 @@ var slideFiles = Enumerable.Range(1, 3).Select(i => DrawSlide(i, Path.Combine(ro
 var imported = services.GetRequiredService<ISlideshowLibrary>().ImportAsync(slideFiles).GetAwaiter().GetResult();
 plan = plan.Insert(3, new PresentationPlanItem(Guid.NewGuid(), imported.Folder, "Ogłoszenia parafialne"));
 plan = plan.Insert(5, new VideoPlanItem(Guid.NewGuid(), videoArg ?? Path.Combine(root, "swiadectwo.mp4"), "Świadectwo Ani"));
+// Kiosk: obraz poziomy z napisem (pod spodem), pionowy z napisem (z prawej), sam napis i sam obraz.
+var kioskImages = services.GetRequiredService<ISlideshowLibrary>().ImportEachAsync(
+    [DrawSlide(2, Path.Combine(root, "kiosk-poziomy.png")), DrawPortrait(Path.Combine(root, "kiosk-pionowy.png")), slideFiles[2]])
+    .GetAwaiter().GetResult();
+// zrzuty układów bez przejść i zoomu (przejścia — osobno, klatka po klatce)
+var kioskItem = KioskPlanItem.Create("Ogłoszenia przed Mszą") with
+{
+    Transitions = [],
+    SlowZoom = false,
+    Entries =
+    [
+        new KioskEntry(kioskImages[0].Folder, "Rekolekcje adwentowe", "1–3 grudnia, początek o 18:00\nprowadzi ks. Marek"),
+        new KioskEntry(kioskImages[1].Folder, "Schola dziecięca", "Zapraszamy dzieci w każdą sobotę o 10:00 do salki pod kościołem."),
+        new KioskEntry(null, "Witamy na wieczorze uwielbienia", "Telefony wyciszamy — dziękujemy!"),
+        new KioskEntry(kioskImages[2].Folder),
+    ],
+};
+plan = plan.Insert(6, kioskItem);
 services.GetRequiredService<IPlanStore>().Save(plan);
 active.Open(plan);
 
@@ -145,6 +163,73 @@ control.Show(active.Playlist.First(i => i.Slides.FirstOrDefault() is ImageSlide)
 Save(window, "prezentacja", settle: true);
 Save(projection, "projekcja-prezentacja", settle: true);
 
+// Kiosk: kolumna „Pieśń” (edycja), „Na ekranie” i każdy układ elementu na rzutniku.
+{
+    var rotation = services.GetRequiredService<Uwielbienia.Core.Kiosks.KioskRotation>();
+    main.Plan.Selected = main.Plan.Items.First(i => i.IsKiosk);
+    control.Show(active.Playlist.First(i => i.PlanItemId == kioskItem.Id));
+    Save(window, "kiosk", settle: true);
+    foreach (var (index, name) in new[] { (0, "pod"), (1, "obok"), (2, "napis"), (3, "obraz") })
+    {
+        rotation.GoTo(index);
+        Save(projection, "projekcja-kiosk-" + name, settle: true);
+    }
+
+    // Przejście na żywo (zrzut stron, nakładka i animacja w oknie projekcji): po końcu ekran pokazuje nowy element, bez nakładki.
+    // Bez karty graficznej (to narzędzie) klatki są za wolne — przejścia same przechodzą na przenikanie.
+    active.Update(p => p.Replace(kioskItem with { Transitions = [SlideTransition.StainedGlass] }));
+    Save(projection, "tmp", settle: true);
+    rotation.GoTo(2);
+    for (var i = 0; i < 25; i++)
+    {
+        Dispatcher.UIThread.RunJobs();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Thread.Sleep(80);
+    }
+    Save(projection, "projekcja-kiosk-po-przejsciu");
+    // Powolny zoom: zdjęcie po kilku sekundach przybliżone / oddalone (rusza po przejściu).
+    active.Update(p => p.Replace(kioskItem with { Transitions = [], SlowZoom = true }));
+    rotation.GoTo(1);
+    for (var i = 0; i < 50; i++)
+    {
+        Dispatcher.UIThread.RunJobs();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Thread.Sleep(80);
+    }
+    Save(projection, "projekcja-kiosk-zoom");
+    active.Update(p => p.Replace(kioskItem));
+    Save(projection, "tmp", settle: true);
+
+    // Efekty przejść: zrzuty dwóch elementów i kilka klatek każdego efektu (shader rysowany jak na rzutniku).
+    var slideView = projection.FindControl<SlideView>("Slide")!;
+    rotation.GoTo(0);
+    Save(projection, "tmp", settle: true);
+    var first = Uwielbienia.App.Transitions.ShaderPageTransition.Capture(slideView)!;
+    rotation.GoTo(1);
+    Save(projection, "tmp", settle: true);
+    var second = Uwielbienia.App.Transitions.ShaderPageTransition.Capture(slideView)!;
+    File.Delete(Path.Combine(output, (light ? "jasny-" : "") + "tmp.png"));
+    foreach (var effect in SlideTransitions.All)
+    {
+        var shader = Uwielbienia.App.Transitions.TransitionShaders.For(effect);
+        if (shader is null)
+        {
+            Console.WriteLine("SHADER BLAD " + effect);
+            continue;
+        }
+        var direction = effect == SlideTransition.LightRay ? Vector.Normalize(new Vector(1, 0.45)) : new Vector(1, 0);
+        var transitionView = new Uwielbienia.App.Transitions.ShaderTransitionView(first, second, shader, 0.37f, direction) { AllowSoftware = true };
+        var host = new Window { Width = 960, Height = 540, Content = transitionView };
+        host.Show();
+        foreach (var progress in new[] { 0.3, 0.55, 0.8 })
+        {
+            transitionView.Progress = progress;
+            Save(host, $"przejscie-{effect.ToString().ToLowerInvariant()}-{progress * 100:0}");
+        }
+        host.Close();
+    }
+}
+
 // Film: kolumna „Pieśń”, „Na ekranie” (podgląd, pauza, suwak) i rzutnik — także z „Dopasuj obraz”.
 services.GetRequiredService<Uwielbienia.Core.Videos.VideoDirector>();
 main.Plan.Selected = main.Plan.Items.First(i => i.IsVideo);
@@ -218,6 +303,28 @@ void Save(Window w, string name, bool settle = false)
     AvaloniaHeadlessPlatform.ForceRenderTimerTick();
     var frame = w.CaptureRenderedFrame();
     frame?.Save(Path.Combine(output, (light ? "jasny-" : "") + name + ".png"), new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+}
+
+static string DrawPortrait(string file)
+{
+    var picture = new Border
+    {
+        Width = 900,
+        Height = 1200,
+        Background = new LinearGradientBrush
+        {
+            StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+            EndPoint = new RelativePoint(0, 1, RelativeUnit.Relative),
+            GradientStops = { new GradientStop(Color.Parse("#E8A33D"), 0), new GradientStop(Color.Parse("#3A1E5C"), 1) },
+        },
+        Child = new Avalonia.Controls.Shapes.Ellipse { Width = 420, Height = 420, Fill = new SolidColorBrush(Color.Parse("#FFF2C6")), Margin = new Thickness(0, 0, 0, 260) },
+    };
+    picture.Measure(new Size(900, 1200));
+    picture.Arrange(new Rect(0, 0, 900, 1200));
+    using var bitmap = new Avalonia.Media.Imaging.RenderTargetBitmap(new PixelSize(900, 1200));
+    bitmap.Render(picture);
+    bitmap.Save(file, new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+    return file;
 }
 
 static string DrawSlide(int number, string file)

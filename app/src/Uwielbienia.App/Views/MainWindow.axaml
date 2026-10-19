@@ -119,6 +119,7 @@
                           <Ellipse Classes="textDot" IsVisible="{Binding IsText}" />
                           <Border Classes="slideMark" IsVisible="{Binding IsPresentation}" />
                           <Path Classes="videoMark" IsVisible="{Binding IsVideo}" />
+                          <Path Classes="kioskMark" IsVisible="{Binding IsKiosk}" />
                         </Panel>
                         <StackPanel Grid.Column="2" VerticalAlignment="Center">
                           <TextBlock Classes="bodyStrong" Classes.textItem="{Binding IsText}" Classes.presentationItem="{Binding IsMedia}"
@@ -229,6 +230,99 @@
                   </DataTemplate>
                 </ContentControl.ContentTemplate>
               </ContentControl>
+              <!-- Kiosk: elementy zmieniają się same co kilka sekund; każda zmiana od razu w planie (i na ekranie). -->
+              <DockPanel IsVisible="{Binding Preview.HasKiosk}">
+                <Grid DockPanel.Dock="Top" ColumnDefinitions="*,16,Auto">
+                  <TextBox Classes="kioskTitle" Text="{Binding Preview.Kiosk.Title, UpdateSourceTrigger=LostFocus}" PlaceholderText="Nazwa kiosku" />
+                  <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"
+                              ToolTip.Tip="Co ile sekund następny element">
+                    <TextBlock Classes="caption" Text="Zmiana co" VerticalAlignment="Center" />
+                    <NumericUpDown Value="{Binding Preview.Kiosk.Seconds}" Minimum="2" Maximum="600" Increment="1"
+                                   FormatString="0" Width="118" />
+                    <TextBlock Classes="caption" Text="s" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Grid>
+                <!-- Przejście między elementami: żaden efekt = przenikanie, jeden = zawsze ten, kilka = losowo jeden z nich. -->
+                <StackPanel DockPanel.Dock="Top" Margin="0,12,0,0" Spacing="6">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Classes="caption" Text="Przejście" VerticalAlignment="Center"
+                               ToolTip.Tip="Kilka zaznaczonych — za każdym razem losowo jeden; żadne — zwykłe przenikanie" />
+                    <CheckBox Grid.Column="1" Content="Powolny zoom zdjęć" IsChecked="{Binding Preview.Kiosk.SlowZoom}" />
+                  </Grid>
+                  <ItemsControl ItemsSource="{Binding Preview.Kiosk.Transitions}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <WrapPanel ItemSpacing="6" LineSpacing="6" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:TransitionOptionViewModel">
+                        <ToggleButton Classes="chip" Content="{Binding Name}" IsChecked="{Binding IsSelected}" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+                <WrapPanel DockPanel.Dock="Bottom" ItemSpacing="8" LineSpacing="8" Margin="0,12,0,0">
+                  <Button Classes="addKind" Click="OnKioskAddImagesClick" ToolTip.Tip="Każdy obraz osobnym elementem">
+                    <StackPanel>
+                      <Path Data="M3,5 H21 V19 H3 Z M3,16 L9,10 L14,15 L17,12 L21,16 M15,8 A1.5,1.5 0 1 1 18,8 A1.5,1.5 0 1 1 15,8 Z" />
+                      <TextBlock Text="Obraz" />
+                    </StackPanel>
+                  </Button>
+                  <Button Classes="addKind" Command="{Binding Preview.Kiosk.AddTextCommand}" ToolTip.Tip="Sam napis, z tytułem albo bez">
+                    <StackPanel>
+                      <Path Data="M4,6 H20 M4,10 H20 M4,14 H14 M4,18 H17" />
+                      <TextBlock Text="Napis" />
+                    </StackPanel>
+                  </Button>
+                  <Button Classes="addKind" Click="OnKioskAddPresentationClick" ToolTip.Tip="Plik PowerPoint — każdy slajd osobnym elementem">
+                    <StackPanel>
+                      <Path Data="M3,4 H21 V15 H3 Z M12,15 V19 M8,20 H16" />
+                      <TextBlock Text="Prezentacja" />
+                    </StackPanel>
+                  </Button>
+                </WrapPanel>
+                <TextBlock DockPanel.Dock="Bottom" Classes="caption failed" Text="{Binding Preview.Kiosk.Error}" TextWrapping="Wrap" Margin="0,10,0,0"
+                           IsVisible="{Binding Preview.Kiosk.Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                <Panel Margin="0,14,0,0">
+                  <TextBlock Classes="bodyMuted" TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center"
+                             IsVisible="{Binding Preview.Kiosk.IsEmpty}" Text="Dodaj obrazy, napisy albo prezentację." />
+                  <ScrollViewer>
+                    <ItemsControl x:Name="KioskEntriesList" ItemsSource="{Binding Preview.Kiosk.Entries}" Margin="0,0,12,0">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:KioskEntryViewModel">
+                          <Panel Classes.dragged="{Binding IsDragged}">
+                            <Border Classes="slideTile" Margin="0,0,0,8" Padding="10">
+                              <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+                                <!-- uchwyt do przeciągania -->
+                                <TextBlock Classes="caption kioskHandle" Text="⠿" VerticalAlignment="Center" Padding="2,8,8,8"
+                                           Background="Transparent" Cursor="SizeNorthSouth" />
+                                <Border Grid.Column="1" Classes="slideThumb" Width="150" Height="84" Margin="0,0,12,0" VerticalAlignment="Top"
+                                        IsVisible="{Binding HasImage}">
+                                  <Image Source="{Binding Thumbnail^}" Stretch="Uniform" />
+                                </Border>
+                                <StackPanel Grid.Column="2" Spacing="6">
+                                  <TextBox Text="{Binding Title, UpdateSourceTrigger=LostFocus}" PlaceholderText="Tytuł (opcjonalnie)" />
+                                  <TextBox Text="{Binding Text, UpdateSourceTrigger=LostFocus}" PlaceholderText="{Binding TextHint}"
+                                           AcceptsReturn="True" TextWrapping="Wrap" MinHeight="60" />
+                                  <TextBlock Classes="caption" Classes.failed="{Binding IsFailed}" Text="{Binding Note}" TextWrapping="Wrap"
+                                             IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                                </StackPanel>
+                                <Button Grid.Column="3" Classes="quiet removeItem" Content="✕" ToolTip.Tip="Usuń z kiosku" VerticalAlignment="Top"
+                                        Margin="6,0,0,0"
+                                        Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).Preview.Kiosk.RemoveCommand}"
+                                        CommandParameter="{Binding}" />
+                              </Grid>
+                            </Border>
+                            <Border Classes="dropMarker" VerticalAlignment="Top" Margin="0,-6,0,0" IsVisible="{Binding IsDropBefore}" />
+                            <Border Classes="dropMarker" VerticalAlignment="Bottom" Margin="0,0,0,2" IsVisible="{Binding IsDropAfter}" />
+                          </Panel>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </ScrollViewer>
+                </Panel>
+              </DockPanel>
               <DockPanel IsVisible="{Binding Preview.HasSong}">
                 <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*">
                   <TextBlock Classes="displayNumber" Text="{Binding Preview.Number}" Margin="0,2,14,0" VerticalAlignment="Top"
@@ -356,6 +450,15 @@
                                  HorizontalAlignment="Right" Margin="0,0,0,10" />
                       <Border Classes="slideThumb" IsVisible="{Binding Live.HasCurrentImage}" Margin="0,0,0,4">
                         <Image Source="{Binding Live.CurrentImage^}" Stretch="Uniform" />
+                      </Border>
+                      <!-- Kiosk: ten sam obraz co na rzutniku, elementy zmieniają się same. -->
+                      <Border Classes="slideThumb" IsVisible="{Binding Live.HasCurrentKiosk}" Margin="0,0,0,4">
+                        <v:SlideView Page="{Binding Live.CurrentKiosk}"
+                                     SlideBackground="{Binding Live.Appearance.Background}"
+                                     SlideForeground="{Binding Live.Appearance.Foreground}"
+                                     SlideMuted="{Binding Live.Appearance.Muted}"
+                                     SlideAccent="{Binding Live.Appearance.Accent}"
+                                     SlideTitle="{Binding Live.Appearance.Title}" />
                       </Border>
                       <!-- Film: ten sam obraz co na rzutniku, pauza (spacja), przewijanie i czas. -->
                       <StackPanel IsVisible="{Binding Live.HasCurrentVideo}" Spacing="8" Margin="0,0,0,4">
@@ -504,6 +607,12 @@
                   <TextBlock Text="Film" />
                 </StackPanel>
               </Button>
+              <Button Classes="addKind" Command="{Binding PlanAdd.NewKioskCommand}" ToolTip.Tip="Obrazy i napisy zmieniające się same co kilka sekund">
+                <StackPanel>
+                  <Path Data="M7,4 H21 V15 M3,8 H17 V20 H3 Z" />
+                  <TextBlock Text="Kiosk" />
+                </StackPanel>
+              </Button>
             </WrapPanel>
             <Button Grid.Column="2" Classes="primary" Content="Wybierz" Command="{Binding PlanAdd.AddCommand}" VerticalAlignment="Bottom"
                     CommandParameter="{x:Null}" IsEnabled="{Binding PlanAdd.HasSelection}" />
@@ -581,6 +690,16 @@
     <Style Selector="Path.videoMark">
       <Setter Property="Data" Value="M 0,0 L 10,6 L 0,12 Z" />
       <Setter Property="Fill" Value="{DynamicResource PresentationItemBrush}" />
+    </Style>
+    <!-- Kiosk: dwa nałożone slajdy (zmieniają się same), w kolorze prezentacji. -->
+    <Style Selector="Path.kioskMark">
+      <Setter Property="Data" Value="M 4,0 H 14 V 8 M 0,3 H 10 V 11 H 0 Z" />
+      <Setter Property="Stroke" Value="{DynamicResource PresentationItemBrush}" />
+      <Setter Property="StrokeThickness" Value="1.5" />
+    </Style>
+    <Style Selector="TextBox.kioskTitle">
+      <Setter Property="FontSize" Value="18" />
+      <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
     <Style Selector="Border.slideThumb">
       <Setter Property="Background" Value="Black" />

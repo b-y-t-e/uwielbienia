@@ -98,6 +98,17 @@ input {
 .now-label { color: var(--candle); font-size: var(--fs-small); font-weight: 700; }
 .badge { font-size: var(--fs-small); font-weight: 700; color: var(--danger); background: var(--raised); padding: .2rem .6rem; border-radius: 999px; }
 
+/* Kiosk: podgląd bieżącego elementu (obraz wpisany w ramkę) i napis pod nim */
+.kiosk-panel { min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: .7rem; padding-top: .4rem; }
+.kiosk-panel img { width: 100%; height: 100%; min-height: 0; object-fit: contain; border-radius: 8px; background: #000; }
+.kiosk-panel img[hidden] { display: none; }
+.kiosk-caption { text-align: center; font: 400 var(--fs-large)/1.3 "Literata", Georgia, serif; }
+.kiosk-caption p { margin: 0; white-space: pre-line; }
+.kiosk-title { color: var(--candle); font-weight: 600; }
+.kiosk-title:empty { display: none; }
+.kiosk-panel.text-only { grid-template-rows: 1fr; align-items: center; }
+.kiosk-panel.text-only .kiosk-caption { font-size: var(--fs-title); }
+
 /* Wersy z akordami jak w śpiewniku: tekst Literatą (ten krój co na rzutniku), akordy nad wersem
    krojem interfejsu, refren prawdziwą kursywą, zawinięty wers wcięty (widać, że to ciąg dalszy).
    Rozmiar ustawia app.js (fitText), tu tylko proporcje. */
@@ -184,6 +195,8 @@ input {
 .slide-text .is-title { color: #D8C4A0; }
 .slide-text .rep { color: #9C968C; font-size: .628em; }
 .slide-text .slide-title { color: #D8C4A0; width: fit-content; margin: 0 auto 2.08cqw; }
+.slide-text .kiosk-image { display: block; max-width: 100%; max-height: 62cqh; margin: 0 auto 2.08cqw; object-fit: contain; }
+.slide-text .kiosk-text { white-space: pre-line; font-size: .75em; }
 .slide-text .slide-title::after { content: ""; display: block; height: .21cqw; border-radius: .1cqw; background: #C9A15A; margin-top: .73cqw; }
 
 /* Ekran w przeglądarce: czysta czerń, płótno wpisane w okno */

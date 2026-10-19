@@ -161,7 +161,7 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
 
 | Projekt | Rola |
 |---|---|
-| `src/Uwielbienia.Core` | logika bez UI: pieśni (`Songs/`), plany (`Plans/`), ekran (`Presentation/`), prezentacje (`Slideshows/`), filmy (`Videos/`), aktualizacje (`Updates/`) |
+| `src/Uwielbienia.Core` | logika bez UI: pieśni (`Songs/`), plany (`Plans/`), ekran (`Presentation/`), prezentacje (`Slideshows/`), filmy (`Videos/`), kioski (`Kiosks/`), aktualizacje (`Updates/`) |
 | `src/Uwielbienia.Link` | tailcat-link: protokół JSON (`RemoteProtocol`), polecenia z telefonu (`RemoteCommandHandler`), serwer (`LinkRemoteServer`) |
 | `src/Uwielbienia.App` | Avalonia: widoki (`Views/`), modele widoków (`ViewModels/`), usługi okienkowe (`Services/`), motywy (`Themes/`), czcionki, korzeń DI `AppComposition` |
 | `src/Uwielbienia.Desktop` | program Windows/Linux (`Program.cs`, Velopack) |
@@ -215,7 +215,7 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   (`PlanItemTypes` — rejestr wszystkich `IPlanItemType`) daje opis na liście (`PlanItemInfo`:
   tytuł, numer, `PlanItemKind`, uwaga) i slajdy (`LiveItem`), a jego `Changed` (zmieniona treść)
   przebudowuje plan. Rodzaje: `SongPlanItemType` (pieśń i tekst; też `ISongPresenter` — pieśń
-  spoza planu na ekran), `PresentationPlanItemType` (prezentacja) i `VideoPlanItemType` (film).
+  spoza planu na ekran), `PresentationPlanItemType` (prezentacja), `VideoPlanItemType` (film) i `KioskPlanItemType` (kiosk).
 - **Prezentacje** (`PresentationPlanItem`: folder + tytuł). `SlideshowLibrary` kopiuje plik
   PowerPoint (`.pptx .ppt .pps .ppsx .pptm .ppsm .odp`) albo obrazy (`.png .jpg .jpeg .bmp .webp`,
   kilka = jedna prezentacja; „Obraz” — `ImportEachAsync`: każdy obraz osobno, wszystko albo nic) do
@@ -269,6 +269,27 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   (`app/Vlc.props`: tylko x64, bez wtyczek nagrywania / transmisji / lua; `build.py` pakuje go do .exe
   z jednego pliku), Linux — VLC z systemu (bez niego czytelny komunikat przy filmie). Próba z
   prawdziwym plikiem: `dotnet run --project app/tools/Uwielbienia.Screenshots -- <katalog> --video <plik>`.
+- **Kiosk** (`KioskPlanItem`: tytuł, `Seconds` — domyślnie 8, i `KioskEntry`: folder obrazu lub prezentacji
+  i / albo napis z opcjonalnym tytułem). Obrazy i prezentacje kopiuje `SlideshowLibrary` (jak „Obraz” / „Prezentacja”;
+  każdy slajd prezentacji to osobny element). Dla planu, klawiatury i telefonu to **jeden slajd** `KioskSlide` (lista
+  `KioskFrame` + odstęp; porównanie treści, nie list) — „Dalej” idzie do następnej pozycji planu. Elementy zmienia
+  `KioskRotation` (Core, jedna dla rzutnika, „Na ekranie” i telefonu): co `Interval`, w kółko; czarny ekran = stoi;
+  powrót do kiosku = od elementu, na którym skończył (osobno dla każdej pozycji); edycja na żywo zostawia ten sam
+  element. Rzutnik: `ProjectedKiosk` (strona stała) z wewnętrznym przenikaniem 0,6 s `KioskFramePage`; układ wg
+  `KioskFrame.LayoutFor` — napis tam, gdzie obraz zostaje największy (pionowy do ok. 3:2 → napis z prawej, szerszy →
+  pod spodem; sam obraz — cały ekran, sam napis — jak tekst). Kolumna „Pieśń” (`KioskViewModel`) edytuje kiosk na
+  miejscu (nazwa, „Zmiana co … s”, elementy z przeciąganiem, „Obraz / Napis / Prezentacja”), każda zmiana od razu w planie.
+  Telefon: `StateMessage.IsKiosk` + wiadomość `kiosk` (`KioskMessage`: element, napis, podgląd JPEG 480 px z `IImagePreviews`).
+  **Przejścia** między elementami (`KioskPlanItem.Transitions`: żaden = przenikanie, jeden = ten, kilka = losowo jeden;
+  `null` = domyślnie Akwarela) i **powolny zoom** zdjęć (`SlowZoom`, efekt Kena Burnsa — `Views/SlowZoom`, rusza po przejściu).
+- **Przejścia slajdów** (`App/Transitions`, ogólne — gotowe do użycia przy każdej zmianie slajdu): `SlideTransition` (Core:
+  Przesunięcie w losowym kierunku — wstecz w przeciwnym, Witraż, Płomień, Akwarela, Promień światła, Fala) →
+  `ShaderPageTransition` (`IPageTransition` dla `TransitioningContentControl`): zrzut starej i nowej strony
+  (`RenderTargetBitmap` → `SKImage`), na czas przejścia w ich miejscu `ShaderTransitionView` rysuje shader SkSL
+  (`TransitionShaders`, `SKRuntimeEffect`; model gl-transitions: `from`, `to`, `progress`). Bez karty graficznej albo gdy odstępy między
+  klatkami (mierzone w `Animate`, czyli z rysowaniem na karcie) przekraczają 50 ms pięć razy pod rząd — przejście kończy się
+  od razu, a do końca działania zwykłe przenikanie (`SmoothnessGuard`; pojedyncze zacięcia nie wyłączają efektów). Uwaga: w SkSL `pow` z ujemną podstawą jest niezdefiniowane (kwadrat = `x * x`);
+  `SKRuntimeShaderBuilder` nie zwalniamy (zwolniłby wspólny efekt). Klatki efektów: zrzuty `przejscie-*.png`.
 - **Przeciąganie** (plan, części pieśni, części w edytorze — za uchwyt ⠿): `ListReorderDrag` — zwykłe przeciąganie myszą ze
   znacznikiem miejsca i przewijaniem przy krawędzi; wiersze implementują `IReorderableItem`.
 - **Ekran.** `LiveSession` to jedyne źródło prawdy: polecenia przez `ILiveControl` (klawiatura —
@@ -344,7 +365,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
    (podmiana na żywo) działa dla pól rekordu; kolekcje porównuje tylko `Lines`.
 4. **Lista planu** (`MainWindow.axaml`, wiersz planu i „Dodaj do planu”): znacznik i kolor wg
    `PlanItemKind` (numer; kropka + `TextItemBrush` dla `Text`; znak slajdu + `PresentationItemBrush`
-   dla `Presentation`; trójkąt odtwarzania w tym samym kolorze dla `Video`). `PlanItemInfo.Note` = uwaga pod tytułem.
+   dla `Presentation`; trójkąt odtwarzania w tym samym kolorze dla `Video`; dwa nałożone slajdy dla `Kiosk`). `PlanItemInfo.Note` = uwaga pod tytułem.
 5. **Kolumna „Pieśń”:** `MainViewModel.ShowDetails` wybiera widok dla zaznaczonej pozycji;
    nowy rodzaj dostaje własny model widoku i szablon (wzorzec: `PresentationViewModel`).
 6. **Dodawanie:** przycisk w oknie „Dodaj do planu” (`PlanAddViewModel`) tworzący pozycję i
@@ -366,7 +387,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 - Każda czynność ma jedno miejsce:
   - dodawanie do planu tylko z planu: „+”, prawy klik („Dodaj powyżej / poniżej”) albo pisanie
     gdziekolwiek w oknie → okno „Dodaj do planu” (`PlanAddViewModel`: zaznacz + „Wybierz”, Enter,
-    dwuklik; „Nowa pieśń / Nowy tekst / Prezentacja / Obraz / Film”, z ikonami; „Obraz” = każdy wybrany obraz
+    dwuklik; „Nowa pieśń / Nowy tekst / Prezentacja / Obraz / Film / Kiosk”, z ikonami; „Obraz” = każdy wybrany obraz
     osobną pozycją, na cały ekran — jednoslajdowa prezentacja); plik prezentacji (lub obrazy,
     filmy) upuszczony na plan trafia za wiersz pod kursorem;
   - na ekran wyłącznie dwuklikiem albo prawym klikiem („Pokaż na ekranie”) w planie;
@@ -402,7 +423,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 
 - Paleta „nocny granat + świeca” (`Themes/Palette.axaml`, jasny i ciemny). Akcenty mają stałe
   znaczenie: świeca (`CandleBrush`) = to, co jest na ekranie; `ChordBrush` = akordy;
-  `TextItemBrush` = teksty w planie; `PresentationItemBrush` = prezentacje i filmy w planie;
+  `TextItemBrush` = teksty w planie; `PresentationItemBrush` = prezentacje, filmy i kioski w planie;
   `DangerBrush` = usuwanie i błędy. Typografia operatora: skala
   13/15/18/24 (`Themes/Controls.axaml`). Kroje: Atkinson Hyperlegible Next (interfejs), Literata
   (tytuły, tekst na rzutniku).

@@ -72,11 +72,20 @@ public sealed partial class PreviewViewModel : ObservableObject
 
     public bool HasVideo => Video is not null;
 
+    /// <summary>Wybrany w planie kiosk (edycja na miejscu).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasKiosk), nameof(ColumnTitle), nameof(IsEmpty), nameof(HasChordsToggle))]
+    public partial KioskViewModel? Kiosk { get; private set; }
+
+    partial void OnKioskChanged(KioskViewModel? oldValue, KioskViewModel? newValue) => oldValue?.Dispose();
+
+    public bool HasKiosk => Kiosk is not null;
+
     /// <summary>Nic nie jest wybrane w planie.</summary>
-    public bool IsEmpty => Song is null && Presentation is null && Video is null;
+    public bool IsEmpty => Song is null && Presentation is null && Video is null && Kiosk is null;
 
     /// <summary>Przełącznik akordów ma sens tylko przy pieśni.</summary>
-    public bool HasChordsToggle => Presentation is null && Video is null && !IsText;
+    public bool HasChordsToggle => Presentation is null && Video is null && Kiosk is null && !IsText;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsEditing), nameof(IsViewing), nameof(ColumnTitle))]
@@ -85,7 +94,7 @@ public sealed partial class PreviewViewModel : ObservableObject
     public bool IsEditing => Editor is not null;
 
     /// <summary>Nagłówek kolumny: rodzaj wybranej pozycji, a w trakcie edycji — co jest edytowane.</summary>
-    public string ColumnTitle => Editor?.Heading ?? (Presentation is not null ? "Prezentacja" : Video is not null ? "Film" : IsText ? "Tekst" : "Pieśń");
+    public string ColumnTitle => Editor?.Heading ?? (Presentation is not null ? "Prezentacja" : Video is not null ? "Film" : Kiosk is not null ? "Kiosk" : IsText ? "Tekst" : "Pieśń");
 
     public bool IsViewing => Editor is null;
 
@@ -134,6 +143,7 @@ public sealed partial class PreviewViewModel : ObservableObject
         IsFromPlan = true;
         Presentation = null;
         Video = null;
+        Kiosk = null;
         Load(song, planItem);
     }
 
@@ -156,10 +166,23 @@ public sealed partial class PreviewViewModel : ObservableObject
         Video = new VideoDetailsViewModel(item, note, _video);
     }
 
+    /// <summary>Kiosk z planu; ta sama pozycja po zapisie (plan się przebudował) zostaje — z polami w trakcie edycji.</summary>
+    public void ShowKiosk(KioskPlanItem item)
+    {
+        // Własny zapis wraca z planu jako ten sam obiekt — model zostaje (z polami w trakcie edycji). Inna treść tej samej
+        // pozycji (np. obrazy dodane, gdy kiosk nie był zaznaczony) — model od nowa.
+        if (Kiosk?.Item.Id == item.Id && ReferenceEquals(Kiosk.Item, item))
+            return;
+        Clear();
+        IsFromPlan = true;
+        Kiosk = new KioskViewModel(item, _plan, _slideshows);
+    }
+
     public void ShowSong(Song song)
     {
         Presentation = null;
         Video = null;
+        Kiosk = null;
         _planItem = null;
         IsFromPlan = false;
         Load(song, null);
@@ -253,6 +276,7 @@ public sealed partial class PreviewViewModel : ObservableObject
         Song = null;
         Presentation = null;
         Video = null;
+        Kiosk = null;
         Parts.Clear();
     }
 

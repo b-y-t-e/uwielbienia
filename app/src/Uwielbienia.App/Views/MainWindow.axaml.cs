@@ -29,6 +29,8 @@ public partial class MainWindow : Window
         _ = new ListReorderDrag(PartsList,
             source => ViewModel.Preview.CanReorderParts ? FindRow<SongPartViewModel>(source, "partHandle") : null,
             (item, index) => ViewModel.Preview.MovePart((SongPartViewModel)item, index));
+        _ = new ListReorderDrag(KioskEntriesList, source => FindRow<KioskEntryViewModel>(source, "kioskHandle"),
+            (item, index) => ViewModel.Preview.Kiosk?.Move((KioskEntryViewModel)item, index));
         PlanList.AddHandler(DragDrop.DragOverEvent, OnPlanDragOver);
         PlanList.AddHandler(DragDrop.DropEvent, OnPlanDrop);
         PropertyChanged += (_, e) =>
@@ -223,6 +225,36 @@ public partial class MainWindow : Window
         var videos = files.Select(f => f.TryGetLocalPath()).OfType<string>().Select(VideoPlanItem.For).ToList();
         if (videos.Count > 0)
             ViewModel.PlanAdd.AddVideos(videos);
+    }
+
+    /// <summary>Kiosk, „Obraz”: każdy wybrany obraz osobnym elementem.</summary>
+    private async void OnKioskAddImagesClick(object? sender, RoutedEventArgs e)
+    {
+        if (ViewModel.Preview.Kiosk is not { } kiosk)
+            return;
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Obrazy do kiosku",
+            AllowMultiple = true,
+            FileTypeFilter = [new FilePickerFileType("Obrazy") { Patterns = [.. SlideshowLibrary.ImageExtensions.Select(ext => "*" + ext)] }],
+        });
+        var paths = files.Select(f => f.TryGetLocalPath()).OfType<string>().ToList();
+        if (paths.Count > 0)
+            await kiosk.AddImagesAsync(paths);
+    }
+
+    /// <summary>Kiosk, „Prezentacja”: slajdy pliku PowerPoint jako kolejne elementy.</summary>
+    private async void OnKioskAddPresentationClick(object? sender, RoutedEventArgs e)
+    {
+        if (ViewModel.Preview.Kiosk is not { } kiosk)
+            return;
+        var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Prezentacja do kiosku",
+            FileTypeFilter = [new FilePickerFileType("Prezentacje") { Patterns = [.. SlideshowLibrary.PresentationExtensions.Select(ext => "*" + ext)] }],
+        });
+        if (files.Select(f => f.TryGetLocalPath()).OfType<string>().FirstOrDefault() is { } path)
+            await kiosk.AddPresentationAsync(path);
     }
 
     private static List<string> DroppedFiles(DragEventArgs e) =>

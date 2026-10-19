@@ -58,13 +58,14 @@ public sealed record Plan(
 
 /// <summary>
 /// Pozycja planu: pieśń lub tekst (<see cref="SongPlanItem"/>), prezentacja (<see cref="PresentationPlanItem"/>),
-/// film (<see cref="VideoPlanItem"/>).
+/// film (<see cref="VideoPlanItem"/>), kiosk (<see cref="KioskPlanItem"/>).
 /// Nowy rodzaj = nowy rekord z <see cref="JsonDerivedTypeAttribute"/> (CLAUDE.md: „Nowy rodzaj elementu”).
 /// </summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(SongPlanItem), "song")]
 [JsonDerivedType(typeof(PresentationPlanItem), "presentation")]
 [JsonDerivedType(typeof(VideoPlanItem), "video")]
+[JsonDerivedType(typeof(KioskPlanItem), "kiosk")]
 public abstract record PlanItem(Guid Id)
 {
     public abstract PlanItem WithNewId();
@@ -162,4 +163,47 @@ public sealed record VideoPlanItem(Guid Id, string File, string Title) : PlanIte
     public static VideoPlanItem For(string file) => new(Guid.NewGuid(), file, Path.GetFileNameWithoutExtension(file));
 
     public override PlanItem WithNewId() => this with { Id = Guid.NewGuid() };
+}
+
+/// <summary>
+/// Kiosk: obrazy i napisy, które zmieniają się same co <see cref="Seconds"/> sekund (w kółko). Dla planu i pilota to jeden
+/// slajd — „Dalej” przechodzi do następnej pozycji planu.
+/// </summary>
+/// <param name="Seconds">Co ile sekund następny element.</param>
+/// <param name="Transitions">
+/// Efekty przejścia między elementami — przy kilku losowany jest jeden; pusta lista = zwykłe przenikanie;
+/// <c>null</c> = domyślne (<see cref="DefaultTransitions"/>).
+/// </param>
+/// <param name="SlowZoom">Zdjęcia powoli przybliżają się i przesuwają, póki są na ekranie.</param>
+public sealed record KioskPlanItem(
+    Guid Id,
+    string Title,
+    IReadOnlyList<KioskEntry> Entries,
+    int Seconds = KioskPlanItem.DefaultSeconds,
+    IReadOnlyList<Presentation.SlideTransition>? Transitions = null,
+    bool SlowZoom = true)
+    : PlanItem(Id)
+{
+    public const int DefaultSeconds = 8;
+    public const int MinSeconds = 2;
+    public const int MaxSeconds = 600;
+
+    /// <summary>Efektowne, a spokojne: nowy obraz rozlewa się jak farba.</summary>
+    public static readonly IReadOnlyList<Presentation.SlideTransition> DefaultTransitions = [Presentation.SlideTransition.Watercolor];
+
+    public IReadOnlyList<Presentation.SlideTransition> ChosenTransitions => Transitions ?? DefaultTransitions;
+
+    public static KioskPlanItem Create(string title = "Kiosk") => new(Guid.NewGuid(), title, []);
+
+    // Foldery obrazów się nie zmieniają (edycja kiosku tylko dodaje nowe) — kopia może je współdzielić.
+    public override PlanItem WithNewId() => this with { Id = Guid.NewGuid() };
+}
+
+/// <summary>Element kiosku: obraz (albo wszystkie slajdy prezentacji), napis, albo obraz z napisem.</summary>
+/// <param name="Folder">Folder obrazu lub prezentacji w katalogu aplikacji (<see cref="Slideshows.ISlideshowLibrary"/>); <c>null</c> = sam napis.</param>
+/// <param name="Title">Tytuł napisu (opcjonalny).</param>
+/// <param name="Text">Treść napisu; wiersze rozdziela znak nowej linii.</param>
+public sealed record KioskEntry(string? Folder = null, string? Title = null, string? Text = null)
+{
+    public bool HasText => !string.IsNullOrWhiteSpace(Title) || !string.IsNullOrWhiteSpace(Text);
 }

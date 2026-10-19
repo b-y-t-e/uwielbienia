@@ -154,6 +154,14 @@ public sealed partial class PlanAddViewModel(
     [RelayCommand]
     private void NewText() => RequestNew(SongKind.Text);
 
+    /// <summary>„Kiosk”: pusty kiosk w zapamiętane miejsce planu — obrazy i napisy dodaje się w kolumnie „Pieśń”.</summary>
+    [RelayCommand]
+    private void NewKiosk()
+    {
+        actions.Insert(KioskPlanItem.Create(), _index);
+        IsOpen = false;
+    }
+
     [RelayCommand]
     private void Close() => IsOpen = false;
 

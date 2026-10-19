@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.Input;
 using Uwielbienia.App.Services;
+using Uwielbienia.Core.Kiosks;
 using Uwielbienia.Core.Presentation;
 
 namespace Uwielbienia.App.ViewModels;
@@ -12,11 +13,14 @@ public sealed partial class LiveViewModel : ObservableObject
 {
     private readonly ILiveControl _control;
 
-    public LiveViewModel(ILiveStateSource source, ILiveControl control, ProjectionAppearance appearance, VideoControlsViewModel video)
+    public LiveViewModel(
+        ILiveStateSource source, ILiveControl control, ProjectionAppearance appearance, VideoControlsViewModel video, KioskPlayback kiosk)
     {
         _control = control;
         Appearance = appearance;
         Video = video;
+        Kiosk = kiosk;
+        kiosk.PropertyChanged += (_, _) => OnPropertyChanged(nameof(CurrentLabel));
         source.StateChanged += (_, state) => Apply(state);
         Apply(source.State);
     }
@@ -25,6 +29,9 @@ public sealed partial class LiveViewModel : ObservableObject
 
     /// <summary>Film na ekranie: podgląd i sterowanie odtwarzaniem.</summary>
     public VideoControlsViewModel Video { get; }
+
+    /// <summary>Kiosk na ekranie: bieżący element (zmienia się sam).</summary>
+    public KioskPlayback Kiosk { get; }
 
     [ObservableProperty]
     public partial LiveState State { get; private set; } = LiveState.Empty;
@@ -36,6 +43,7 @@ public sealed partial class LiveViewModel : ObservableObject
     {
         ImageSlide image => new ProjectedImage(image),
         VideoSlide video => new ProjectedVideo(video, Video.Frames),
+        KioskSlide kiosk => new ProjectedKiosk(kiosk, Kiosk),
         { } slide when State.Item is { } item => new ProjectedPage(slide, State.SlideIndex == 0 && item.ShowTitle ? item.Title : null),
         _ => null,
     };
@@ -77,7 +85,12 @@ public sealed partial class LiveViewModel : ObservableObject
 
     public bool HasCurrentVideo => CurrentTab?.Slide is VideoSlide;
 
-    public string? CurrentLabel => CurrentTab?.Label ?? (HasItem && Slides.Count == 0 ? State.Item?.Note ?? "Brak slajdów" : null);
+    /// <summary>Kiosk w kolumnie „Na ekranie” — tak jak na rzutniku, także pod czarnym ekranem (zmiana wtedy stoi).</summary>
+    public ProjectedKiosk? CurrentKiosk => CurrentTab?.Slide is KioskSlide kiosk ? new ProjectedKiosk(kiosk, Kiosk) : null;
+
+    public bool HasCurrentKiosk => CurrentTab?.Slide is KioskSlide;
+
+    public string? CurrentLabel => (HasCurrentKiosk ? Kiosk.PositionText : null) ?? CurrentTab?.Label ?? (HasItem && Slides.Count == 0 ? State.Item?.Note ?? "Brak slajdów" : null);
 
     public string? UpcomingLabel => NextTab?.Label ?? NextText;
 
@@ -133,6 +146,8 @@ public sealed partial class LiveViewModel : ObservableObject
         OnPropertyChanged(nameof(HasCurrentImage));
         OnPropertyChanged(nameof(HasNextImage));
         OnPropertyChanged(nameof(HasCurrentVideo));
+        OnPropertyChanged(nameof(CurrentKiosk));
+        OnPropertyChanged(nameof(HasCurrentKiosk));
         OnPropertyChanged(nameof(CurrentLabel));
         OnPropertyChanged(nameof(UpcomingLabel));
         OnPropertyChanged(nameof(HasUpcoming));

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Uwielbienia.Core.Kiosks;
 using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Presentation;
 using Uwielbienia.Core.Videos;
@@ -9,6 +10,7 @@ namespace Uwielbienia.Link;
 // Protokół między aplikacją (host) a stroną www (pilot / ekran). Wszystko w JSON, camelCase.
 //
 // host → strona (notify):   {"type":"state", ...StateMessage} | {"type":"plan", ...PlanMessage} | {"type":"video", ...VideoMessage}
+//                           | {"type":"kiosk", ...KioskMessage} (bieżący element kiosku na ekranie — zmienia się sam)
 //                           | {"type":"device", ...DeviceMessage} (operator zmienił uprawnienia tego urządzenia)
 // strona → host (request):  {"cmd":"hello"|"next"|"prev"|"blank"|"goto"|"showItem"|"showSong"|"search"
 //                                  |"videoToggle"|"videoSkip" (seconds: ±15)
@@ -34,7 +36,8 @@ public sealed record CommandReply(
     IReadOnlyList<SongHit>? Results = null,
     VideoMessage? Video = null,
     DeviceMessage? Device = null,
-    PlanItemMessage? Added = null);
+    PlanItemMessage? Added = null,
+    KioskMessage? Kiosk = null);
 
 /// <summary>Co wolno temu urządzeniu: z uprawnieniem telefon pokazuje „+” (dodaj pieśń jako następną).</summary>
 public sealed record DeviceMessage(bool CanAddSongs)
@@ -59,7 +62,8 @@ public sealed record StateMessage(
     string? Next,
     bool ShowTitle = false,
     IReadOnlyList<LineMessage>? NextLines = null,
-    bool IsVideo = false)
+    bool IsVideo = false,
+    bool IsKiosk = false)
 {
     public string Type => "state";
 
@@ -80,7 +84,8 @@ public sealed record StateMessage(
         state.Item is { ShowTitle: true } && state.SlideIndex == 0 && state.Slide?.GetType() == typeof(Slide),
         // następny slajd tej samej pieśni — muzyk widzi, co nadchodzi (inna pieśń: tylko tytuł w Next)
         state.Item is { } item && state.SlideIndex + 1 < item.Slides.Count ? LinesOf(item.Slides[state.SlideIndex + 1]) : null,
-        state.Slide is VideoSlide);
+        state.Slide is VideoSlide,
+        state.Slide is KioskSlide);
 
     private static List<LineMessage> LinesOf(Slide? slide) =>
         slide?.Lines.Select(l => new LineMessage(l.Text, l.Repeat, l.IsChorus, l.StartsPart, l.TitleLength, l.Chords)).ToList() ?? [];

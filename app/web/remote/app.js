@@ -1,5 +1,5 @@
 // Pilot i ekran w przeglądarce dla aplikacji „Uwielbienia”.
-// Protokół: app/src/Uwielbienia.Link/RemoteProtocol.cs — host wysyła {type:"state"|"plan"|"video"|"device"},
+// Protokół: app/src/Uwielbienia.Link/RemoteProtocol.cs — host wysyła {type:"state"|"plan"|"video"|"device"|"kiosk"},
 // strona pyta poleceniami {cmd:"hello"|"next"|"prev"|…}. Telefon zmienia slajdy: bez planu i gaszenia
 // ekranu (to zostaje w aplikacji) — dziecko nic nie zepsuje, a muzyk widzi bieżący i następny slajd z
 // akordami bez dotykania telefonu. Dodawanie pieśni („+”) tylko z uprawnieniem nadanym w aplikacji.
@@ -56,6 +56,7 @@ async function command(cmd, extra = {}) {
     if (reply.state) receive({ ...reply.state, type: "state" });
     if (reply.video) receive({ ...reply.video, type: "video" });
     if (reply.device) receive({ ...reply.device, type: "device" });
+    if (reply.kiosk) receive({ ...reply.kiosk, type: "kiosk" });
     return reply;
   } catch {
     setStatus("failed", "Polecenie nie dotarło");
@@ -75,7 +76,35 @@ function receive(message) {
   } else if (message.type === "video") {
     video = { ...message, receivedAt: performance.now() };
     renderVideo();
+  } else if (message.type === "kiosk") {
+    kiosk = message;
+    renderKiosk();
+    renderDisplay();
   }
+}
+
+// ---------- kiosk ----------
+
+let kiosk = null;
+
+// Kiosk na ekranie: elementy zmieniają się same (dla telefonu to jeden slajd — „Dalej” = następna pozycja planu);
+// zamiast wersów podgląd bieżącego obrazu i napis.
+// Element tylko tego kiosku, który jest teraz na ekranie — nie poprzedniego (wiadomości przychodzą w dowolnej kolejności).
+function isKioskShown() {
+  return !!state?.isKiosk && !!kiosk && kiosk.itemId === state.itemId;
+}
+
+function renderKiosk() {
+  const show = isKioskShown();
+  $("kioskPanel").hidden = !show;
+  if (state) ui.currentLines.hidden = !!state.isVideo || show;
+  if (!show) return;
+  ui.nowLabel.textContent = `Kiosk · ${kiosk.index + 1} z ${kiosk.count}${kiosk.isRunning || kiosk.count < 2 ? "" : " · zatrzymany"}`;
+  $("kioskImage").hidden = !kiosk.image;
+  if (kiosk.image) $("kioskImage").src = kiosk.image;
+  $("kioskTitle").textContent = kiosk.title ?? "";
+  $("kioskText").textContent = kiosk.text ?? "";
+  $("kioskPanel").classList.toggle("text-only", !kiosk.image);
 }
 
 // ---------- film ----------
@@ -92,7 +121,7 @@ const formatTime = (seconds) => {
 function renderVideo() {
   const show = !!state?.isVideo;
   $("videoPanel").hidden = !show;
-  ui.currentLines.hidden = show;
+  ui.currentLines.hidden = show || !!state?.isKiosk;
   if (!show) return;
   const v = video ?? { isPlaying: false, position: 0, duration: 0 };
   const elapsed = v.isPlaying ? (performance.now() - (v.receivedAt ?? 0)) / 1000 : 0;
@@ -130,7 +159,13 @@ function setStatus(kind, text) {
 function renderSlide(screen, s) {
   const text = screen.querySelector(".slide-text");
   const content = [];
-  if (s && !s.isBlank) {
+  if (s && !s.isBlank && s.isKiosk) {
+    if (!isKioskShown()) { text.replaceChildren(); return; }
+    // kiosk: podgląd obrazu (mały — z telefonu) i napis pod nim
+    if (kiosk.image) content.push(Object.assign(document.createElement("img"), { className: "kiosk-image", src: kiosk.image, alt: "" }));
+    if (kiosk.title) content.push(Object.assign(document.createElement("div"), { className: "slide-title", textContent: kiosk.title }));
+    if (kiosk.text) content.push(Object.assign(document.createElement("p"), { className: "kiosk-text", textContent: kiosk.text }));
+  } else if (s && !s.isBlank) {
     if (s.showTitle) content.push(Object.assign(document.createElement("div"), { className: "slide-title", textContent: s.title }));
     for (const l of s.lines) {
       // słowa powtarzające tytuł w kolorze tytułu, reszta wersu zwykła
@@ -184,6 +219,7 @@ function renderState() {
   ui.nextLabel.textContent = s.next ? `Dalej: ${s.next}` : "";
   ui.nextLines.replaceChildren(...nextLines.map(chordLine));
   renderVideo();
+  renderKiosk();
   fitAll();
   renderDisplay();
 }

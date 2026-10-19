@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Uwielbienia.Core;
+using Uwielbienia.Core.Kiosks;
 using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Presentation;
 using Uwielbienia.Core.Songs;
@@ -27,7 +28,9 @@ public sealed class RemoteCommandHandler(
     IUiDispatcher dispatcher,
     IPlanItemTypes itemTypes,
     IVideoPlayer? video = null,
-    UndoableAdditions? undoable = null) : IRemoteAdditions
+    UndoableAdditions? undoable = null,
+    KioskRotation? kiosk = null,
+    IImagePreviews? previews = null) : IRemoteAdditions
 {
     private readonly UndoableAdditions _undoable = undoable ?? new(live);
 
@@ -49,6 +52,9 @@ public sealed class RemoteCommandHandler(
         var reply = command is null
             ? new CommandReply(false, "Nieczytelne polecenie.")
             : await dispatcher.InvokeAsync(() => Execute(command, caller ?? RemoteCaller.Pilot));
+        // pełny stan po (ponownym) połączeniu — także bieżący element kiosku
+        if (command?.Cmd == "hello" && reply.Ok)
+            reply = reply with { Kiosk = await CurrentKioskAsync() };
         return RemoteJson.Serialize(reply);
     }
 
@@ -131,4 +137,8 @@ public sealed class RemoteCommandHandler(
     public PlanMessage CurrentPlan() => PlanMessage.From(plan.Plan, plan.Playlist, itemTypes);
 
     public VideoMessage? CurrentVideo() => video is null ? null : VideoMessage.From(video);
+
+    /// <summary>Bieżący element kiosku (stan czytany na wątku interfejsu, podgląd obrazu — w tle).</summary>
+    public async Task<KioskMessage?> CurrentKioskAsync() =>
+        kiosk is null ? null : await await dispatcher.InvokeAsync(() => KioskMessage.FromAsync(kiosk, previews));
 }
