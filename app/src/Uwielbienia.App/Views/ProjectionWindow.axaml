@@ -12,8 +12,9 @@
         Topmost="True"
         ShowInTaskbar="False">
   <Panel x:Name="Screen">
-    <!-- Obraz projekcji rozpięty na narożnikach z „Dopasuj obraz” (przekształcenie ustawia kod). -->
-    <Panel x:Name="Warped" RenderTransformOrigin="0,0">
+    <!-- Obraz projekcji rozpięty na narożnikach z „Dopasuj obraz” (przekształcenie ustawia kod). Własne tło w kolorze
+         ekranu: brzegi slajdu wygładzane przy przekształceniu łączą się z nim w tej samej warstwie, bez jasnej linii. -->
+    <Panel x:Name="Warped" RenderTransformOrigin="0,0" Background="{Binding Live.Appearance.Background}">
       <v:SlideView x:Name="Slide"
                    Page="{Binding Live.Page}"
                    SlideBackground="{Binding Live.Appearance.Background}"

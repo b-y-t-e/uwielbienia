@@ -44,8 +44,8 @@
           </Button>
           <Button Command="{Binding ToggleThemeCommand}">
             <Panel>
-              <TextBlock Text="Jasny wygląd" IsVisible="{Binding IsDarkTheme}" />
-              <TextBlock Text="Ciemny wygląd" IsVisible="{Binding !IsDarkTheme}" />
+              <TextBlock Text="Ciemny wygląd" IsVisible="{Binding IsDarkTheme}" />
+              <TextBlock Text="Jasny wygląd" IsVisible="{Binding !IsDarkTheme}" />
             </Panel>
           </Button>
         </StackPanel>
@@ -414,10 +414,12 @@
               <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                 <ToggleButton Classes="chip liveHeaderAction" Content="Akordy" IsChecked="{Binding ShowChords, Mode=OneWay}"
                               Command="{Binding ToggleChordsCommand}" />
-                <Button Classes="quiet liveHeaderAction" Command="{Binding ToggleProjectionThemeCommand}">
+                <!-- Obecne tło ekranu; kliknięcie przełącza na drugie. -->
+                <Button Classes="quiet liveHeaderAction" Command="{Binding ToggleProjectionThemeCommand}"
+                        ToolTip.Tip="Tło ekranu w sali — kliknij, żeby zmienić">
                   <Panel>
-                    <TextBlock Text="Ekran: jasne tło" IsVisible="{Binding IsProjectionDark}" />
-                    <TextBlock Text="Ekran: czarne tło" IsVisible="{Binding !IsProjectionDark}" />
+                    <TextBlock Text="Ekran: czarne tło" IsVisible="{Binding IsProjectionDark}" />
+                    <TextBlock Text="Ekran: jasne tło" IsVisible="{Binding !IsProjectionDark}" />
                   </Panel>
                 </Button>
               </StackPanel>

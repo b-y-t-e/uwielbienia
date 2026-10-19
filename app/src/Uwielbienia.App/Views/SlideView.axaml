@@ -34,8 +34,9 @@
           <DataTemplate DataType="vm:ProjectedVideo">
             <v:VideoSurface Frames="{Binding Frames}" />
           </DataTemplate>
+          <!-- Obraz na tle ekranu (czarnym albo jasnym — „Ekran: …”), jak tekst. -->
           <DataTemplate DataType="vm:ProjectedImage">
-            <Panel Background="Black">
+            <Panel Background="{Binding #Root.SlideBackground}">
               <Image Source="{Binding Picture^}" Stretch="Uniform" />
             </Panel>
           </DataTemplate>
@@ -47,8 +48,12 @@
                 <DataTemplate DataType="vm:KioskFramePage">
                   <!-- Napis jak tekst pieśni: Literata, tytuł w kolorze tytułu z linią; obok obrazu i pod nim mniejszy. -->
                   <Panel Background="{Binding #Root.SlideBackground}">
-                    <Panel IsVisible="{Binding IsImageOnly}" Background="Black" ClipToBounds="True">
-                      <Image Source="{Binding Picture}" Stretch="Uniform" v:SlowZoom.Duration="{Binding ZoomDuration}" />
+                    <!-- Zoom tylko w obrębie zdjęcia (ramka na jego wymiar): przesuwany element nie sięga brzegów ekranu,
+                         gdzie jego krawędź rysowała się cienką jasną linią. -->
+                    <Panel IsVisible="{Binding IsImageOnly}">
+                      <Border ClipToBounds="True" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Image Source="{Binding Picture}" Stretch="Uniform" v:SlowZoom.Duration="{Binding ZoomDuration}" />
+                      </Border>
                     </Panel>
                     <Viewbox IsVisible="{Binding IsTextOnly}" StretchDirection="DownOnly" Margin="140,40" VerticalAlignment="Center">
                       <ContentControl Width="1640" FontSize="86" Content="{Binding}" ContentTemplate="{StaticResource KioskCaption}" />

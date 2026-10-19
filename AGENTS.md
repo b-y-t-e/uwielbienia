@@ -433,7 +433,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
   i u dołu — brzegi ekranu w sali załatwia „Dopasuj obraz”), za długi zmniejsza się w całości.
   Kolory: ciemny = czerń i ciepła kość słoniowa, jasny = biel i granat;
   tytuł pieśni w delikatnym ciepłym odcieniu z linią pod spodem; bez stałej wysokości wiersza
-  (Literata ma długie ogonki liter). Slajd prezentacji: obraz na cały ekran na czarnym tle.
+  (Literata ma długie ogonki liter). Slajd prezentacji: obraz na cały ekran na tle ekranu (czarnym albo jasnym).
 - Bez zbędnych objaśnień i podpisów: pusty stan, krótka podpowiedź w polu, ostrzeżenie przy
   usuwaniu — tak; opisy pod nagłówkami — nie. Teksty interfejsu po polsku.
 
