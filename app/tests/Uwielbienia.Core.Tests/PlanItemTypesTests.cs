@@ -64,6 +64,25 @@ public class PlanItemTypesTests
     }
 
     [Fact]
+    public void Song_with_own_transitions_uses_them_and_one_without_follows_the_plan()
+    {
+        var session = new LiveSession();
+        var library = new Songs.SongLibrary(new Songs.DirectorySongSource(RepositoryPaths.Songs), new Songs.MarkdownSongParser());
+        var plan = new ActivePlan(new MemoryPlanStore(), new PlanItemTypes([new SongPlanItemType(library, new SectionSlideBuilder())]), session);
+        var songId = library.Songs[0].Id;
+        var own = SongPlanItem.For(songId) with { Transitions = [SlideTransition.Flame] };
+        var plain = SongPlanItem.For(songId);
+
+        plan.Open(Plan.Create("Test", null).Insert(0, own).Insert(1, plain).WithTransitions([SlideTransition.Ripple]));
+
+        Assert.Equal([SlideTransition.Flame], plan.Playlist[0].Transitions);
+        Assert.Equal([SlideTransition.Ripple], plan.Playlist[1].Transitions);
+        var saved = System.Text.Json.JsonSerializer.Deserialize<PlanItem>(
+            System.Text.Json.JsonSerializer.Serialize<PlanItem>(own, JsonPlanStore.JsonOptions), JsonPlanStore.JsonOptions);
+        Assert.Equal([SlideTransition.Flame], ((SongPlanItem)saved!).Transitions);
+    }
+
+    [Fact]
     public void Plan_transitions_apply_only_between_two_visible_plan_items()
     {
         var effects = new[] { SlideTransition.Flame };

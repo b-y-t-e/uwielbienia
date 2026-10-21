@@ -347,7 +347,7 @@
                 </Panel>
               </DockPanel>
               <DockPanel IsVisible="{Binding Preview.HasSong}">
-                <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*">
+                <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto">
                   <TextBlock Classes="displayNumber" Text="{Binding Preview.Number}" Margin="0,2,14,0" VerticalAlignment="Top"
                              IsVisible="{Binding Preview.Number, Converter={x:Static ObjectConverters.IsNotNull}}" />
                   <StackPanel Grid.Column="1">
@@ -360,6 +360,33 @@
                                  IsVisible="{Binding Preview.OriginText, Converter={x:Static ObjectConverters.IsNotNull}}" />
                     </StackPanel>
                   </StackPanel>
+                  <!-- Przejście na tę pieśń w planie: jak w planie albo własne efekty. -->
+                  <Button Grid.Column="2" Classes="quiet" VerticalAlignment="Top" Margin="12,0,0,0"
+                          IsVisible="{Binding Preview.IsFromPlan}"
+                          ToolTip.Tip="Przejście na rzutniku na tę pozycję z innej pozycji planu">
+                    <TextBlock Text="{Binding Preview.Transitions.ButtonText}" />
+                    <Button.Flyout>
+                      <Flyout Placement="BottomEdgeAlignedRight">
+                        <StackPanel Width="340" Spacing="10" Margin="4"
+                                    ToolTip.Tip="Kilka zaznaczonych — za każdym razem losowo jeden; żadne — zwykłe przenikanie">
+                          <ToggleButton Classes="chip" Content="Jak w planie" HorizontalAlignment="Left"
+                                        IsChecked="{Binding Preview.Transitions.FollowsPlan}" />
+                          <ItemsControl ItemsSource="{Binding Preview.Transitions.Options}">
+                            <ItemsControl.ItemsPanel>
+                              <ItemsPanelTemplate>
+                                <WrapPanel ItemSpacing="6" LineSpacing="6" />
+                              </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                              <DataTemplate x:DataType="vm:TransitionOptionViewModel">
+                                <ToggleButton Classes="chip" Content="{Binding Name}" IsChecked="{Binding IsSelected}" />
+                              </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                          </ItemsControl>
+                        </StackPanel>
+                      </Flyout>
+                    </Button.Flyout>
+                  </Button>
                 </Grid>
 
                 <!-- Układ pieśni w tym planie: kolejność (przeciąganie za nagłówek), powtórzenie, usunięcie, pominięcie. -->

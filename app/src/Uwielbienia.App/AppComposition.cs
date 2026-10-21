@@ -50,12 +50,16 @@ public static class AppComposition
         services.AddSingleton<SongPlanItemType>();
         services.AddSingleton<IPlanItemType>(sp => sp.GetRequiredService<SongPlanItemType>());
         services.AddSingleton<ISongPresenter>(sp => sp.GetRequiredService<SongPlanItemType>());
-        // eksport slajdów: PowerPoint (z ważną licencją) → DeckCraft → LibreOffice; zawodzi jeden — próbuje następny
-        services.AddSingleton<ISlideExporter>(_ => new SlideExporterChain(
-            [new PowerPointExporter(), new DeckCraftExporter(), new LibreOfficeExporter()]));
+        // eksport slajdów: PowerPoint (z ważną licencją) → DeckCraft → LibreOffice; zawodzi jeden — próbuje następny;
+        // kroki animacji (kolejne kliknięcia) jako osobne slajdy
+        services.AddSingleton(_ => new AnimationStepsExporter(new SlideExporterChain(
+            [new PowerPointExporter(), new DeckCraftExporter(), new LibreOfficeExporter()])));
+        services.AddSingleton<ISlideExporter>(sp => sp.GetRequiredService<AnimationStepsExporter>());
+        services.AddSingleton<ISlideExportVersion>(sp => sp.GetRequiredService<AnimationStepsExporter>());
         services.AddSingleton<ISlideshowLibrary>(sp => new SlideshowLibrary(
             sp.GetRequiredService<AppPaths>().Presentations,
             sp.GetRequiredService<ISlideExporter>(),
+            sp.GetRequiredService<ISlideExportVersion>(),
             sp.GetRequiredService<IUiDispatcher>()));
         services.AddSingleton<IPlanItemType, PresentationPlanItemType>();
         services.AddSingleton<IPlanItemType, VideoPlanItemType>();

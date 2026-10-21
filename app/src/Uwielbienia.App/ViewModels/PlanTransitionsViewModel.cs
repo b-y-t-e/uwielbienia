@@ -12,50 +12,37 @@ namespace Uwielbienia.App.ViewModels;
 public sealed partial class PlanTransitionsViewModel : ObservableObject
 {
     private readonly ActivePlan _plan;
-    private bool _showingPlan;
+    private readonly TransitionChoiceViewModel _choice = new();
 
     public PlanTransitionsViewModel(ActivePlan plan)
     {
         _plan = plan;
-        foreach (var transition in SlideTransitions.All)
-        {
-            var option = new TransitionOptionViewModel(transition, false);
-            option.PropertyChanged += (_, _) => OnChosen();
-            Options.Add(option);
-        }
+        _choice.Chosen += (_, chosen) => OnChosen(chosen);
         plan.Changed += (_, _) => ShowPlan();
         ShowPlan();
     }
 
     /// <summary>Żaden — zwykłe przenikanie, jeden — zawsze ten, kilka — losowo jeden z nich.</summary>
-    public ObservableCollection<TransitionOptionViewModel> Options { get; } = [];
+    public ObservableCollection<TransitionOptionViewModel> Options => _choice.Options;
 
     /// <summary>Np. „Przejście: Akwarela”, „Przejście: losowe (3)”, „Przejście: przenikanie”.</summary>
-    public string ButtonText =>
-        "Przejście: " + SlideTransitions.Describe(Options.Where(o => o.IsSelected).Select(o => o.Transition).ToList());
+    public string ButtonText => "Przejście: " + _choice.Description;
 
-    private void OnChosen()
+    private void OnChosen(IReadOnlyList<SlideTransition> chosen)
     {
-        if (_showingPlan)
-            return;
         if (_plan.Plan is not { } plan)
         {
             ShowPlan();
             return;
         }
         OnPropertyChanged(nameof(ButtonText));
-        var chosen = Options.Where(o => o.IsSelected).Select(o => o.Transition).ToList();
         if (!plan.ChosenTransitions.SequenceEqual(chosen))
             _plan.Update(p => p.WithTransitions(chosen));
     }
 
     private void ShowPlan()
     {
-        var chosen = _plan.Plan?.ChosenTransitions ?? Plan.DefaultTransitions;
-        _showingPlan = true;
-        foreach (var option in Options)
-            option.IsSelected = chosen.Contains(option.Transition);
-        _showingPlan = false;
+        _choice.Show(_plan.Plan?.ChosenTransitions ?? Plan.DefaultTransitions);
         OnPropertyChanged(nameof(ButtonText));
     }
 }

@@ -51,9 +51,10 @@ public sealed class ActivePlan
     private void Refresh()
     {
         Playlist = (Plan?.Items ?? [])
-            .Select(_itemTypes.Present)
+            .Select(item => _itemTypes.Present(item) is { } live
+                ? live with { Transitions = item.EntryTransitions ?? Plan!.ChosenTransitions }
+                : null)
             .OfType<LiveItem>()
-            .Select(live => live with { Transitions = Plan!.ChosenTransitions })
             .ToList();
         _session.SetPlaylist(Playlist);
         Changed?.Invoke(this, EventArgs.Empty);

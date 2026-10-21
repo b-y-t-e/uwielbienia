@@ -43,6 +43,7 @@ public sealed partial class PreviewViewModel : ObservableObject
         _planActions = planActions;
         _library = library;
         _editor = editor;
+        Transitions = new SongTransitionsViewModel(SaveTransitions);
         // Pieśń spoza planu po edycji: wczytaj nową wersję (pozycje planu odświeża plan).
         library.Changed += (_, _) =>
         {
@@ -113,6 +114,9 @@ public sealed partial class PreviewViewModel : ObservableObject
 
     public bool HasSong => Song is not null;
 
+    /// <summary>Przejście na tę pieśń w planie (tylko pieśń z planu).</summary>
+    public SongTransitionsViewModel Transitions { get; }
+
     public string? Title => Song?.DisplayTitle;
 
     public string? Number => Song?.Number?.ToString();
@@ -132,6 +136,7 @@ public sealed partial class PreviewViewModel : ObservableObject
 
     public void ShowPlanItem(SongPlanItem planItem, Song song)
     {
+        Transitions.Show(planItem.Transitions, _plan.Plan?.ChosenTransitions ?? Plan.DefaultTransitions);
         // Plan przebudowuje się po każdym zapisie (np. zmianie układu) — ta sama pozycja z tym samym
         // układem nie wymaga ponownego wczytania, które skasowałoby listę części w trakcie jej zmiany.
         if (_planItem?.Id == planItem.Id && ReferenceEquals(Song, song) && SameLayout(_planItem, planItem))
@@ -307,6 +312,14 @@ public sealed partial class PreviewViewModel : ObservableObject
         if (_planItem is null || Song is not { } song)
             return;
         _planItem = _planItem.WithLayout(song, Parts.Select(p => new LayoutEntry(p.Code, p.IsIncluded)).ToList());
+        _plan.Update(p => p.Replace(_planItem));
+    }
+
+    private void SaveTransitions(IReadOnlyList<SlideTransition>? chosen)
+    {
+        if (_planItem is null)
+            return;
+        _planItem = _planItem with { Transitions = chosen };
         _plan.Update(p => p.Replace(_planItem));
     }
 

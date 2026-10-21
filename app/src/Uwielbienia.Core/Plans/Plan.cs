@@ -83,6 +83,10 @@ public sealed record Plan(
 public abstract record PlanItem(Guid Id)
 {
     public abstract PlanItem WithNewId();
+
+    /// <summary>Własne efekty przejścia na tę pozycję z innej pozycji planu; <c>null</c> = przejście planu.</summary>
+    [JsonIgnore]
+    public virtual IReadOnlyList<SlideTransition>? EntryTransitions => null;
 }
 
 /// <summary>Część w układzie pieśni: kod sekcji i czy jest śpiewana (odznaczona = pominięta).</summary>
@@ -98,14 +102,22 @@ public sealed record LayoutEntry(string Code, bool Sung = true);
 /// Części usunięte z układu w tym planie („Usuń”). Odróżnia je od części dopisanych później w edytorze
 /// (albo w nowej wersji śpiewnika), które pojawiają się w układzie same. <c>null</c> = plan sprzed tego pola.
 /// </param>
+/// <param name="Transitions">
+/// Własne efekty przejścia na tę pieśń z innej pozycji planu (jak <see cref="Plan.Transitions"/>: pusta lista = przenikanie,
+/// kilka = losowo jeden); <c>null</c> = przejście planu.
+/// </param>
 public sealed record SongPlanItem(
     Guid Id,
     string SongId,
     IReadOnlyList<string>? Arrangement,
     IReadOnlyList<LayoutEntry>? Layout = null,
-    IReadOnlyList<string>? Removed = null)
+    IReadOnlyList<string>? Removed = null,
+    IReadOnlyList<SlideTransition>? Transitions = null)
     : PlanItem(Id)
 {
+    [JsonIgnore]
+    public override IReadOnlyList<SlideTransition>? EntryTransitions => Transitions;
+
     /// <summary>
     /// Układ do wyświetlenia w kolumnie „Pieśń”, uzgodniony z aktualną treścią pieśni: bez części, których już nie
     /// ma, z nowymi częściami (śpiewanymi, na końcu), które nie zostały usunięte w planie.
