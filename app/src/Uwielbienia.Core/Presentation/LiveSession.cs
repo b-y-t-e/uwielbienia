@@ -64,7 +64,7 @@ public sealed record LiveState(
             ? SlideIndex == before.SlideIndex ? "ten sam slajd"
             : Item.InnerTransitions is not { Count: > 0 } ? "slajdy pozycji mają wybrane samo przenikanie"
             : null
-        : Item.Transitions is not { Count: > 0 } ? "pozycja ma wybrane samo przenikanie lub nie ma efektów"
+        : Item.Transitions is not { Count: > 0 } ? "plan ma wybrane samo przenikanie między pozycjami"
         : null;
 }
 

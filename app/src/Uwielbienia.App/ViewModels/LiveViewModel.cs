@@ -189,13 +189,13 @@ public sealed partial class LiveViewModel : ObservableObject
             return;
         var blank = before.IsBlank || after.IsBlank ? $" (czarny ekran {before.IsBlank} → {after.IsBlank})" : "";
         var chosen = string.Join(", ", ((within ? after.Item?.InnerTransitions : after.Item?.Transitions) ?? []).Select(SlideTransitions.Name));
-        var result = effects.Count == 0 ? $"krótkie przenikanie — {after.NoTransitionsReason(before)}" : within ? "efekt slajdów planu" : "efekt planu / pieśni";
+        var result = effects.Count == 0 ? $"krótkie przenikanie — {after.NoTransitionsReason(before)}" : within ? "efekt slajdów (pozycji albo planu)" : "efekt planu";
         if (within)
         {
             TransitionLog.Write($"Slajd {before.SlideIndex + 1} → {after.SlideIndex + 1} w „{after.Item?.Title}”; slajdy mają [{chosen}] → {result}");
             return;
         }
-        TransitionLog.Write($"Ekran: „{before.Item?.Title}” → „{after.Item?.Title}”{blank}; pozycja ma [{chosen}] → {result}");
+        TransitionLog.Write($"Ekran: „{before.Item?.Title}” → „{after.Item?.Title}”{blank}; plan ma [{chosen}] → {result}");
     }
 }
 

@@ -10,8 +10,8 @@ using Uwielbienia.Core.Slideshows;
 namespace Uwielbienia.App.ViewModels;
 
 /// <summary>
-/// Kolumna „Pieśń” dla prezentacji: miniatury slajdów, stan ich przygotowania i przejścia — na prezentację (jak przy
-/// pieśni: jak w planie albo własne) i między jej slajdami (domyślnie przenikanie).
+/// Kolumna „Pieśń” dla prezentacji: miniatury slajdów, stan ich przygotowania i przejście między jej slajdami (jak przy
+/// pieśni: jak w planie albo własne; przejście na prezentację z innej pozycji jest zawsze z planu).
 /// </summary>
 public sealed partial class PresentationViewModel : ObservableObject, IDisposable
 {
@@ -23,12 +23,7 @@ public sealed partial class PresentationViewModel : ObservableObject, IDisposabl
         Item = item;
         _library = library;
         _plan = plan;
-        Transitions = new TransitionOverrideViewModel(own => Save(Item with { Transitions = own }));
-        SlideChoice.Chosen += (_, chosen) =>
-        {
-            OnPropertyChanged(nameof(SlidesButtonText));
-            Save(Item with { SlideEffects = chosen.Count == 0 ? null : chosen });
-        };
+        SlideTransitions = new TransitionOverrideViewModel(own => Save(Item with { SlideEffects = own }), "Slajdy");
         library.Changed += OnChanged;
         library.Progress += OnProgress;
         Show(item);
@@ -37,22 +32,17 @@ public sealed partial class PresentationViewModel : ObservableObject, IDisposabl
 
     public PresentationPlanItem Item { get; private set; }
 
-    /// <summary>Przejście na prezentację z innej pozycji planu.</summary>
-    public TransitionOverrideViewModel Transitions { get; }
+    /// <summary>Przejście między slajdami prezentacji.</summary>
+    public TransitionOverrideViewModel SlideTransitions { get; }
 
-    /// <summary>Przejście między slajdami prezentacji: żaden efekt = przenikanie.</summary>
-    public TransitionChoiceViewModel SlideChoice { get; } = new();
-
-    /// <summary>Np. „Slajdy: przenikanie”, „Slajdy: Akwarela”.</summary>
-    public string SlidesButtonText => "Slajdy: " + SlideChoice.Description;
+    /// <summary>Przejście między slajdami ma sens tylko przy kilku slajdach.</summary>
+    public bool HasSeveralSlides => Slides.Count > 1;
 
     /// <summary>Ta sama pozycja po zapisie albo zmianie przejścia planu — odśwież wybór bez wczytywania slajdów od nowa.</summary>
     public void Show(PresentationPlanItem item)
     {
         Item = item;
-        Transitions.Show(item.Transitions, _plan.Plan?.ChosenTransitions ?? Plan.DefaultTransitions);
-        SlideChoice.Show(item.SlideEffects ?? []);
-        OnPropertyChanged(nameof(SlidesButtonText));
+        SlideTransitions.Show(item.SlideEffects, _plan.Plan?.ChosenInnerTransitions ?? Plan.DefaultTransitions);
     }
 
     private void Save(PresentationPlanItem item)
@@ -110,6 +100,7 @@ public sealed partial class PresentationViewModel : ObservableObject, IDisposabl
         foreach (var (file, i) in state.Slides.Select((f, i) => (f, i)))
             Slides.Add(new PresentationSlideViewModel(i + 1, file));
         OnPropertyChanged(nameof(Summary));
+        OnPropertyChanged(nameof(HasSeveralSlides));
     }
 }
 

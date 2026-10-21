@@ -5,7 +5,7 @@ using Uwielbienia.Core.Presentation;
 namespace Uwielbienia.App.ViewModels;
 
 /// <summary>
-/// Wybór efektów przejścia z „Jak w planie” — kolumna „Pieśń”: przejście na tę pieśń z innej pozycji planu (<see cref="SongPlanItem.Transitions"/>). „Jak w planie” —
+/// Wybór efektów przejścia z „Jak w planie” — kolumna „Pieśń”: przejście między slajdami pieśni, tekstu lub prezentacji (<see cref="SongPlanItem.SlideEffects"/>). „Jak w planie” —
 /// efekty z paska górnego (widać je zaznaczone); wybranie efektu daje pieśni własne przejście. Ten sam wybór służy
 /// przejściu między slajdami w pasku górnym (<see cref="PlanSlideTransitionsViewModel"/>).
 /// </summary>
@@ -58,7 +58,7 @@ public sealed partial class TransitionOverrideViewModel : ObservableObject
     private void OnChosen(IReadOnlyList<SlideTransition> chosen)
     {
         _showing = true;
-        FollowsPlan = false; // zaznaczenie efektu = własne przejście pieśni
+        FollowsPlan = false; // zaznaczenie efektu = własne przejście (np. slajdów pozycji)
         _showing = false;
         OnPropertyChanged(nameof(ButtonText));
         OnPropertyChanged(nameof(ShortText));

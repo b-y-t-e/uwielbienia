@@ -52,7 +52,7 @@ public sealed class ActivePlan
     {
         Playlist = (Plan?.Items ?? [])
             .Select(item => _itemTypes.Present(item) is { } live
-                ? live with { Transitions = item.EntryTransitions ?? Plan!.ChosenTransitions, InnerTransitions = item.InnerTransitions ?? Plan!.ChosenInnerTransitions }
+                ? live with { Transitions = Plan!.ChosenTransitions, InnerTransitions = item.InnerTransitions ?? Plan!.ChosenInnerTransitions }
                 : null)
             .OfType<LiveItem>()
             .ToList();

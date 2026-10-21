@@ -173,11 +173,13 @@ najdłuższy wers zmieścił się na szerokość. Ma przy tym minimum, żeby roz
 między slajdami jednej pieśni. Na pierwszym slajdzie pieśni nad tekstem jest jej tytuł —
 tej samej wielkości co tekst, oddzielony linią w kolorze świecy.
 Nazwy części („Refren”) nigdy nie pojawiają się na ekranie. Czarny ekran i pieśń spoza planu zmieniają się krótkim
-przenikaniem (150 ms). Slajdy w obrębie jednej pozycji planu (zwrotki) mają efekt
-z przycisku „Slajdy: …” w pasku górnym (zapisany w planie; domyślnie „jak w planie”); slajdy prezentacji mają własny wybór („Slajdy: …” w kolumnie „Pieśń”, domyślnie przenikanie jak w PowerPoincie), a wejście na prezentację — „Przejście: …” jak przy pieśni. Przejście na inną pozycję planu ma efekt wybrany dla planu (przycisk
-przycisk przejścia w pasku górnym (napis: sam efekt), zapisany w planie; domyślnie Akwarela; żaden = przenikanie, kilka =
-losowo jeden). Pieśń lub tekst może mieć w planie własne przejście (przycisk „Przejście: …” w kolumnie „Pieśń”;
-domyślnie „jak w planie”). Kiosk ma własne efekty między elementami, niezależne od planu. Bez karty graficznej
+przenikaniem (150 ms). Przejścia są dwa: **między pozycjami planu** — efekt z pierwszego przycisku przejścia
+w pasku górnym (napis: sam efekt; zapisany w planie, domyślnie Akwarela) — i **między slajdami jednej pozycji** —
+drugi przycisk w pasku (domyślnie „jak w planie”), dla zwrotek, części tekstu i slajdów prezentacji. Pieśń, tekst
+i prezentacja z kilkoma slajdami mogą mieć własne przejście slajdów (przycisk „Slajdy: …” w kolumnie „Pieśń”,
+domyślnie „jak w planie”); przejścia na pozycję nie ustawia się osobno. Wybór: „Przenikanie” albo efekty — kilka
+zaznaczonych = za każdym razem losowo jeden. Kiosk ma własne efekty między elementami, niezależne od planu; film
+i pojedynczy obraz nie mają przejść wewnętrznych. Bez karty graficznej
 albo przy uporczywie wolnych klatkach zamiast efektów — przenikanie.
 
 ## 7. Architektura (Clean Code + SOLID)

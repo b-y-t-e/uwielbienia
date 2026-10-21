@@ -64,26 +64,7 @@ public class PlanItemTypesTests
     }
 
     [Fact]
-    public void Song_with_own_transitions_uses_them_and_one_without_follows_the_plan()
-    {
-        var session = new LiveSession();
-        var library = new Songs.SongLibrary(new Songs.DirectorySongSource(RepositoryPaths.Songs), new Songs.MarkdownSongParser());
-        var plan = new ActivePlan(new MemoryPlanStore(), new PlanItemTypes([new SongPlanItemType(library, new SectionSlideBuilder())]), session);
-        var songId = library.Songs[0].Id;
-        var own = SongPlanItem.For(songId) with { Transitions = [SlideTransition.Flame] };
-        var plain = SongPlanItem.For(songId);
-
-        plan.Open(Plan.Create("Test", null).Insert(0, own).Insert(1, plain).WithTransitions([SlideTransition.Ripple]));
-
-        Assert.Equal([SlideTransition.Flame], plan.Playlist[0].Transitions);
-        Assert.Equal([SlideTransition.Ripple], plan.Playlist[1].Transitions);
-        var saved = System.Text.Json.JsonSerializer.Deserialize<PlanItem>(
-            System.Text.Json.JsonSerializer.Serialize<PlanItem>(own, JsonPlanStore.JsonOptions), JsonPlanStore.JsonOptions);
-        Assert.Equal([SlideTransition.Flame], ((SongPlanItem)saved!).Transitions);
-    }
-
-    [Fact]
-    public void Presentation_slides_cross_fade_regardless_of_the_plan_slide_transitions()
+    public void Presentation_slides_follow_the_plan_slide_transitions_unless_it_has_its_own()
     {
         var session = new LiveSession();
         var plan = new ActivePlan(new MemoryPlanStore(), new PlanItemTypes([new NoticeType(), new PresentationType()]), session);
@@ -92,21 +73,39 @@ public class PlanItemTypesTests
             .WithTransitions([SlideTransition.Flame]).WithInnerTransitions([SlideTransition.Ripple]));
 
         Assert.Equal([SlideTransition.Ripple], plan.Playlist[0].InnerTransitions);
-        Assert.Empty(plan.Playlist[1].InnerTransitions!);
-        Assert.Equal([SlideTransition.Flame], plan.Playlist[1].Transitions); // wejście na prezentację — jak w planie
+        Assert.Equal([SlideTransition.Ripple], plan.Playlist[1].InnerTransitions);
+        Assert.Equal([SlideTransition.Flame], plan.Playlist[1].Transitions); // wejście na prezentację — zawsze z planu
 
-        var own = (PresentationPlanItem)plan.Plan!.Items[1] with { Transitions = [SlideTransition.Slide], SlideEffects = [SlideTransition.Watercolor] };
+        var own = (PresentationPlanItem)plan.Plan!.Items[1] with { SlideEffects = [SlideTransition.Watercolor] };
         plan.Update(p => p.Replace(own));
 
-        Assert.Equal([SlideTransition.Slide], plan.Playlist[1].Transitions);
+        Assert.Equal([SlideTransition.Flame], plan.Playlist[1].Transitions);
         Assert.Equal([SlideTransition.Watercolor], plan.Playlist[1].InnerTransitions);
         var saved = (PresentationPlanItem)System.Text.Json.JsonSerializer.Deserialize<PlanItem>(
             System.Text.Json.JsonSerializer.Serialize<PlanItem>(own, JsonPlanStore.JsonOptions), JsonPlanStore.JsonOptions)!;
         Assert.Equal([SlideTransition.Watercolor], saved.SlideEffects);
+        // plan z dawnym własnym przejściem na pozycję („transitions”) wczytuje się — to pole już nic nie znaczy
         var old = System.Text.Json.JsonSerializer.Deserialize<PlanItem>(
-            """{"type":"presentation","id":"8f6c2b1e-0000-0000-0000-000000000001","folder":"f","title":"t"}""", JsonPlanStore.JsonOptions);
-        Assert.Empty(old!.InnerTransitions!);
-        Assert.Null(old.EntryTransitions);
+            """{"type":"presentation","id":"8f6c2b1e-0000-0000-0000-000000000001","folder":"f","title":"t","transitions":["flame"]}""", JsonPlanStore.JsonOptions);
+        Assert.Null(old!.InnerTransitions);
+    }
+
+    [Fact]
+    public void Song_slides_follow_the_plan_slide_transitions_unless_it_has_its_own()
+    {
+        var session = new LiveSession();
+        var library = new Songs.SongLibrary(new Songs.DirectorySongSource(RepositoryPaths.Songs), new Songs.MarkdownSongParser());
+        var plan = new ActivePlan(new MemoryPlanStore(), new PlanItemTypes([new SongPlanItemType(library, new SectionSlideBuilder())]), session);
+        var songId = library.Songs[0].Id;
+        var own = SongPlanItem.For(songId) with { SlideEffects = [] };
+
+        plan.Open(Plan.Create("Test", null).Insert(0, own).Insert(1, SongPlanItem.For(songId)).WithInnerTransitions([SlideTransition.Flame]));
+
+        Assert.Empty(plan.Playlist[0].InnerTransitions!);
+        Assert.Equal([SlideTransition.Flame], plan.Playlist[1].InnerTransitions);
+        var saved = System.Text.Json.JsonSerializer.Deserialize<PlanItem>(
+            System.Text.Json.JsonSerializer.Serialize<PlanItem>(own, JsonPlanStore.JsonOptions), JsonPlanStore.JsonOptions);
+        Assert.Empty(((SongPlanItem)saved!).SlideEffects!);
     }
 
     private sealed class PresentationType : IPlanItemType

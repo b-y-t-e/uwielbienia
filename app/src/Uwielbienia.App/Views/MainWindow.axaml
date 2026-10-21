@@ -275,23 +275,14 @@
                             <Button Classes="quiet" Content="Spróbuj ponownie" Command="{Binding RetryCommand}" IsVisible="{Binding IsFailed}" />
                           </StackPanel>
                         </StackPanel>
-                        <!-- Przejście na prezentację (jak przy pieśni) i między jej slajdami (domyślnie przenikanie). -->
-                        <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="12,0,0,0" Spacing="2">
-                          <Button Classes="quiet" HorizontalAlignment="Right"
-                                  ToolTip.Tip="Przejście na rzutniku na tę pozycję z innej pozycji planu">
-                            <TextBlock Text="{Binding Transitions.ButtonText}" />
-                            <Button.Flyout>
-                              <Flyout Placement="BottomEdgeAlignedRight">
-                                <ContentControl Content="{Binding Transitions}" />
-                              </Flyout>
-                            </Button.Flyout>
-                          </Button>
+                        <!-- Przejście między slajdami prezentacji (tylko przy kilku): jak w planie albo własne (jak przy pieśni). -->
+                        <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="12,0,0,0" IsVisible="{Binding HasSeveralSlides}">
                           <Button Classes="quiet" HorizontalAlignment="Right"
                                   ToolTip.Tip="Przejście na rzutniku między slajdami tej prezentacji">
-                            <TextBlock Text="{Binding SlidesButtonText}" />
+                            <TextBlock Text="{Binding SlideTransitions.ButtonText}" />
                             <Button.Flyout>
                               <Flyout Placement="BottomEdgeAlignedRight">
-                                <ContentControl Width="340" Margin="4" Content="{Binding SlideChoice}" />
+                                <ContentControl Content="{Binding SlideTransitions}" />
                               </Flyout>
                             </Button.Flyout>
                           </Button>
@@ -431,17 +422,24 @@
                                  IsVisible="{Binding Preview.OriginText, Converter={x:Static ObjectConverters.IsNotNull}}" />
                     </StackPanel>
                   </StackPanel>
-                  <!-- Przejście na tę pieśń w planie: jak w planie albo własne efekty. -->
-                  <Button Grid.Column="2" Classes="quiet" VerticalAlignment="Top" Margin="12,0,0,0"
-                          IsVisible="{Binding Preview.IsFromPlan}"
-                          ToolTip.Tip="Przejście na rzutniku na tę pozycję z innej pozycji planu">
-                    <TextBlock Text="{Binding Preview.Transitions.ButtonText}" />
-                    <Button.Flyout>
-                      <Flyout Placement="BottomEdgeAlignedRight">
-                        <ContentControl Content="{Binding Preview.Transitions}" />
-                      </Flyout>
-                    </Button.Flyout>
-                  </Button>
+                  <!-- Przejście między slajdami tej pieśni (tylko przy kilku): jak w planie albo własne efekty. -->
+                  <StackPanel Grid.Column="2" VerticalAlignment="Top" Margin="12,0,0,0">
+                    <StackPanel.IsVisible>
+                      <MultiBinding Converter="{x:Static BoolConverters.And}">
+                        <Binding Path="Preview.IsFromPlan" />
+                        <Binding Path="Preview.HasSeveralSlides" />
+                      </MultiBinding>
+                    </StackPanel.IsVisible>
+                    <Button Classes="quiet" HorizontalAlignment="Right"
+                            ToolTip.Tip="Przejście na rzutniku między slajdami tej pozycji">
+                      <TextBlock Text="{Binding Preview.SlideTransitions.ButtonText}" />
+                      <Button.Flyout>
+                        <Flyout Placement="BottomEdgeAlignedRight">
+                          <ContentControl Content="{Binding Preview.SlideTransitions}" />
+                        </Flyout>
+                      </Button.Flyout>
+                    </Button>
+                  </StackPanel>
                 </Grid>
 
                 <!-- Układ pieśni w tym planie: kolejność (przeciąganie za nagłówek), powtórzenie, usunięcie, pominięcie. -->

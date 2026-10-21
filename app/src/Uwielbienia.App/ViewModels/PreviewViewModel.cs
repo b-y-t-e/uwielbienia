@@ -43,7 +43,7 @@ public sealed partial class PreviewViewModel : ObservableObject
         _planActions = planActions;
         _library = library;
         _editor = editor;
-        Transitions = new TransitionOverrideViewModel(SaveTransitions);
+        SlideTransitions = new TransitionOverrideViewModel(own => SavePlanItem(item => item with { SlideEffects = own }), "Slajdy");
         // Pieśń spoza planu po edycji: wczytaj nową wersję (pozycje planu odświeża plan).
         library.Changed += (_, _) =>
         {
@@ -114,8 +114,12 @@ public sealed partial class PreviewViewModel : ObservableObject
 
     public bool HasSong => Song is not null;
 
-    /// <summary>Przejście na tę pieśń w planie (tylko pieśń z planu).</summary>
-    public TransitionOverrideViewModel Transitions { get; }
+    /// <summary>Przejście między slajdami tej pieśni: jak w planie albo własne.</summary>
+    public TransitionOverrideViewModel SlideTransitions { get; }
+
+    /// <summary>Pozycja z planu ma kilka slajdów — tylko wtedy jest wybór przejścia między nimi.</summary>
+    [ObservableProperty]
+    public partial bool HasSeveralSlides { get; private set; }
 
     public string? Title => Song?.DisplayTitle;
 
@@ -136,7 +140,8 @@ public sealed partial class PreviewViewModel : ObservableObject
 
     public void ShowPlanItem(SongPlanItem planItem, Song song)
     {
-        Transitions.Show(planItem.Transitions, _plan.Plan?.ChosenTransitions ?? Plan.DefaultTransitions);
+        SlideTransitions.Show(planItem.SlideEffects, _plan.Plan?.ChosenInnerTransitions ?? Plan.DefaultTransitions);
+        HasSeveralSlides = _plan.FindLiveItem(planItem.Id)?.Slides.Count > 1;
         // Plan przebudowuje się po każdym zapisie (np. zmianie układu) — ta sama pozycja z tym samym
         // układem nie wymaga ponownego wczytania, które skasowałoby listę części w trakcie jej zmiany.
         if (_planItem?.Id == planItem.Id && ReferenceEquals(Song, song) && SameLayout(_planItem, planItem))
@@ -319,11 +324,11 @@ public sealed partial class PreviewViewModel : ObservableObject
         _plan.Update(p => p.Replace(_planItem));
     }
 
-    private void SaveTransitions(IReadOnlyList<SlideTransition>? chosen)
+    private void SavePlanItem(Func<SongPlanItem, SongPlanItem> change)
     {
         if (_planItem is null)
             return;
-        _planItem = _planItem with { Transitions = chosen };
+        _planItem = change(_planItem);
         _plan.Update(p => p.Replace(_planItem));
     }
 

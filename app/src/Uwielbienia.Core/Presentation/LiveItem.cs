@@ -19,7 +19,7 @@ namespace Uwielbienia.Core.Presentation;
 /// (spoza planu) = zwykłe krótkie przenikanie.
 /// </param>
 /// <param name="InnerTransitions">
-/// Efekty przejścia między slajdami tej pozycji (z planu — <see cref="Plans.Plan.InnerTransitions"/>); jak <paramref name="Transitions"/>.
+/// Efekty przejścia między slajdami tej pozycji (własne pozycji — <see cref="Plans.PlanItem.InnerTransitions"/> — albo z planu — <see cref="Plans.Plan.InnerTransitions"/>); jak <paramref name="Transitions"/>.
 /// </param>
 public sealed record LiveItem(
     Guid? PlanItemId,

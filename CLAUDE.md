@@ -291,13 +291,17 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   `null` = domyślnie Akwarela; tylko własne — przejścia planu ich nie zmieniają) i **powolny zoom** zdjęć (`SlowZoom`, efekt Kena Burnsa — `Views/SlowZoom`: przejście
   `TransformOperationsTransition`, bo Avalonia nie animuje `RenderTransform` klatkami kluczowymi; rusza po przejściu; tylko
   w ramce na wymiar zdjęcia — przesuwany element na cały ekran zostawiał jasną linię na brzegu).
-- **Przejścia slajdów** (`App/Transitions`, ogólne): między elementami kiosku — efekty kiosku; na rzutniku przy przejściu
-  na inną pozycję planu — efekty planu (`Plan.Transitions` — przycisk przejścia w pasku górnym — napis to sam efekt, np. „Akwarela”, `PlanTransitionsViewModel`), a pieśń
-  lub tekst z własnymi efektami — jej (`SongPlanItem.Transitions`, `null` = jak w planie; przycisk „Przejście: …” w kolumnie „Pieśń”,
-  `TransitionOverrideViewModel`); `ActivePlan` wpisuje je w każdy `LiveItem.Transitions`,
-  a między slajdami jednej pozycji — efekty drugiego przycisku przejścia w pasku górnym (napis „Jak w planie” albo efekt) (`Plan.InnerTransitions`, `null` = jak w planie;
-  `PlanSlideTransitionsViewModel`; prezentacja ma własne — `PresentationPlanItem.SlideEffects`, domyślnie przenikanie, przycisk „Slajdy: …” w kolumnie „Pieśń” obok „Przejście: …” jak przy pieśni; `PlanItem.EntryTransitions` / `InnerTransitions`) w `LiveItem.InnerTransitions`; `LiveState.TransitionsFrom` (Core) daje je tylko między dwoma widocznymi slajdami
-  planu — `LiveViewModel.PageTransition` zamienia je na przejście; zapis i opis wyboru: `Plan.WithTransitions`, `SlideTransitions.Default` / `Describe`); ten sam slajd,
+- **Przejścia slajdów** (`App/Transitions`, ogólne). Są dwa rodzaje: **między pozycjami planu** — tylko efekty planu
+  (`Plan.Transitions`, pierwszy przycisk przejścia w pasku górnym — napis to sam efekt, np. „Akwarela”, `PlanTransitionsViewModel`;
+  pozycja nie ma własnego wejścia), i **między slajdami jednej pozycji** — drugi przycisk w pasku (`Plan.InnerTransitions`,
+  `null` = jak między pozycjami; `PlanSlideTransitionsViewModel`), domyślny dla zwrotek pieśni, części tekstu i slajdów prezentacji
+  (też kilku obrazów); pieśń, tekst i prezentacja mogą mieć własny (`SongPlanItem.SlideEffects`, `PresentationPlanItem.SlideEffects`,
+  `null` = jak w planie; przycisk „Slajdy: …” w kolumnie „Pieśń” tylko przy kilku slajdach, `TransitionOverrideViewModel`;
+  `PlanItem.InnerTransitions`). Kiosk ma tylko własne efekty między elementami; film i pojedynczy obraz — jeden slajd, bez
+  przejść wewnętrznych. Wybór: „Przenikanie” albo efekty (kilka = losowo jeden; `TransitionChoiceViewModel`, jeden szablon
+  w `MainWindow.axaml`). `ActivePlan` wpisuje efekty w `LiveItem.Transitions` / `InnerTransitions`; `LiveState.TransitionsFrom` (Core)
+  daje je tylko między dwoma widocznymi slajdami planu — `LiveViewModel.PageTransition` zamienia je na przejście; zapis i opis
+  wyboru: `Plan.WithTransitions`, `SlideTransitions.Default` / `Describe`. Ten sam slajd,
   czarny ekran i pieśń spoza planu — krótkie przenikanie (`LiveViewModel.SlideChange`). Przenikanie to `DirectCrossFade`: stara strona zostaje, aż nowa się wczyta i ułoży (`PageReadiness`), potem `CrossFadeView` miesza zrzuty obu stron (z tłem ekranu) — wprost, bez przyciemnienia. Nie przezroczystość strony: Avalonia nakłada `Opacity` na każdy element osobno (`RequiresFullOpacityHandling` nie pomaga), więc nieprzezroczyste tło i obraz nowej strony kolejno przyciemniały starą — w połowie ciemniej niż obie (czarne mignięcie); `CrossFade` z Avalonii tak samo. Animacji `FillMode.Forward` nie używamy do przejść — po końcu trzyma wartość ponad lokalną. `SlideTransition` (Core:
   Przesunięcie w losowym kierunku — wstecz w przeciwnym, Witraż, Płomień, Akwarela, Promień światła, Fala) →
   `ShaderPageTransition` (`IPageTransition` dla `TransitioningContentControl`): zrzut starej i nowej strony
