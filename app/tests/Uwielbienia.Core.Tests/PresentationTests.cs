@@ -15,13 +15,20 @@ public sealed class PresentationTests : IDisposable
     public PresentationTests()
     {
         Directory.CreateDirectory(_temp);
-        _library = new SlideshowLibrary(Path.Combine(_temp, "prezentacje"), _exporter, new ImmediateDispatcher());
+        _library = new SlideshowLibrary(Path.Combine(_temp, "prezentacje"), _exporter, _exporter, new ImmediateDispatcher());
     }
 
     public void Dispose() => Directory.Delete(_temp, recursive: true);
 
-    private sealed class FakeExporter : ISlideExporter
+    private sealed class FakeExporter : ISlideExporter, ISlideExportVersion
     {
+        public string Current => "v2";
+
+        /// <summary>Slajdy starszej wersji są nieaktualne.</summary>
+        public bool Outdated { get; set; }
+
+        public bool IsOutdated(string presentation, string exported) => Outdated;
+
         public string Name => "Fake";
 
         public bool IsAvailable => true;
@@ -99,6 +106,45 @@ public sealed class PresentationTests : IDisposable
         _library.Load(imported.Folder);
         await WaitFor(() => changes == 3);
         Assert.Equal(3, _library.Load(imported.Folder).Slides.Count);
+    }
+
+    [Fact]
+    public async Task Old_export_of_animated_presentation_is_redone_and_kept_when_that_fails()
+    {
+        var source = Path.Combine(_temp, "Animacje.pptx");
+        File.WriteAllText(source, "");
+        _exporter.Outdated = true;
+        var imported = await _library.ImportAsync([source]);
+        var slides = Path.Combine(_temp, "prezentacje", imported.Folder, "slajdy");
+        Directory.CreateDirectory(slides);
+        File.WriteAllText(Path.Combine(slides, "slide001.png"), "");
+        File.WriteAllText(Path.Combine(slides, ".complete"), ""); // eksport sprzed kroków animacji
+        _exporter.Error = "Brak PowerPointa";
+        var changed = false;
+        _library.Changed += (_, _) => changed = true;
+
+        Assert.Single(_library.Load(imported.Folder).Slides); // stare slajdy w trakcie nowego eksportu …
+        _exporter.Release.SetResult();
+        await WaitFor(() => changed);
+
+        var state = _library.Load(imported.Folder);            // … i po jego błędzie
+        Assert.Single(state.Slides);
+        Assert.False(state.IsFailed);
+    }
+
+    [Fact]
+    public async Task Old_export_without_animations_stays_and_is_checked_once()
+    {
+        var source = Path.Combine(_temp, "Zwykla.pptx");
+        File.WriteAllText(source, "");
+        var imported = await _library.ImportAsync([source]);
+        var slides = Path.Combine(_temp, "prezentacje", imported.Folder, "slajdy");
+        Directory.CreateDirectory(slides);
+        File.WriteAllText(Path.Combine(slides, "slide001.png"), "");
+        File.WriteAllText(Path.Combine(slides, ".complete"), "");
+
+        Assert.Single(_library.Load(imported.Folder).Slides);
+        Assert.Equal("v2", File.ReadAllText(Path.Combine(slides, ".complete")));
     }
 
     [Fact]

@@ -36,17 +36,19 @@ public static class SlideImages
 
         public Task<Bitmap?> Get(string file)
         {
+            // ponowny eksport zapisuje nowe slajdy pod tymi samymi ścieżkami — klucz z czasem zapisu
+            var key = $"{file}|{File.GetLastWriteTimeUtc(file).Ticks}";
             lock (_items)
             {
-                if (_items.TryGetValue(file, out var cached))
+                if (_items.TryGetValue(key, out var cached))
                 {
-                    _order.Remove(file);
-                    _order.AddFirst(file);
+                    _order.Remove(key);
+                    _order.AddFirst(key);
                     return cached;
                 }
                 var task = Task.Run(() => Decode(file));
-                _items[file] = task;
-                _order.AddFirst(file);
+                _items[key] = task;
+                _order.AddFirst(key);
                 // Usunięty z pamięci podręcznej obraz może być jeszcze wyświetlany — zwalnia go dopiero GC.
                 while (_order.Count > capacity)
                 {

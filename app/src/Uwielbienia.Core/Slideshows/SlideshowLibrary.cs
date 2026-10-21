@@ -15,6 +15,16 @@ public interface ISlideExporter
     Task ExportAsync(string presentation, string outDir, int width, IProgress<string> progress);
 }
 
+/// <summary>Wersja formatu eksportu: kiedy slajdy wyeksportowane wcześniej trzeba wyeksportować jeszcze raz.</summary>
+public interface ISlideExportVersion
+{
+    /// <summary>Wersja zapisywana w znaczniku ukończenia eksportu.</summary>
+    string Current { get; }
+
+    /// <summary>Slajdy z wersji <paramref name="exported"/> są nieaktualne dla tej prezentacji.</summary>
+    bool IsOutdated(string presentation, string exported);
+}
+
 /// <summary>Stan slajdów prezentacji.</summary>
 /// <param name="Slides">Pliki obrazów w kolejności pokazu; puste, dopóki slajdy nie są gotowe.</param>
 /// <param name="Note">Dlaczego nie ma slajdów: przygotowywanie albo błąd; <c>null</c> = gotowe.</param>
@@ -58,7 +68,7 @@ public interface ISlideshowLibrary
     event EventHandler<SlideshowProgress>? Progress;
 }
 
-public sealed class SlideshowLibrary(string root, ISlideExporter exporter, IUiDispatcher dispatcher) : ISlideshowLibrary
+public sealed class SlideshowLibrary(string root, ISlideExporter exporter, ISlideExportVersion version, IUiDispatcher dispatcher) : ISlideshowLibrary
 {
     public const int ExportWidth = 1920;
 
@@ -68,12 +78,14 @@ public sealed class SlideshowLibrary(string root, ISlideExporter exporter, IUiDi
 
     private const string SlidesFolder = "slajdy";
     private const string CompleteMarker = ".complete";
+
     private const string PreparingNote = "Przygotowywanie slajdów…";
 
     // Stan przygotowania zmieniany tylko na wątku interfejsu (przez dispatcher).
     private readonly Dictionary<string, string> _preparing = [];
     private readonly Dictionary<string, string> _errors = [];
     private readonly SemaphoreSlim _exportLock = new(1, 1);
+    private readonly Dictionary<string, bool> _checkedSteps = [];
 
     public event EventHandler<string>? Changed;
 
@@ -195,18 +207,50 @@ public sealed class SlideshowLibrary(string root, ISlideExporter exporter, IUiDi
             return Ready(ImagesIn(directory));
 
         var slides = Path.Combine(directory, SlidesFolder);
-        if (File.Exists(Path.Combine(slides, CompleteMarker)))
+        if (IsComplete(slides, presentation))
             return Ready(ImagesIn(slides));
+        // eksport sprzed kroków animacji: stare slajdy działają dalej — w trakcie nowego eksportu i gdy ten się nie uda
+        var previous = File.Exists(Path.Combine(slides, CompleteMarker)) ? ImagesIn(slides) : null;
         if (_errors.TryGetValue(folder, out var error))
-            return new SlideshowState([], error, IsFailed: true);
+            return previous is not null ? Ready(previous) : new SlideshowState([], error, IsFailed: true);
         if (_preparing.TryGetValue(folder, out var progress))
-            return new SlideshowState([], progress);
+            return previous is not null ? Ready(previous) : new SlideshowState([], progress);
         if (!prepare)
-            return new SlideshowState([], PreparingNote);
+            return previous is not null ? Ready(previous) : new SlideshowState([], PreparingNote);
         _preparing[folder] = PreparingNote;
         _ = ExportAsync(folder, presentation, slides);
         // eksport mógł już coś zgłosić (albo skończyć) — zwracamy aktualny stan
-        return _preparing.TryGetValue(folder, out var started) ? new SlideshowState([], started) : State(folder, prepare: false);
+        return previous is null && _preparing.TryGetValue(folder, out var started)
+            ? new SlideshowState([], started)
+            : State(folder, prepare: false);
+    }
+
+    /// <summary>
+    /// Slajdy gotowe i aktualne (<see cref="ISlideExportVersion"/>); aktualne slajdy starszej wersji dostają w znaczniku
+    /// bieżącą — plik sprawdza się raz, nie przy każdym starcie.
+    /// </summary>
+    private bool IsComplete(string slides, string presentation)
+    {
+        var marker = Path.Combine(slides, CompleteMarker);
+        if (!File.Exists(marker))
+            return false;
+        if (_checkedSteps.TryGetValue(slides, out var current))
+            return current;
+        var exported = File.ReadAllText(marker);
+        current = exported == version.Current || !version.IsOutdated(presentation, exported);
+        if (current && exported != version.Current)
+        {
+            try
+            {
+                File.WriteAllText(marker, version.Current);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                // sprawdzi się znowu przy następnym starcie
+            }
+        }
+        _checkedSteps[slides] = current;
+        return current;
     }
 
     private static SlideshowState Ready(List<string> images) =>
@@ -228,10 +272,8 @@ public sealed class SlideshowLibrary(string root, ISlideExporter exporter, IUiDi
                 _preparing[folder] = text;
                 Progress?.Invoke(this, new SlideshowProgress(folder, text));
             }))).ConfigureAwait(false);
-            File.WriteAllText(Path.Combine(temp, CompleteMarker), "");
-            if (Directory.Exists(slides))
-                Directory.Delete(slides, recursive: true);
-            Directory.Move(temp, slides);
+            File.WriteAllText(Path.Combine(temp, CompleteMarker), version.Current);
+            ReplaceSlides(temp, slides);
         }
         catch (Exception ex)
         {
@@ -245,10 +287,39 @@ public sealed class SlideshowLibrary(string root, ISlideExporter exporter, IUiDi
         OnUi(() =>
         {
             _preparing.Remove(folder);
+            _checkedSteps.Remove(slides);
             if (error is not null)
                 _errors[folder] = error;
             Changed?.Invoke(this, folder);
         });
+    }
+
+    /// <summary>
+    /// Podmienia slajdy bez chwili, w której ich nie ma: stare (mogą być właśnie czytane) najpierw odchodzą pod nazwę
+    /// zapasową, nowe wchodzą na ich miejsce, a dopiero potem zapasowe są usuwane — błąd usuwania niczego nie psuje.
+    /// </summary>
+    private static void ReplaceSlides(string temp, string slides)
+    {
+        var old = slides + ".old";
+        if (Directory.Exists(old))
+            TryDelete(old);
+        if (Directory.Exists(slides))
+            Directory.Move(slides, old);
+        Directory.Move(temp, slides);
+        TryDelete(old);
+    }
+
+    private static void TryDelete(string directory)
+    {
+        try
+        {
+            if (Directory.Exists(directory))
+                Directory.Delete(directory, recursive: true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // plik jeszcze otwarty — folder zapasowy usunie następny eksport
+        }
     }
 
     private void OnUi(Action action) => _ = dispatcher.InvokeAsync(() =>
