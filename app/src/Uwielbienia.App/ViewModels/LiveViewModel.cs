@@ -51,7 +51,7 @@ public sealed partial class LiveViewModel : ObservableObject
     };
 
     /// <summary>Ten sam slajd, czarny ekran, pieśń spoza planu i wybrane samo przenikanie: krótkie przenikanie.</summary>
-    public static readonly IPageTransition SlideChange = new CrossFade(TimeSpan.FromSeconds(0.15));
+    public static readonly IPageTransition SlideChange = new DirectCrossFade(TimeSpan.FromSeconds(0.15));
 
     /// <summary>
     /// Przejście do strony <see cref="Page"/>: na inną pozycję planu — jej efekty (<see cref="LiveItem.Transitions"/>), między slajdami
@@ -87,7 +87,8 @@ public sealed partial class LiveViewModel : ObservableObject
     public IReadOnlyList<SlideLine> NextLines => NextTab?.Slide.Lines ?? [];
 
     /// <summary>Slajd prezentacji (miniatura) — zamiast wersów.</summary>
-    public Task<Bitmap?>? CurrentImage => CurrentTab?.Slide is ImageSlide image ? SlideImages.LoadThumbnailAsync(image.ImageFile) : null;
+    /// <summary>Slajd prezentacji w kolumnie „Na ekranie” — ta sama strona co na rzutniku (także przy czarnym ekranie).</summary>
+    public ProjectedImage? CurrentImage => CurrentTab?.Slide is ImageSlide image ? new ProjectedImage(image) : null;
 
     public Task<Bitmap?>? NextImage => NextTab?.Slide is ImageSlide image ? SlideImages.LoadThumbnailAsync(image.ImageFile) : null;
 

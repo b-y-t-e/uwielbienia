@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Presentation;
@@ -26,7 +25,7 @@ public sealed partial class TransitionOverrideViewModel : ObservableObject
         _choice.Chosen += (_, chosen) => OnChosen(chosen);
     }
 
-    public ObservableCollection<TransitionOptionViewModel> Options => _choice.Options;
+    public TransitionChoiceViewModel Choice => _choice;
 
     /// <summary>Pieśń nie ma własnego przejścia — używa przejścia planu.</summary>
     [ObservableProperty]

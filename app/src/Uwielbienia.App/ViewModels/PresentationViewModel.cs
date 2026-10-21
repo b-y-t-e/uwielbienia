@@ -4,25 +4,62 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Uwielbienia.App.Services;
 using Uwielbienia.Core.Plans;
+using Uwielbienia.Core.Presentation;
 using Uwielbienia.Core.Slideshows;
 
 namespace Uwielbienia.App.ViewModels;
 
-/// <summary>Kolumna „Pieśń” dla prezentacji: miniatury slajdów i stan ich przygotowania.</summary>
+/// <summary>
+/// Kolumna „Pieśń” dla prezentacji: miniatury slajdów, stan ich przygotowania i przejścia — na prezentację (jak przy
+/// pieśni: jak w planie albo własne) i między jej slajdami (domyślnie przenikanie).
+/// </summary>
 public sealed partial class PresentationViewModel : ObservableObject, IDisposable
 {
     private readonly ISlideshowLibrary _library;
+    private readonly ActivePlan _plan;
 
-    public PresentationViewModel(PresentationPlanItem item, ISlideshowLibrary library)
+    public PresentationViewModel(PresentationPlanItem item, ISlideshowLibrary library, ActivePlan plan)
     {
         Item = item;
         _library = library;
+        _plan = plan;
+        Transitions = new TransitionOverrideViewModel(own => Save(Item with { Transitions = own }));
+        SlideChoice.Chosen += (_, chosen) =>
+        {
+            OnPropertyChanged(nameof(SlidesButtonText));
+            Save(Item with { SlideEffects = chosen.Count == 0 ? null : chosen });
+        };
         library.Changed += OnChanged;
         library.Progress += OnProgress;
+        Show(item);
         Refresh();
     }
 
-    public PresentationPlanItem Item { get; }
+    public PresentationPlanItem Item { get; private set; }
+
+    /// <summary>Przejście na prezentację z innej pozycji planu.</summary>
+    public TransitionOverrideViewModel Transitions { get; }
+
+    /// <summary>Przejście między slajdami prezentacji: żaden efekt = przenikanie.</summary>
+    public TransitionChoiceViewModel SlideChoice { get; } = new();
+
+    /// <summary>Np. „Slajdy: przenikanie”, „Slajdy: Akwarela”.</summary>
+    public string SlidesButtonText => "Slajdy: " + SlideChoice.Description;
+
+    /// <summary>Ta sama pozycja po zapisie albo zmianie przejścia planu — odśwież wybór bez wczytywania slajdów od nowa.</summary>
+    public void Show(PresentationPlanItem item)
+    {
+        Item = item;
+        Transitions.Show(item.Transitions, _plan.Plan?.ChosenTransitions ?? Plan.DefaultTransitions);
+        SlideChoice.Show(item.SlideEffects ?? []);
+        OnPropertyChanged(nameof(SlidesButtonText));
+    }
+
+    private void Save(PresentationPlanItem item)
+    {
+        Item = item;
+        _plan.Update(p => p.Replace(item));
+    }
 
     public string Title => Item.Title;
 

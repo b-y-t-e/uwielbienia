@@ -1,13 +1,14 @@
 using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using Uwielbienia.Core.Presentation;
 
 namespace Uwielbienia.App.ViewModels;
 
 /// <summary>
-/// Lista efektów przejścia do zaznaczania (żaden — przenikanie, kilka — losowo jeden). <see cref="Chosen"/> zgłasza tylko
-/// zmiany operatora, nie <see cref="Show"/>.
+/// Lista efektów przejścia do zaznaczania (żaden — przenikanie, kilka — losowo jeden) z osobnym „Przenikanie”
+/// (<see cref="IsCrossFade"/>). <see cref="Chosen"/> zgłasza tylko zmiany operatora, nie <see cref="Show"/>.
 /// </summary>
-public sealed class TransitionChoiceViewModel
+public sealed class TransitionChoiceViewModel : ObservableObject
 {
     private bool _showing;
 
@@ -18,8 +19,10 @@ public sealed class TransitionChoiceViewModel
             var option = new TransitionOptionViewModel(transition, false);
             option.PropertyChanged += (_, _) =>
             {
-                if (!_showing)
-                    Chosen?.Invoke(this, Selected);
+                if (_showing)
+                    return;
+                OnPropertyChanged(nameof(IsCrossFade));
+                Chosen?.Invoke(this, Selected);
             };
             Options.Add(option);
         }
@@ -28,6 +31,26 @@ public sealed class TransitionChoiceViewModel
     public event EventHandler<IReadOnlyList<SlideTransition>>? Chosen;
 
     public ObservableCollection<TransitionOptionViewModel> Options { get; } = [];
+
+    /// <summary>
+    /// „Przenikanie” — żaden efekt. Zaznaczenie odznacza wszystkie efekty; odznaczyć się go nie da (wybiera się wtedy efekt).
+    /// </summary>
+    public bool IsCrossFade
+    {
+        get => Options.All(o => !o.IsSelected);
+        set
+        {
+            if (value && !IsCrossFade)
+            {
+                _showing = true;
+                foreach (var option in Options)
+                    option.IsSelected = false;
+                _showing = false;
+                Chosen?.Invoke(this, Selected);
+            }
+            OnPropertyChanged(); // odznaczony przycisk wraca do stanu z wyboru
+        }
+    }
 
     public IReadOnlyList<SlideTransition> Selected => Options.Where(o => o.IsSelected).Select(o => o.Transition).ToList();
 
@@ -43,5 +66,6 @@ public sealed class TransitionChoiceViewModel
         foreach (var option in Options)
             option.IsSelected = chosen.Contains(option.Transition);
         _showing = false;
+        OnPropertyChanged(nameof(IsCrossFade));
     }
 }

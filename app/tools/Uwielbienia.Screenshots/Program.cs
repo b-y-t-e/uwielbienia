@@ -96,7 +96,7 @@ if (window.GetVisualDescendants().OfType<Grid>().FirstOrDefault(g => g.ContextMe
 // Pasek górny: przejście między pozycjami planu — panel z efektami (kilka zaznaczonych = losowe).
 if (window.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.Flyout is not null && b.DataContext is MainViewModel) is { } transitionsButton)
 {
-    main.Transitions.Options[0].IsSelected = true;
+    main.Transitions.Choice.Options[0].IsSelected = true;
     transitionsButton.Flyout!.ShowAt(transitionsButton);
     Dispatcher.UIThread.RunJobs();
     AvaloniaHeadlessPlatform.ForceRenderTimerTick();
@@ -104,7 +104,16 @@ if (window.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.Flyout 
     if (active.Plan!.ChosenTransitions is not [SlideTransition.Slide, SlideTransition.Watercolor])
         throw new InvalidOperationException("Wybór przejścia nie trafił do planu");
     transitionsButton.Flyout.Hide();
-    main.Transitions.Options[0].IsSelected = false;
+    main.Transitions.Choice.Options[0].IsSelected = false;
+    // „Przenikanie” odznacza wszystkie efekty, a wybrany efekt odznacza „Przenikanie”
+    var before = active.Plan!.ChosenTransitions;
+    main.Transitions.Choice.IsCrossFade = true;
+    if (active.Plan!.ChosenTransitions.Count != 0 || main.Transitions.Choice.Options.Any(o => o.IsSelected))
+        throw new InvalidOperationException("„Przenikanie” nie odznaczyło efektów");
+    main.Transitions.Choice.Options[1].IsSelected = true;
+    if (main.Transitions.Choice.IsCrossFade)
+        throw new InvalidOperationException("Wybrany efekt nie odznaczył „Przenikanie”");
+    active.Update(p => p.WithTransitions(before));
 }
 
 // Okno „Telefon” ze sparowanymi urządzeniami (serwer udawany — bez sieci).

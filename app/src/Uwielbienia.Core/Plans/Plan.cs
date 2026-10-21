@@ -97,6 +97,10 @@ public abstract record PlanItem(Guid Id)
     /// <summary>Własne efekty przejścia na tę pozycję z innej pozycji planu; <c>null</c> = przejście planu.</summary>
     [JsonIgnore]
     public virtual IReadOnlyList<SlideTransition>? EntryTransitions => null;
+
+    /// <summary>Własne efekty przejścia między slajdami tej pozycji; <c>null</c> = przejście slajdów planu.</summary>
+    [JsonIgnore]
+    public virtual IReadOnlyList<SlideTransition>? InnerTransitions => null;
 }
 
 /// <summary>Część w układzie pieśni: kod sekcji i czy jest śpiewana (odznaczona = pominięta).</summary>
@@ -187,9 +191,25 @@ public sealed record SongPlanItem(
 
 /// <summary>Prezentacja (PowerPoint albo obrazy) skopiowana do folderu aplikacji.</summary>
 /// <param name="Folder">Folder prezentacji w katalogu aplikacji (<see cref="Slideshows.ISlideshowLibrary"/>).</param>
-public sealed record PresentationPlanItem(Guid Id, string Folder, string Title) : PlanItem(Id)
+/// <param name="Transitions">Własne efekty przejścia na prezentację z innej pozycji planu; <c>null</c> = jak w planie.</param>
+/// <param name="SlideEffects">
+/// Efekty przejścia między slajdami prezentacji — niezależne od przejścia slajdów planu; <c>null</c> albo pusta lista =
+/// przenikanie (jak w PowerPoincie).
+/// </param>
+public sealed record PresentationPlanItem(
+    Guid Id,
+    string Folder,
+    string Title,
+    IReadOnlyList<SlideTransition>? Transitions = null,
+    IReadOnlyList<SlideTransition>? SlideEffects = null) : PlanItem(Id)
 {
     public override PlanItem WithNewId() => this with { Id = Guid.NewGuid() };
+
+    [JsonIgnore]
+    public override IReadOnlyList<SlideTransition>? EntryTransitions => Transitions;
+
+    [JsonIgnore]
+    public override IReadOnlyList<SlideTransition>? InnerTransitions => SlideEffects ?? [];
 }
 
 /// <summary>Film wskazany na dysku (nie jest kopiowany — pliki filmów bywają bardzo duże).</summary>

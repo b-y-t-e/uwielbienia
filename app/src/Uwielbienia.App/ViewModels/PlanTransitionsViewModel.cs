@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Presentation;
@@ -23,7 +22,7 @@ public sealed partial class PlanTransitionsViewModel : ObservableObject
     }
 
     /// <summary>Żaden — zwykłe przenikanie, jeden — zawsze ten, kilka — losowo jeden z nich.</summary>
-    public ObservableCollection<TransitionOptionViewModel> Options => _choice.Options;
+    public TransitionChoiceViewModel Choice => _choice;
 
     /// <summary>Np. „Przejście: Akwarela”, „Przejście: losowe (3)”, „Przejście: przenikanie”.</summary>
     public string ButtonText => "Przejście: " + _choice.Description;

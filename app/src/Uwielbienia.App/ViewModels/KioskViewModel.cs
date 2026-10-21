@@ -32,12 +32,8 @@ public sealed partial class KioskViewModel : ObservableObject, IDisposable
         SlowZoom = item.SlowZoom;
         foreach (var entry in item.Entries)
             Entries.Add(CreateEntry(entry));
-        foreach (var transition in SlideTransitions.All)
-        {
-            var option = new TransitionOptionViewModel(transition, item.ChosenTransitions.Contains(transition));
-            option.PropertyChanged += (_, _) => Save();
-            Transitions.Add(option);
-        }
+        Transitions.Show(item.ChosenTransitions);
+        Transitions.Chosen += (_, _) => Save();
         library.Changed += OnLibraryChanged;
         _loaded = true;
     }
@@ -49,7 +45,7 @@ public sealed partial class KioskViewModel : ObservableObject, IDisposable
     public bool IsEmpty => Entries.Count == 0;
 
     /// <summary>Efekty przejścia do wyboru: żaden — przenikanie, jeden — zawsze ten, kilka — losowo jeden z nich.</summary>
-    public ObservableCollection<TransitionOptionViewModel> Transitions { get; } = [];
+    public TransitionChoiceViewModel Transitions { get; } = new();
 
     /// <summary>Powolny zoom zdjęć.</summary>
     [ObservableProperty]
@@ -150,7 +146,7 @@ public sealed partial class KioskViewModel : ObservableObject, IDisposable
             return;
         var title = string.IsNullOrWhiteSpace(Title) ? "Kiosk" : Title.Trim();
         var seconds = Math.Clamp((int)(Seconds ?? KioskPlanItem.DefaultSeconds), KioskPlanItem.MinSeconds, KioskPlanItem.MaxSeconds);
-        var transitions = Transitions.Where(t => t.IsSelected).Select(t => t.Transition).ToList();
+        var transitions = Transitions.Selected;
         var updated = Item with
         {
             Title = title,

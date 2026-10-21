@@ -83,6 +83,45 @@ public class PlanItemTypesTests
     }
 
     [Fact]
+    public void Presentation_slides_cross_fade_regardless_of_the_plan_slide_transitions()
+    {
+        var session = new LiveSession();
+        var plan = new ActivePlan(new MemoryPlanStore(), new PlanItemTypes([new NoticeType(), new PresentationType()]), session);
+        plan.Open(Plan.Create("Test", null).Insert(0, new NoticeItem(Guid.NewGuid(), "a"))
+            .Insert(1, new PresentationPlanItem(Guid.NewGuid(), "folder", "Prezentacja"))
+            .WithTransitions([SlideTransition.Flame]).WithInnerTransitions([SlideTransition.Ripple]));
+
+        Assert.Equal([SlideTransition.Ripple], plan.Playlist[0].InnerTransitions);
+        Assert.Empty(plan.Playlist[1].InnerTransitions!);
+        Assert.Equal([SlideTransition.Flame], plan.Playlist[1].Transitions); // wejście na prezentację — jak w planie
+
+        var own = (PresentationPlanItem)plan.Plan!.Items[1] with { Transitions = [SlideTransition.Slide], SlideEffects = [SlideTransition.Watercolor] };
+        plan.Update(p => p.Replace(own));
+
+        Assert.Equal([SlideTransition.Slide], plan.Playlist[1].Transitions);
+        Assert.Equal([SlideTransition.Watercolor], plan.Playlist[1].InnerTransitions);
+        var saved = (PresentationPlanItem)System.Text.Json.JsonSerializer.Deserialize<PlanItem>(
+            System.Text.Json.JsonSerializer.Serialize<PlanItem>(own, JsonPlanStore.JsonOptions), JsonPlanStore.JsonOptions)!;
+        Assert.Equal([SlideTransition.Watercolor], saved.SlideEffects);
+        var old = System.Text.Json.JsonSerializer.Deserialize<PlanItem>(
+            """{"type":"presentation","id":"8f6c2b1e-0000-0000-0000-000000000001","folder":"f","title":"t"}""", JsonPlanStore.JsonOptions);
+        Assert.Empty(old!.InnerTransitions!);
+        Assert.Null(old.EntryTransitions);
+    }
+
+    private sealed class PresentationType : IPlanItemType
+    {
+        public bool Handles(PlanItem item) => item is PresentationPlanItem;
+
+        public PlanItemInfo? Describe(PlanItem item) => new(((PresentationPlanItem)item).Title, null, PlanItemKind.Presentation);
+
+        public LiveItem? Present(PlanItem item) =>
+            new(item.Id, "prezentacja", null, "Prezentacja", [new Slide("1", "1", []), new Slide("2", "2", [])]);
+
+        public event EventHandler? Changed { add { } remove { } }
+    }
+
+    [Fact]
     public void Plan_transitions_apply_between_visible_plan_slides()
     {
         var effects = new[] { SlideTransition.Flame };

@@ -29,9 +29,6 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
     /// <summary>Największa szerokość zrzutu w pikselach (płótno rzutnika ma 1920).</summary>
     private const int MaxCaptureWidth = 2560;
 
-    /// <summary>Najdłużej czeka na wczytanie nowej strony (<see cref="IWaitablePage"/>) — potem przejście i tak rusza.</summary>
-    private static readonly TimeSpan ReadyTimeout = TimeSpan.FromSeconds(2);
-
     public IReadOnlyList<SlideTransition> Effects { get; } = effects;
 
     public TimeSpan Duration { get; init; } = TimeSpan.FromSeconds(1.2);
@@ -39,11 +36,11 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
     /// <summary>Przesunięcie jest prostsze — krótsze.</summary>
     public TimeSpan SlideDuration { get; init; } = TimeSpan.FromSeconds(0.8);
 
-    public IPageTransition Fallback { get; init; } = new CrossFade(TimeSpan.FromSeconds(0.6));
+    public IPageTransition Fallback { get; init; } = new DirectCrossFade(TimeSpan.FromSeconds(0.6));
 
     /// <summary>Przejście dla wybranych efektów: żadnego — zwykłe przenikanie.</summary>
     public static IPageTransition For(IReadOnlyList<SlideTransition> effects) =>
-        effects.Count == 0 ? new CrossFade(TimeSpan.FromSeconds(0.6)) : new ShaderPageTransition(effects);
+        effects.Count == 0 ? new DirectCrossFade(TimeSpan.FromSeconds(0.6)) : new ShaderPageTransition(effects);
 
     public async Task Start(Visual? from, Visual? to, bool forward, CancellationToken cancellationToken)
     {
@@ -90,21 +87,8 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
         to.IsVisible = true;
         to.Opacity = 0;
         from.Opacity = 1; // po przerwanym przejściu mogła zostać ukryta
-        if (to is ContentPresenter { Content: IWaitablePage page } && !page.Ready.IsCompleted)
-        {
-            // obraz jeszcze się wczytuje — bez tego zrzut nowej strony byłby pustym tłem
-            var waited = await Task.WhenAny(page.Ready, Task.Delay(ReadyTimeout, cancellationToken)) == page.Ready;
-            TransitionLog.Write($"#{id} {where}: {(waited ? "czekał na wczytanie nowej strony" : $"nowa strona nie wczytała się w {ReadyTimeout.TotalSeconds:0} s")}");
-        }
-        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Loaded);
-        // Strona pokazywana pierwszy raz (szablony, obraz z wczytanego zadania) układa się dopiero w kolejnej klatce —
-        // zrzut przed nią byłby pustym tłem.
-        var pending = Pending(to);
-        if (pending > 0)
-        {
-            await NextFramesAsync(to, 2);
-            TransitionLog.Write($"#{id} {where}: nowa strona nieułożona ({pending} el.) — po 2 klatkach {Pending(to)} el.");
-        }
+        if (await PageReadiness.WaitAsync(to, cancellationToken) is { } waited)
+            TransitionLog.Write($"#{id} {where}: {waited}");
         if (cancellationToken.IsCancellationRequested)
         {
             TransitionLog.Write($"#{id} {where}: {picked}; przerwane (kolejna zmiana) przed zrzutem");
@@ -157,25 +141,6 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
                 fromImage.Dispose();
                 toImage.Dispose();
             }, TaskScheduler.Default);
-        }
-    }
-
-    /// <summary>Elementy strony jeszcze nieułożone albo obrazy bez wczytanego źródła.</summary>
-    private static int Pending(Visual page) =>
-        page.GetSelfAndVisualDescendants().Count(v =>
-            v is Layoutable { IsVisible: true } l && (!l.IsMeasureValid || !l.IsArrangeValid)
-            || v is Image { IsVisible: true, Source: null });
-
-    /// <summary>Czeka na <paramref name="count"/> klatek okna (w każdej najpierw układ), najwyżej 250 ms.</summary>
-    private static async Task NextFramesAsync(Visual visual, int count)
-    {
-        if (TopLevel.GetTopLevel(visual) is not { } top)
-            return;
-        for (var i = 0; i < count; i++)
-        {
-            var frame = new TaskCompletionSource();
-            top.RequestAnimationFrame(_ => frame.TrySetResult());
-            await Task.WhenAny(frame.Task, Task.Delay(250));
         }
     }
 
@@ -287,7 +252,7 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
     /// Tło, na którym leży strona (np. tło ekranu: czarne albo jasne). Strona z tekstem sama jest przezroczysta, a efekty
     /// rysują nieprzezroczyście — bez tła przezroczyste piksele zrzutu byłyby czarne.
     /// </summary>
-    private static Color? BackgroundOf(Visual visual) =>
+    internal static Color? BackgroundOf(Visual visual) =>
         visual.GetSelfAndVisualAncestors()
             .Select(v => v switch
             {

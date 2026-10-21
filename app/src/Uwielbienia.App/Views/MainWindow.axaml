@@ -12,11 +12,10 @@
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized">
   <Window.DataTemplates>
-    <!-- Wybór przejścia z „Jak w planie” (kolumna „Pieśń” i „Slajdy: …” w pasku górnym). -->
-    <DataTemplate DataType="vm:TransitionOverrideViewModel">
-      <StackPanel Width="340" Spacing="10" Margin="4"
-                  ToolTip.Tip="Kilka zaznaczonych — za każdym razem losowo jeden; żadne — zwykłe przenikanie">
-        <ToggleButton Classes="chip" Content="Jak w planie" HorizontalAlignment="Left" IsChecked="{Binding FollowsPlan}" />
+    <!-- Wybór efektów przejścia: „Przenikanie” (żaden efekt) albo efekty — kilka = za każdym razem losowo jeden. -->
+    <DataTemplate DataType="vm:TransitionChoiceViewModel">
+      <StackPanel Spacing="10" ToolTip.Tip="Kilka zaznaczonych — za każdym razem losowo jeden">
+        <ToggleButton Classes="chip" Content="Przenikanie" HorizontalAlignment="Left" IsChecked="{Binding IsCrossFade}" />
         <ItemsControl ItemsSource="{Binding Options}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
@@ -29,6 +28,13 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
+      </StackPanel>
+    </DataTemplate>
+    <!-- Wybór przejścia z „Jak w planie” (kolumna „Pieśń” i „Slajdy: …” w pasku górnym). -->
+    <DataTemplate DataType="vm:TransitionOverrideViewModel">
+      <StackPanel Width="340" Spacing="10" Margin="4">
+        <ToggleButton Classes="chip" Content="Jak w planie" HorizontalAlignment="Left" IsChecked="{Binding FollowsPlan}" />
+        <ContentControl Content="{Binding Choice}" />
       </StackPanel>
     </DataTemplate>
   </Window.DataTemplates>
@@ -70,21 +76,7 @@
               </StackPanel>
               <Button.Flyout>
                 <Flyout Placement="BottomEdgeAlignedRight">
-                  <StackPanel Width="340" Spacing="10" Margin="4"
-                              ToolTip.Tip="Kilka zaznaczonych — za każdym razem losowo jeden; żadne — zwykłe przenikanie">
-                    <ItemsControl ItemsSource="{Binding Transitions.Options}">
-                      <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                          <WrapPanel ItemSpacing="6" LineSpacing="6" />
-                        </ItemsPanelTemplate>
-                      </ItemsControl.ItemsPanel>
-                      <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:TransitionOptionViewModel">
-                          <ToggleButton Classes="chip" Content="{Binding Name}" IsChecked="{Binding IsSelected}" />
-                        </DataTemplate>
-                      </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                  </StackPanel>
+                  <ContentControl Width="340" Margin="4" Content="{Binding Transitions.Choice}" />
                 </Flyout>
               </Button.Flyout>
             </Button>
@@ -272,16 +264,39 @@
                 <ContentControl.ContentTemplate>
                   <DataTemplate x:DataType="vm:PresentationViewModel">
                     <DockPanel>
-                      <StackPanel DockPanel.Dock="Top">
-                        <TextBlock Classes="songTitle" Text="{Binding Title}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Title}" />
-                        <StackPanel Orientation="Horizontal" Spacing="10">
-                          <TextBlock Classes="caption" Text="{Binding Summary}" VerticalAlignment="Center"
-                                     IsVisible="{Binding Summary, Converter={x:Static ObjectConverters.IsNotNull}}" />
-                          <TextBlock Classes="caption" Classes.failed="{Binding IsFailed}" Text="{Binding Note}" TextWrapping="Wrap"
-                                     VerticalAlignment="Center" IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}" />
-                          <Button Classes="quiet" Content="Spróbuj ponownie" Command="{Binding RetryCommand}" IsVisible="{Binding IsFailed}" />
+                      <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto">
+                        <StackPanel>
+                          <TextBlock Classes="songTitle" Text="{Binding Title}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Title}" />
+                          <StackPanel Orientation="Horizontal" Spacing="10">
+                            <TextBlock Classes="caption" Text="{Binding Summary}" VerticalAlignment="Center"
+                                       IsVisible="{Binding Summary, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                            <TextBlock Classes="caption" Classes.failed="{Binding IsFailed}" Text="{Binding Note}" TextWrapping="Wrap"
+                                       VerticalAlignment="Center" IsVisible="{Binding Note, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                            <Button Classes="quiet" Content="Spróbuj ponownie" Command="{Binding RetryCommand}" IsVisible="{Binding IsFailed}" />
+                          </StackPanel>
                         </StackPanel>
-                      </StackPanel>
+                        <!-- Przejście na prezentację (jak przy pieśni) i między jej slajdami (domyślnie przenikanie). -->
+                        <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="12,0,0,0" Spacing="2">
+                          <Button Classes="quiet" HorizontalAlignment="Right"
+                                  ToolTip.Tip="Przejście na rzutniku na tę pozycję z innej pozycji planu">
+                            <TextBlock Text="{Binding Transitions.ButtonText}" />
+                            <Button.Flyout>
+                              <Flyout Placement="BottomEdgeAlignedRight">
+                                <ContentControl Content="{Binding Transitions}" />
+                              </Flyout>
+                            </Button.Flyout>
+                          </Button>
+                          <Button Classes="quiet" HorizontalAlignment="Right"
+                                  ToolTip.Tip="Przejście na rzutniku między slajdami tej prezentacji">
+                            <TextBlock Text="{Binding SlidesButtonText}" />
+                            <Button.Flyout>
+                              <Flyout Placement="BottomEdgeAlignedRight">
+                                <ContentControl Width="340" Margin="4" Content="{Binding SlideChoice}" />
+                              </Flyout>
+                            </Button.Flyout>
+                          </Button>
+                        </StackPanel>
+                      </Grid>
                       <ScrollViewer Margin="0,14,0,0">
                         <ItemsControl ItemsSource="{Binding Slides}" Margin="0,0,2,0">
                           <ItemsControl.ItemsPanel>
@@ -336,21 +351,10 @@
                 <StackPanel DockPanel.Dock="Top" Margin="0,12,0,0" Spacing="6">
                   <Grid ColumnDefinitions="*,Auto">
                     <TextBlock Classes="caption" Text="Przejście" VerticalAlignment="Center"
-                               ToolTip.Tip="Kilka zaznaczonych — za każdym razem losowo jeden; żadne — zwykłe przenikanie" />
+                               ToolTip.Tip="Kilka zaznaczonych — za każdym razem losowo jeden" />
                     <CheckBox Grid.Column="1" Content="Powolny zoom zdjęć" IsChecked="{Binding Preview.Kiosk.SlowZoom}" />
                   </Grid>
-                  <ItemsControl ItemsSource="{Binding Preview.Kiosk.Transitions}">
-                    <ItemsControl.ItemsPanel>
-                      <ItemsPanelTemplate>
-                        <WrapPanel ItemSpacing="6" LineSpacing="6" />
-                      </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate x:DataType="vm:TransitionOptionViewModel">
-                        <ToggleButton Classes="chip" Content="{Binding Name}" IsChecked="{Binding IsSelected}" />
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
+                  <ContentControl Content="{Binding Preview.Kiosk.Transitions}" />
                 </StackPanel>
                 <WrapPanel DockPanel.Dock="Bottom" ItemSpacing="8" LineSpacing="8" Margin="0,12,0,0">
                   <Button Classes="addKind" Click="OnKioskAddImagesClick" ToolTip.Tip="Każdy obraz osobnym elementem">
@@ -543,8 +547,11 @@
                       <!-- Ramka w kolorze świecy sama mówi „to jest na ekranie” — bez napisu „TERAZ”. -->
                       <TextBlock Classes="caption" FontWeight="SemiBold" Text="{Binding Live.CurrentLabel}"
                                  HorizontalAlignment="Right" Margin="0,0,0,10" />
+                      <!-- Slajd prezentacji: jak na rzutniku, z tym samym przejściem — stary obraz zostaje, aż nowy się wczyta. -->
                       <Border Classes="slideThumb" IsVisible="{Binding Live.HasCurrentImage}" Margin="0,0,0,4">
-                        <Image Source="{Binding Live.CurrentImage^}" Stretch="Uniform" />
+                        <v:SlideView Page="{Binding Live.CurrentImage}"
+                                     PageTransition="{Binding Live.PageTransition}"
+                                     SlideBackground="{Binding Live.Appearance.Background}" />
                       </Border>
                       <!-- Kiosk: ten sam obraz co na rzutniku, elementy zmieniają się same. -->
                       <Border Classes="slideThumb" IsVisible="{Binding Live.HasCurrentKiosk}" Margin="0,0,0,4">

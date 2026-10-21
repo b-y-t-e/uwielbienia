@@ -154,11 +154,15 @@ public sealed partial class PreviewViewModel : ObservableObject
 
     public void ShowPresentation(PresentationPlanItem item)
     {
-        if (Presentation?.Item == item)
+        // Ta sama prezentacja (np. po zmianie przejścia) — bez wczytywania miniatur od nowa.
+        if (Presentation is { } shown && shown.Item.Id == item.Id && shown.Item.Folder == item.Folder)
+        {
+            shown.Show(item);
             return;
+        }
         Clear();
         IsFromPlan = true;
-        Presentation = new PresentationViewModel(item, _slideshows);
+        Presentation = new PresentationViewModel(item, _slideshows, _plan);
     }
 
     /// <param name="note">Uwaga z planu (np. brak pliku) — ta sama co w wierszu planu, odświeżana razem z nim.</param>
