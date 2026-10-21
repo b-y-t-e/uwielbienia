@@ -24,6 +24,21 @@ public static class SlideTransitions
 {
     public static readonly IReadOnlyList<SlideTransition> All = Enum.GetValues<SlideTransition>();
 
+    /// <summary>Domyślny wybór (plan i kiosk): efektowne, a spokojne — nowy obraz rozlewa się jak farba.</summary>
+    public static readonly IReadOnlyList<SlideTransition> Default = [SlideTransition.Watercolor];
+
+    /// <summary>Wybór do zapisu: równy domyślnemu = <c>null</c> (podąża za domyślnym).</summary>
+    public static IReadOnlyList<SlideTransition>? ToStored(IReadOnlyList<SlideTransition> chosen) =>
+        chosen.SequenceEqual(Default) ? null : chosen;
+
+    /// <summary>Opis wyboru: „przenikanie”, nazwa efektu albo „losowe (n)”.</summary>
+    public static string Describe(IReadOnlyList<SlideTransition> chosen) => chosen.Count switch
+    {
+        0 => "przenikanie",
+        1 => Name(chosen[0]),
+        var n => $"losowe ({n})",
+    };
+
     public static string Name(SlideTransition transition) => transition switch
     {
         SlideTransition.Slide => "Przesunięcie",

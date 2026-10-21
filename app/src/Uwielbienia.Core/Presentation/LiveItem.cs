@@ -14,6 +14,10 @@ namespace Uwielbienia.Core.Presentation;
 /// Rzutnik pokazuje tytuł nad pierwszym slajdem — tylko własny tytuł, który nie powtarza początku pierwszego wersu.
 /// </param>
 /// <param name="Note">Dla operatora: dlaczego nie ma slajdów (np. „Przygotowywanie slajdów…”).</param>
+/// <param name="Transitions">
+/// Efekty przejścia na tę pozycję z innej (z planu — <see cref="Plans.Plan.Transitions"/>); pusta lista albo <c>null</c>
+/// (spoza planu) = zwykłe krótkie przenikanie.
+/// </param>
 public sealed record LiveItem(
     Guid? PlanItemId,
     string ContentId,
@@ -21,7 +25,8 @@ public sealed record LiveItem(
     string Title,
     IReadOnlyList<Slide> Slides,
     bool ShowTitle = true,
-    string? Note = null);
+    string? Note = null,
+    IReadOnlyList<SlideTransition>? Transitions = null);
 
 /// <summary>Pieśń spoza planu na ekran (szybki wybór na projekcji, telefon).</summary>
 public interface ISongPresenter

@@ -93,6 +93,20 @@ if (window.GetVisualDescendants().OfType<Grid>().FirstOrDefault(g => g.ContextMe
     row.ContextMenu.Close();
 }
 
+// Pasek górny: przejście między pozycjami planu — panel z efektami (kilka zaznaczonych = losowe).
+if (window.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.Flyout is not null && b.DataContext is MainViewModel) is { } transitionsButton)
+{
+    main.Transitions.Options[0].IsSelected = true;
+    transitionsButton.Flyout!.ShowAt(transitionsButton);
+    Dispatcher.UIThread.RunJobs();
+    AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+    Save(window, "przejscie-planu");
+    if (active.Plan!.ChosenTransitions is not [SlideTransition.Slide, SlideTransition.Watercolor])
+        throw new InvalidOperationException("Wybór przejścia nie trafił do planu");
+    transitionsButton.Flyout.Hide();
+    main.Transitions.Options[0].IsSelected = false;
+}
+
 // Okno „Telefon” ze sparowanymi urządzeniami (serwer udawany — bez sieci).
 {
     var server = new ShotRemoteServer();
@@ -228,6 +242,32 @@ Save(projection, "projekcja-prezentacja", settle: true);
         }
         host.Close();
     }
+}
+
+// Przejście na inną pozycję planu: efekty planu; następny slajd tej samej pieśni — krótkie przenikanie.
+{
+    // przejścia planu nie zmieniają kiosku — ten ma własne
+    var kioskTransitions = active.FindLiveItem(kioskItem.Id)!.Slides.OfType<Uwielbienia.Core.Kiosks.KioskSlide>().Single().ChosenTransitions;
+    active.Update(p => p with { Transitions = [SlideTransition.Flame] });
+    if (!active.FindLiveItem(kioskItem.Id)!.Slides.OfType<Uwielbienia.Core.Kiosks.KioskSlide>().Single().ChosenTransitions.SequenceEqual(kioskTransitions))
+        throw new InvalidOperationException("Przejścia planu zmieniły kiosk");
+    active.Update(p => p with { Transitions = [SlideTransition.Watercolor] });
+    var song = active.Playlist.First(i => i.Slides.Count > 1 && i.Slides[0] is not ImageSlide);
+    control.Show(song);
+    control.Next();
+    if (main.Live.PageTransition != LiveViewModel.SlideChange)
+        throw new InvalidOperationException("Następny slajd pieśni nie powinien mieć efektu planu");
+    control.NextItem();
+    if (main.Live.PageTransition is not Uwielbienia.App.Transitions.ShaderPageTransition { Effects: [SlideTransition.Watercolor] })
+        throw new InvalidOperationException("Następna pozycja planu bez efektu planu");
+    for (var i = 0; i < 25; i++)
+    {
+        Dispatcher.UIThread.RunJobs();
+        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+        Thread.Sleep(80);
+    }
+    Save(projection, "projekcja-nastepna-pozycja");
+    active.Update(p => p with { Transitions = null });
 }
 
 // Film: kolumna „Pieśń”, „Na ekranie” (podgląd, pauza, suwak) i rzutnik — także z „Dopasuj obraz”.

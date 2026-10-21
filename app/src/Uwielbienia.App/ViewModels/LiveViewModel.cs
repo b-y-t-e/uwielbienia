@@ -1,8 +1,10 @@
 using System.Collections.ObjectModel;
+using Avalonia.Animation;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.Input;
 using Uwielbienia.App.Services;
+using Uwielbienia.App.Transitions;
 using Uwielbienia.Core.Kiosks;
 using Uwielbienia.Core.Presentation;
 
@@ -47,6 +49,16 @@ public sealed partial class LiveViewModel : ObservableObject
         { } slide when State.Item is { } item => new ProjectedPage(slide, State.SlideIndex == 0 && item.ShowTitle ? item.Title : null),
         _ => null,
     };
+
+    /// <summary>Zmiana slajdu w tej samej pozycji, czarny ekran i pozycja bez efektów: krótkie przenikanie.</summary>
+    public static readonly IPageTransition SlideChange = new CrossFade(TimeSpan.FromSeconds(0.15));
+
+    /// <summary>
+    /// Przejście do strony <see cref="Page"/>: z jednej pozycji planu na inną — efekty planu (<see cref="LiveItem.Transitions"/>),
+    /// poza tym <see cref="SlideChange"/>. Ustawiane przed zmianą <see cref="Page"/>.
+    /// </summary>
+    [ObservableProperty]
+    public partial IPageTransition PageTransition { get; private set; } = SlideChange;
 
     public string Title => State.Item is { } item ? item.Title : "Ekran jest pusty";
 
@@ -117,6 +129,7 @@ public sealed partial class LiveViewModel : ObservableObject
     private void Apply(LiveState state)
     {
         var itemChanged = !ReferenceEquals(State.Item, state.Item);
+        PageTransition = TransitionTo(State, state);
         State = state;
         if (itemChanged)
         {
@@ -154,6 +167,13 @@ public sealed partial class LiveViewModel : ObservableObject
         OnPropertyChanged(nameof(ProgressValue));
         OnPropertyChanged(nameof(ProgressText));
     }
+
+    private IPageTransition TransitionTo(LiveState before, LiveState after) => after.TransitionsFrom(before) switch
+    {
+        [] => SlideChange,
+        var effects when PageTransition is ShaderPageTransition current && current.Effects.SequenceEqual(effects) => current,
+        var effects => ShaderPageTransition.For(effects),
+    };
 }
 
 /// <summary>

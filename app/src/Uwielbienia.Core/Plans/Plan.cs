@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Uwielbienia.Core.Presentation;
 using Uwielbienia.Core.Songs;
 
 namespace Uwielbienia.Core.Plans;
@@ -12,20 +13,33 @@ public enum PlanKind
 }
 
 /// <summary>Plan (lista pozycji) na wydarzenie albo szablon.</summary>
+/// <param name="Transitions">
+/// Efekty przejścia z jednej pozycji planu na inną (rzutnik; kiosk ma własne — <see cref="KioskPlanItem.Transitions"/>) —
+/// przy kilku losowany jest jeden; pusta lista = zwykłe przenikanie; <c>null</c> = domyślne (<see cref="DefaultTransitions"/>).
+/// </param>
 public sealed record Plan(
     Guid Id,
     string Name,
     DateOnly? Date,
     PlanKind Kind,
     IReadOnlyList<PlanItem> Items,
-    DateTimeOffset UpdatedAt)
+    DateTimeOffset UpdatedAt,
+    IReadOnlyList<SlideTransition>? Transitions = null)
 {
+    public static IReadOnlyList<SlideTransition> DefaultTransitions => SlideTransitions.Default;
+
+    public IReadOnlyList<SlideTransition> ChosenTransitions => Transitions ?? DefaultTransitions;
+
+    /// <summary>Nowy wybór efektów przejścia (równy domyślnemu — plan podąża za domyślnymi).</summary>
+    public Plan WithTransitions(IReadOnlyList<SlideTransition> chosen) =>
+        this with { Transitions = SlideTransitions.ToStored(chosen), UpdatedAt = DateTimeOffset.Now };
+
     public static Plan Create(string name, DateOnly? date, PlanKind kind = PlanKind.Event) =>
         new(Guid.NewGuid(), name, date, kind, [], DateTimeOffset.Now);
 
     /// <summary>Kopia z nowymi identyfikatorami — „Użyj ponownie” albo „Zapisz jako szablon”.</summary>
     public Plan CloneAs(string name, DateOnly? date, PlanKind kind) =>
-        new(Guid.NewGuid(), name, date, kind, Items.Select(i => i.WithNewId()).ToList(), DateTimeOffset.Now);
+        new(Guid.NewGuid(), name, date, kind, Items.Select(i => i.WithNewId()).ToList(), DateTimeOffset.Now, Transitions);
 
     public Plan WithItems(IReadOnlyList<PlanItem> items) => this with { Items = items, UpdatedAt = DateTimeOffset.Now };
 
@@ -172,7 +186,7 @@ public sealed record VideoPlanItem(Guid Id, string File, string Title) : PlanIte
 /// <param name="Seconds">Co ile sekund następny element.</param>
 /// <param name="Transitions">
 /// Efekty przejścia między elementami — przy kilku losowany jest jeden; pusta lista = zwykłe przenikanie;
-/// <c>null</c> = domyślne (<see cref="DefaultTransitions"/>).
+/// <c>null</c> = domyślne (<see cref="DefaultTransitions"/>). Niezależne od przejść planu.
 /// </param>
 /// <param name="SlowZoom">Zdjęcia powoli przybliżają się i przesuwają, póki są na ekranie.</param>
 public sealed record KioskPlanItem(
@@ -180,7 +194,7 @@ public sealed record KioskPlanItem(
     string Title,
     IReadOnlyList<KioskEntry> Entries,
     int Seconds = KioskPlanItem.DefaultSeconds,
-    IReadOnlyList<Presentation.SlideTransition>? Transitions = null,
+    IReadOnlyList<SlideTransition>? Transitions = null,
     bool SlowZoom = true)
     : PlanItem(Id)
 {
@@ -188,10 +202,9 @@ public sealed record KioskPlanItem(
     public const int MinSeconds = 2;
     public const int MaxSeconds = 600;
 
-    /// <summary>Efektowne, a spokojne: nowy obraz rozlewa się jak farba.</summary>
-    public static readonly IReadOnlyList<Presentation.SlideTransition> DefaultTransitions = [Presentation.SlideTransition.Watercolor];
+    public static IReadOnlyList<SlideTransition> DefaultTransitions => SlideTransitions.Default;
 
-    public IReadOnlyList<Presentation.SlideTransition> ChosenTransitions => Transitions ?? DefaultTransitions;
+    public IReadOnlyList<SlideTransition> ChosenTransitions => Transitions ?? DefaultTransitions;
 
     public static KioskPlanItem Create(string title = "Kiosk") => new(Guid.NewGuid(), title, []);
 

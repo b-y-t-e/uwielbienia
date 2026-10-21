@@ -13,15 +13,15 @@ public static class TransitionShaders
     private static readonly Dictionary<SlideTransition, SKRuntimeEffect?> Compiled = [];
 
     /// <summary>
-    /// Odstęp między klatkami przejścia dłuższy niż 50 ms pięć razy pod rząd (słaba karta graficzna) albo brak karty
+    /// Odstęp między klatkami jednego przejścia dłuższy niż 50 ms pięć razy pod rząd (słaba karta graficzna) albo brak karty
     /// graficznej — przejście by się zacinało, więc od razu nowa strona, a do końca działania programu zwykłe przenikanie.
     /// </summary>
     private static readonly SmoothnessGuard Guard = new(TimeSpan.FromMilliseconds(50), slowFramesInRow: 5);
 
     public static bool IsSmooth => Guard.IsSmooth;
 
-    /// <summary>Odstęp między kolejnymi klatkami przejścia (czas rysowania na karcie graficznej razem z resztą).</summary>
-    public static void ReportFrame(TimeSpan interval) => Guard.ReportFrame(interval);
+    /// <summary>Nowe przejście: zgłasza odstępy między swoimi klatkami (czas rysowania na karcie graficznej razem z resztą).</summary>
+    public static SmoothnessGuard.Run BeginTransition() => Guard.Begin();
 
     /// <summary>Brak karty graficznej (wątek renderowania).</summary>
     public static void DisableEffects() => Guard.Disable();

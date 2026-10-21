@@ -5,7 +5,7 @@ Projekt i scenariusze: [`../docs/projekt-aplikacji.md`](../docs/projekt-aplikacj
 ## Uruchomienie
 
 ```
-dotnet run --project app/src/Uwielbienia.Desktop
+dotnet run --project app/src/Uwielbienia.Desktop   # albo: python run.py
 ```
 
 Wymaga .NET 10 SDK. Pieśni są wbudowane w aplikację; uruchomiona z repozytorium czyta od razu
@@ -28,16 +28,12 @@ Bez PowerPointa można dodać slajdy zapisane jako obrazy.
 **Filmy:** „Film” (albo upuszczenie pliku na plan) dodaje film w dowolnym formacie, który zna
 VLC (`.mp4`, `.mkv`, `.avi`, `.mov`, `.wmv`, `.webm`…). Plik nie jest kopiowany — plan go tylko
 wskazuje, więc musi zostać na swoim miejscu (brak pliku widać w planie). Film gra, gdy jest na
-ekranie: spacja — pauza / odtwarzanie, suwak w kolumnie „Na ekranie” przewija, B (czarny ekran)
-pauzuje, „Dalej” przechodzi do następnej pozycji. Dźwięk idzie na domyślne urządzenie systemu,
+ekranie (sterowanie — rozdz. „Sterowanie” niżej). Dźwięk idzie na domyślne urządzenie systemu,
 obraz podlega „Dopasuj obraz”. VLC jest w instalacji Windows; na Linuksie trzeba go zainstalować
 (`sudo apt install vlc`).
 
-**Dopasowanie obrazu do ekranu w sali** (jak w pps_viewer) — myszą wprost na ekranie projekcji:
-ruch myszy pokazuje na 3 s ramkę i narożniki. Przeciąganie w dowolnym miejscu przesuwa najbliższy
-narożnik (narożniki bywają poza ekranem w sali), z Shift — cały obraz. Kółko myszy zmienia wielkość, Shift+kółko szerokość, Ctrl+kółko wysokość.
-Klawisze (po kliknięciu w obraz): K — tryb kalibracji, a w nim G — siatka, R — pełny obraz, Tab i
-Ctrl+strzałki — narożnik dokładnie (z Shift o 10 px), Esc — koniec.
+**Dopasowanie obrazu do ekranu w sali** (jak w pps_viewer) — myszą wprost na ekranie projekcji
+(korekcja trapezu, zmniejszenie, przesunięcie); obsługa — rozdz. „Sterowanie” niżej.
 
 ## Okno operatora
 
@@ -51,19 +47,9 @@ Trzy kolumny (szerokość regulowana przeciąganiem, zapamiętywana):
 
 Plany (wydarzenia i szablony) zarządza się w oknie „Plany” po kliknięciu nazwy planu.
 
-## Obsługa w skrócie
+## Sterowanie
 
-| Klawisz | Działanie |
-|---|---|
-| Spacja, →, PageDown | następny slajd / następna pieśń planu |
-| Backspace, ←, PageUp | poprzedni slajd |
-| B lub . | czarny ekran |
-| F5 | włącz/wyłącz projekcję (drugi ekran albo ten sam) |
-| pisanie cyfr/liter | „Dodaj do planu” z tym tekstem; Enter dodaje zaraz za pieśnią na ekranie |
-| dwuklik w planie | pokaż pieśń na ekranie (jedyny sposób w oknie operatora) |
-| Shift+1…9 | skok do slajdu bieżącej pieśni |
-| Esc | zamyka nakładkę; kończy kalibrację obrazu; w trybie jednego ekranu wraca do okna operatora |
-| K, a w kalibracji G, R, Tab, Ctrl+strzałki | na ekranie projekcji: tryb kalibracji, siatka, pełny obraz, narożnik |
+Klawisze, pilot, mysz na ekranie projekcji i „Dopasuj obraz”: [docs/projekt-aplikacji.md, rozdz. 5](../docs/projekt-aplikacji.md#5-obsługa-sterowanie).
 
 ## Struktura
 

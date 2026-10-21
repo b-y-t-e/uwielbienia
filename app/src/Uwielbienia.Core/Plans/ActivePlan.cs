@@ -53,6 +53,7 @@ public sealed class ActivePlan
         Playlist = (Plan?.Items ?? [])
             .Select(_itemTypes.Present)
             .OfType<LiveItem>()
+            .Select(live => live with { Transitions = Plan!.ChosenTransitions })
             .ToList();
         _session.SetPlaylist(Playlist);
         Changed?.Invoke(this, EventArgs.Empty);

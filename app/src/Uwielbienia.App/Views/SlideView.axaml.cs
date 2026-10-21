@@ -1,5 +1,6 @@
 using System.Globalization;
 using Avalonia;
+using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
 using Avalonia.Media;
@@ -12,6 +13,10 @@ public partial class SlideView : UserControl
 {
     public static readonly StyledProperty<ProjectedPage?> PageProperty =
         AvaloniaProperty.Register<SlideView, ProjectedPage?>(nameof(Page));
+
+    /// <summary>Przejście przy zmianie strony (domyślnie krótkie przenikanie).</summary>
+    public static readonly StyledProperty<IPageTransition?> PageTransitionProperty =
+        AvaloniaProperty.Register<SlideView, IPageTransition?>(nameof(PageTransition), LiveViewModel.SlideChange);
 
     public static readonly StyledProperty<IBrush?> SlideBackgroundProperty =
         AvaloniaProperty.Register<SlideView, IBrush?>(nameof(SlideBackground), Brushes.Black);
@@ -34,6 +39,12 @@ public partial class SlideView : UserControl
     {
         get => GetValue(PageProperty);
         set => SetValue(PageProperty, value);
+    }
+
+    public IPageTransition? PageTransition
+    {
+        get => GetValue(PageTransitionProperty);
+        set => SetValue(PageTransitionProperty, value);
     }
 
     public IBrush? SlideBackground

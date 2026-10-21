@@ -168,6 +168,31 @@ public class KioskTests
         Assert.Empty(loadedNone.ChosenTransitions);
     }
 
+    [Fact]
+    public void Plan_transitions_survive_saving_and_copying_and_older_plans_use_the_default()
+    {
+        var temp = Path.Combine(Path.GetTempPath(), "uwielbienia-kiosk-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var store = new JsonPlanStore(temp);
+            var plan = Plan.Create("Wieczór", null) with { Transitions = [SlideTransition.LightRay] };
+            store.Save(plan);
+            store.Save(Plan.Create("Starszy", null));
+
+            var loaded = store.LoadAll().ToDictionary(p => p.Name);
+
+            Assert.Equal([SlideTransition.LightRay], loaded["Wieczór"].Transitions);
+            Assert.Equal([SlideTransition.LightRay], plan.CloneAs("Kopia", null, PlanKind.Template).Transitions);
+            Assert.Null(loaded["Starszy"].Transitions);
+            Assert.Equal(Plan.DefaultTransitions, loaded["Starszy"].ChosenTransitions);
+        }
+        finally
+        {
+            if (Directory.Exists(temp))
+                Directory.Delete(temp, recursive: true);
+        }
+    }
+
     private static PlanItem? RoundTrip(PlanItem item) =>
         JsonSerializer.Deserialize<PlanItem>(JsonSerializer.Serialize(item, JsonPlanStore.JsonOptions), JsonPlanStore.JsonOptions);
 
@@ -197,25 +222,42 @@ public class KioskTests
     public void Single_slow_frames_do_not_disable_effects_but_slow_frames_in_a_row_do()
     {
         var guard = new SmoothnessGuard(TimeSpan.FromMilliseconds(50), slowFramesInRow: 3);
+        var run = guard.Begin();
         var slow = TimeSpan.FromMilliseconds(120);
         var fast = TimeSpan.FromMilliseconds(4);
 
         // szybki komputer: zacięcia rozrzucone w czasie
         for (var i = 0; i < 10; i++)
         {
-            guard.ReportFrame(slow);
-            guard.ReportFrame(slow);
-            guard.ReportFrame(fast);
+            run.ReportFrame(slow);
+            run.ReportFrame(slow);
+            run.ReportFrame(fast);
         }
         Assert.True(guard.IsSmooth);
 
         // słaby komputer: każda klatka wolna
-        guard.ReportFrame(slow);
-        guard.ReportFrame(slow);
-        guard.ReportFrame(slow);
+        run.ReportFrame(slow);
+        run.ReportFrame(slow);
+        run.ReportFrame(slow);
         Assert.False(guard.IsSmooth);
-        guard.ReportFrame(fast);
+        run.ReportFrame(fast);
         Assert.False(guard.IsSmooth);
+    }
+
+    [Fact]
+    public void Transitions_running_at_once_count_their_slow_frames_separately()
+    {
+        // wejście na kiosk: przejście strony na rzutniku i pierwsze elementy kiosku na rzutniku i w kolumnie „Na ekranie”
+        var guard = new SmoothnessGuard(TimeSpan.FromMilliseconds(50), slowFramesInRow: 3);
+        var runs = new[] { guard.Begin(), guard.Begin(), guard.Begin() };
+        var slow = TimeSpan.FromMilliseconds(70);
+        var fast = TimeSpan.FromMilliseconds(30);
+
+        foreach (var frame in new[] { slow, slow, fast, slow, slow, fast })
+            foreach (var run in runs)
+                run.ReportFrame(frame);
+
+        Assert.True(guard.IsSmooth);
     }
 
     // ---------- na ekranie ----------

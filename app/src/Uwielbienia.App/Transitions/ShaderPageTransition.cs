@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
@@ -42,6 +43,19 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
     {
         if (cancellationToken.IsCancellationRequested)
             return;
+        // Przed albo po nie ma treści (kiosk wchodzi na ekran albo z niego schodzi — to już ma własne przejście strony):
+        // od razu, bez drugiego efektu naraz.
+        if (from is ContentPresenter { Content: null } || to is ContentPresenter { Content: null })
+        {
+            if (from is not null)
+                from.IsVisible = false;
+            if (to is not null)
+            {
+                to.IsVisible = true;
+                to.Opacity = 1;
+            }
+            return;
+        }
         var effect = SlideTransitions.Pick(Effects, Random);
         var shader = effect is { } chosen && TransitionShaders.IsSmooth ? TransitionShaders.For(chosen) : null;
         if (from is null || to is null || shader is null || to.GetVisualParent() is not Panel host)
@@ -126,6 +140,7 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
         if (TopLevel.GetTopLevel(view) is not { } top)
             return Task.CompletedTask;
         var done = new TaskCompletionSource();
+        var smoothness = TransitionShaders.BeginTransition();
         TimeSpan? start = null;
         TimeSpan? previous = null;
         void Frame(TimeSpan now)
@@ -133,7 +148,7 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
             // Odstępy między klatkami mierzą całe rysowanie (także na karcie graficznej); pierwszy pomijamy — kompilacja
             // shadera. Zbyt wolne pod rząd (albo brak karty graficznej) — przejście kończy się od razu, bez zacinania.
             if (previous is { } last && last != start)
-                TransitionShaders.ReportFrame(now - last);
+                smoothness.ReportFrame(now - last);
             previous = now;
             if (cancellationToken.IsCancellationRequested || !TransitionShaders.IsSmooth)
             {

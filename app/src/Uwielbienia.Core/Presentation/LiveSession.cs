@@ -40,6 +40,16 @@ public sealed record LiveState(
 
     /// <summary>Slajd faktycznie widoczny na ekranie (<c>null</c> przy czarnym/pustym ekranie).</summary>
     public Slide? VisibleSlide => IsBlank ? null : Slide;
+
+    /// <summary>
+    /// Efekty przejścia ze stanu <paramref name="before"/> na ten: efekty planu tylko między dwiema widocznymi, różnymi
+    /// pozycjami planu; poza tym (ten sam slajd lub pozycja, czarny ekran, pieśń spoza planu) pusta lista = krótkie przenikanie.
+    /// </summary>
+    public IReadOnlyList<SlideTransition> TransitionsFrom(LiveState before) =>
+        before.VisibleSlide is not null && VisibleSlide is not null
+        && Item is { PlanItemId: { } id, Transitions: { } effects } && before.Item?.PlanItemId is { } previousId && id != previousId
+            ? effects
+            : [];
 }
 
 public interface ILiveStateSource

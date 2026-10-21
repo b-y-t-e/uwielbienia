@@ -22,6 +22,7 @@ public sealed partial class MainViewModel : ObservableObject
         PlanViewModel plan,
         PreviewViewModel preview,
         PlansViewModel plans,
+        PlanTransitionsViewModel transitions,
         RemoteViewModel remote,
         ISettingsStore settings,
         IUpdateService updates,
@@ -41,6 +42,7 @@ public sealed partial class MainViewModel : ObservableObject
         Plan = plan;
         Preview = preview;
         Plans = plans;
+        Transitions = transitions;
         Remote = remote;
         Projection = projection;
         Control = control;
@@ -70,6 +72,9 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     public LiveViewModel Live { get; }
+
+    /// <summary>Przejście między pozycjami otwartego planu (pasek górny).</summary>
+    public PlanTransitionsViewModel Transitions { get; }
 
     /// <summary>
     /// Kolumna „Pieśń” dla zaznaczonej pozycji planu. Nowy rodzaj elementu prezentacji dostaje tu

@@ -5,10 +5,10 @@ namespace Uwielbienia.Core.Videos;
 /// <summary>
 /// Pilot (i klawiatura) przy filmie na ekranie. Pilot ma tylko cztery sygnały — krótko i długo „do przodu” / „do tyłu”
 /// (długie przytrzymanie wysyła inny klawisz, np. <c>b</c> i <c>Shift+F5</c>):
-/// krótko = ±15 s (szybkie klikanie tylko przewija), długo „do przodu” = pauza / wznowienie, długo „do tyłu” = podpowiedź
+/// krótko = ±15 s (szybkie klikanie tylko przewija, a z początku / końca filmu zmienia slajd — <see cref="Edge"/>), długo „do przodu” = pauza / wznowienie, długo „do tyłu” = podpowiedź
 /// na ekranie, a po niej długo „do tyłu” = poprzednia pozycja planu, długo „do przodu” = następna. Każde inne naciśnięcie
 /// albo upływ <see cref="PromptTime"/> zamyka podpowiedź. Bez filmu na ekranie metody zwracają <c>false</c> — wtedy
-/// klawisz robi to co zwykle (slajd, czarny ekran…).
+/// klawisz robi to co zwykle (slajd, projekcja…).
 /// </summary>
 public sealed class FilmRemote
 {
@@ -49,11 +49,30 @@ public sealed class FilmRemote
     /// <summary>Na ekranie jest film, który da się odtworzyć.</summary>
     private bool OnFilm => _player.IsOnScreen(_live.State);
 
-    /// <summary>Krótko „do przodu” (PageDown, →, ↓).</summary>
-    public bool Forward() => Skip(Step);
+    /// <summary>
+    /// Tyle od początku / końca filmu krótko „do tyłu” / „do przodu” zmienia slajd zamiast przewijać — z 0:00 nie ma
+    /// dokąd cofnąć, a z końca dokąd przewinąć.
+    /// </summary>
+    public static readonly TimeSpan Edge = TimeSpan.FromSeconds(2);
 
-    /// <summary>Krótko „do tyłu” (PageUp, ←, ↑, Backspace).</summary>
-    public bool Back() => Skip(-Step);
+    /// <summary>Krótko „do przodu” (PageDown, →, ↓): +15 s, a przy końcu filmu (<see cref="Edge"/>) <c>false</c> — następny slajd.</summary>
+    public bool Forward() => AtEnd() ? LeaveToSlide() : Skip(Step);
+
+    /// <summary>Krótko „do tyłu” (PageUp, ←, ↑, Backspace): −15 s, a na początku filmu <c>false</c> — poprzedni slajd.</summary>
+    public bool Back() => AtStart() ? LeaveToSlide() : Skip(-Step);
+
+    private bool AtStart() => OnFilm && _player.Status.Position <= Edge;
+
+    private bool AtEnd() =>
+        OnFilm && _player.Status is var status &&
+        (status.HasEnded || status.Duration > TimeSpan.Zero && status.Duration - status.Position <= Edge);
+
+    /// <summary>Klawisz zmienia slajd jak zwykle (<c>false</c> dla wołającego).</summary>
+    private bool LeaveToSlide()
+    {
+        CancelPrompt();
+        return false;
+    }
 
     /// <summary>Długo „do przodu” (pilot: <c>b</c>): pauza / wznowienie, a po podpowiedzi — następna pozycja planu.</summary>
     public bool HoldForward()

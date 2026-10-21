@@ -17,6 +17,7 @@
     <Panel x:Name="Warped" RenderTransformOrigin="0,0" Background="{Binding Live.Appearance.Background}">
       <v:SlideView x:Name="Slide"
                    Page="{Binding Live.Page}"
+                   PageTransition="{Binding Live.PageTransition}"
                    SlideBackground="{Binding Live.Appearance.Background}"
                    SlideForeground="{Binding Live.Appearance.Foreground}"
                    SlideMuted="{Binding Live.Appearance.Muted}"

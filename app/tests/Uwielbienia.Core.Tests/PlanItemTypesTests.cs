@@ -50,6 +50,51 @@ public class PlanItemTypesTests
     }
 
     [Fact]
+    public void Every_item_of_the_plan_carries_the_plan_transitions_and_follows_their_change()
+    {
+        var session = new LiveSession();
+        var plan = new ActivePlan(new MemoryPlanStore(), new PlanItemTypes([new NoticeType()]), session);
+        plan.Open(Plan.Create("Test", null).Insert(0, new NoticeItem(Guid.NewGuid(), "a")).Insert(1, new NoticeItem(Guid.NewGuid(), "b")));
+
+        Assert.All(plan.Playlist, item => Assert.Equal(Plan.DefaultTransitions, item.Transitions));
+
+        plan.Update(p => p with { Transitions = [SlideTransition.Flame, SlideTransition.Slide] });
+
+        Assert.All(plan.Playlist, item => Assert.Equal([SlideTransition.Flame, SlideTransition.Slide], item.Transitions));
+    }
+
+    [Fact]
+    public void Plan_transitions_apply_only_between_two_visible_plan_items()
+    {
+        var effects = new[] { SlideTransition.Flame };
+        LiveItem Item(Guid? planItemId) => new(planItemId, "x", null, "T", [new Slide("V1", "1", []), new Slide("V2", "2", [])], Transitions: effects);
+        var first = Item(Guid.NewGuid());
+        var second = Item(Guid.NewGuid());
+        LiveState State(LiveItem item, int slide = 0, bool blank = false) => new(1, item, slide, blank, null);
+
+        Assert.Equal(effects, State(second).TransitionsFrom(State(first)));
+        Assert.Empty(State(first, 1).TransitionsFrom(State(first)));
+        Assert.Empty(State(second, blank: true).TransitionsFrom(State(first)));
+        Assert.Empty(State(second).TransitionsFrom(State(first, blank: true)));
+        Assert.Empty(State(second).TransitionsFrom(LiveState.Empty));
+        Assert.Empty(State(Item(null) with { Transitions = null }).TransitionsFrom(State(first)));
+        Assert.Empty(State(second with { Transitions = [] }).TransitionsFrom(State(first)));
+        Assert.Empty(State(second).TransitionsFrom(State(Item(null) with { Transitions = null })));
+    }
+
+    [Fact]
+    public void Choosing_the_default_transitions_stores_none_and_describes_the_choice()
+    {
+        var plan = Plan.Create("Test", null);
+
+        Assert.Null(plan.WithTransitions([SlideTransition.Watercolor]).Transitions);
+        Assert.Equal([SlideTransition.Flame], plan.WithTransitions([SlideTransition.Flame]).Transitions);
+        Assert.Equal("Akwarela", SlideTransitions.Describe(plan.ChosenTransitions));
+        Assert.Equal("przenikanie", SlideTransitions.Describe([]));
+        Assert.Equal("losowe (3)", SlideTransitions.Describe([SlideTransition.Flame, SlideTransition.Slide, SlideTransition.Ripple]));
+    }
+
+    [Fact]
     public void Unknown_item_type_is_skipped()
     {
         var types = new PlanItemTypes([]);

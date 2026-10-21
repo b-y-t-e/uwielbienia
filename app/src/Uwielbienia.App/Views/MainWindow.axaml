@@ -39,6 +39,29 @@
           <Button Command="{Binding ToggleProjectionCommand}" ToolTip.Tip="{Binding ProjectionHint}">
             <TextBlock Text="{Binding ProjectionStatus}" />
           </Button>
+          <!-- Przejście z jednej pozycji planu na inną (rzutnik): efekty w panelu, każda zmiana od razu w planie. -->
+          <Button ToolTip.Tip="Przejście na rzutniku z jednej pozycji planu na inną">
+            <TextBlock Text="{Binding Transitions.ButtonText}" />
+            <Button.Flyout>
+              <Flyout Placement="BottomEdgeAlignedRight">
+                <StackPanel Width="340" Spacing="10" Margin="4"
+                            ToolTip.Tip="Kilka zaznaczonych — za każdym razem losowo jeden; żadne — zwykłe przenikanie">
+                  <ItemsControl ItemsSource="{Binding Transitions.Options}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <WrapPanel ItemSpacing="6" LineSpacing="6" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:TransitionOptionViewModel">
+                        <ToggleButton Classes="chip" Content="{Binding Name}" IsChecked="{Binding IsSelected}" />
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Flyout>
+            </Button.Flyout>
+          </Button>
           <Button Command="{Binding Remote.ShowCommand}" ToolTip.Tip="Sparuj telefon jako pilota albo przeglądarkę jako ekran">
             <TextBlock Text="{Binding Remote.BadgeText}" />
           </Button>

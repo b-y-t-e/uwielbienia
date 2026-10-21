@@ -15,6 +15,7 @@ Teksty/
 tools/
   import_spiewnik.py   # jednorazowy import z PDF (PyMuPDF) — NIE uruchamiać ponownie
   validate.py          # walidator formatu: python tools/validate.py
+run.py                 # kompiluje i uruchamia aplikację: python run.py [--release]
 build.py               # buduje aplikacje i stronę do release/
 deploy.py              # wydanie: strona na FTP + tag → GitHub Release (.github/workflows/release.yml)
 app/                   # aplikacja rzutnika (Avalonia, .NET 10) + strona pilota — patrz app/README.md
@@ -249,9 +250,9 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   `b` (do przodu) i na zmianę `Shift+F5` / `Escape` (do tyłu — pilot przełącza „start / koniec pokazu”;
   przy filmie oba to długie „do tyłu”, bez filmu `Escape` dalej zamyka okna i tryb jednego ekranu); strzałki
   działają jak pilot. Przy filmie: krótko = ±15 s (szybkie
-  klikanie tylko przewija), długo do przodu = pauza, długo do tyłu = podpowiedź na rzutniku i w „Na ekranie”
+  klikanie tylko przewija, ale w pierwszych / ostatnich 2 s filmu krótko do tyłu / do przodu = poprzedni / następny slajd — `FilmRemote.Edge`), długo do przodu = pauza, długo do tyłu = podpowiedź na rzutniku i w „Na ekranie”
   (4 s), a po niej długo do tyłu = poprzednia, długo do przodu = następna pozycja planu. Przy zwykłym slajdzie:
-  krótko = slajd, `b` = czarny ekran, `Shift+F5` tylko włącza projekcję (nigdy jej nie wyłącza). `Ctrl+PageDown` /
+  krótko = slajd, `b` = nic (czarny ekran tylko `.` z klawiatury — przypadkowe przytrzymanie pilota nie gasi tekstu), `Shift+F5` tylko włącza projekcję (nigdy jej nie wyłącza). `Ctrl+PageDown` /
   `Ctrl+PageUp` = następna / poprzednia pozycja planu (`ILiveControl.NextItem` / `PreviousItem`). Przyciski
   „Dalej” / „Wstecz” (okno, telefon) zawsze zmieniają slajd / pozycję.
   „−15 s” / „+15 s” (`IVideoPlayer.Skip`, w granicach filmu) w „Na ekranie” i na telefonie; pauza / odtwarzanie
@@ -275,20 +276,31 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   `KioskFrame` + odstęp; porównanie treści, nie list) — „Dalej” idzie do następnej pozycji planu. Elementy zmienia
   `KioskRotation` (Core, jedna dla rzutnika, „Na ekranie” i telefonu): co `Interval`, w kółko; czarny ekran = stoi;
   powrót do kiosku = od elementu, na którym skończył (osobno dla każdej pozycji); edycja na żywo zostawia ten sam
-  element. Rzutnik: `ProjectedKiosk` (strona stała) z wewnętrznym przenikaniem 0,6 s `KioskFramePage`; układ wg
+  element. Rzutnik: `ProjectedKiosk` (strona stała — równa każdej innej stronie tego kiosku, także po edycji na żywo) z wewnętrznym
+  przejściem `KioskFramePage` (`KioskPlayback.Transition`; nowa strona tylko dla innego elementu); układ wg
   `KioskFrame.LayoutFor` — napis tam, gdzie obraz zostaje największy (pionowy do ok. 3:2 → napis z prawej, szerszy →
   pod spodem; sam obraz — cały ekran, sam napis — jak tekst). Kolumna „Pieśń” (`KioskViewModel`) edytuje kiosk na
   miejscu (nazwa, „Zmiana co … s”, elementy z przeciąganiem, „Obraz / Napis / Prezentacja”), każda zmiana od razu w planie.
-  Telefon: `StateMessage.IsKiosk` + wiadomość `kiosk` (`KioskMessage`: element, napis, podgląd JPEG 480 px z `IImagePreviews`).
+  Telefon: `StateMessage.IsKiosk` + wiadomość `kiosk` (`KioskMessage`: `ItemId` — strona pokazuje element tylko przy stanie
+  z tą samą pozycją, napis, podgląd JPEG 480 px z `IImagePreviews`); tryb „Ekran” w przeglądarce pokazuje ten podgląd i napis
+  pod nim (nie układy rzutnika). Edycja dodana w starym modelu (np. kopiowanie skończone po zmianie zaznaczenia) trafia
+  do aktualnego kiosku w planie; kolumna wczytuje kiosk od nowa, gdy treść zmieniła się poza nią.
   **Przejścia** między elementami (`KioskPlanItem.Transitions`: żaden = przenikanie, jeden = ten, kilka = losowo jeden;
-  `null` = domyślnie Akwarela) i **powolny zoom** zdjęć (`SlowZoom`, efekt Kena Burnsa — `Views/SlowZoom`, rusza po przejściu).
-- **Przejścia slajdów** (`App/Transitions`, ogólne — gotowe do użycia przy każdej zmianie slajdu): `SlideTransition` (Core:
+  `null` = domyślnie Akwarela; tylko własne — przejścia planu ich nie zmieniają) i **powolny zoom** zdjęć (`SlowZoom`, efekt Kena Burnsa — `Views/SlowZoom`: przejście
+  `TransformOperationsTransition`, bo Avalonia nie animuje `RenderTransform` klatkami kluczowymi; rusza po przejściu; tylko
+  w ramce na wymiar zdjęcia — przesuwany element na cały ekran zostawiał jasną linię na brzegu).
+- **Przejścia slajdów** (`App/Transitions`, ogólne): między elementami kiosku — efekty kiosku; na rzutniku przy przejściu
+  na inną pozycję planu — efekty planu (`Plan.Transitions` — przycisk „Przejście: …” w pasku górnym, `PlanTransitionsViewModel`; `ActivePlan` wpisuje je w każdy `LiveItem.Transitions`,
+  a `LiveState.TransitionsFrom` (Core) daje je tylko między dwiema widocznymi pozycjami planu — `LiveViewModel.PageTransition` zamienia je na przejście; zapis i opis wyboru: `Plan.WithTransitions`, `SlideTransitions.Default` / `Describe`); slajd w tej samej pozycji,
+  czarny ekran i pieśń spoza planu — krótkie przenikanie (`LiveViewModel.SlideChange`). `SlideTransition` (Core:
   Przesunięcie w losowym kierunku — wstecz w przeciwnym, Witraż, Płomień, Akwarela, Promień światła, Fala) →
   `ShaderPageTransition` (`IPageTransition` dla `TransitioningContentControl`): zrzut starej i nowej strony
   (`RenderTargetBitmap` → `SKImage`), na czas przejścia w ich miejscu `ShaderTransitionView` rysuje shader SkSL
   (`TransitionShaders`, `SKRuntimeEffect`; model gl-transitions: `from`, `to`, `progress`). Bez karty graficznej albo gdy odstępy między
-  klatkami (mierzone w `Animate`, czyli z rysowaniem na karcie) przekraczają 50 ms pięć razy pod rząd — przejście kończy się
-  od razu, a do końca działania zwykłe przenikanie (`SmoothnessGuard`; pojedyncze zacięcia nie wyłączają efektów). Uwaga: w SkSL `pow` z ujemną podstawą jest niezdefiniowane (kwadrat = `x * x`);
+  klatkami (mierzone w `Animate`, czyli z rysowaniem na karcie) przekraczają 50 ms pięć razy pod rząd w jednym przejściu — przejście
+  kończy się od razu, a do końca działania zwykłe przenikanie (`SmoothnessGuard`, `Begin()` = osobny licznik dla każdego przejścia:
+  przejścia naraz — rzutnik i „Na ekranie” — nie sumują wolnych klatek; pojedyncze zacięcia nie wyłączają efektów). Gdy przed albo
+  po nie ma treści (kiosk wchodzi na ekran lub z niego schodzi), bez efektu — przejście strony już go ma. Uwaga: w SkSL `pow` z ujemną podstawą jest niezdefiniowane (kwadrat = `x * x`);
   `SKRuntimeShaderBuilder` nie zwalniamy (zwolniłby wspólny efekt). Klatki efektów: zrzuty `przejscie-*.png`.
 - **Przeciąganie** (plan, części pieśni, części w edytorze — za uchwyt ⠿): `ListReorderDrag` — zwykłe przeciąganie myszą ze
   znacznikiem miejsca i przewijaniem przy krawędzi; wiersze implementują `IReorderableItem`.
@@ -303,7 +315,8 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
 - **Dopasuj obraz** (jak w pps_viewer): `ProjectionCalibration` — 4 narożniki obrazu projekcji
   (korekcja trapezu rzutnika, zmniejszenie, przesunięcie) dla wszystkiego, co pokazuje projekcja.
   `Keystone` (Core) liczy macierz perspektywy prostokąt → czworokąt; `ProjectionWindow` nakłada ją
-  jako `RenderTransform` na panel `Warped` (tekst zostaje wektorowy), poza obrazem czerń. Obsługa
+  jako `RenderTransform` na panel `Warped` (tekst zostaje wektorowy; panel ma tło ekranu — wygładzany brzeg slajdu
+  nie świeci jasną linią), poza obrazem tło ekranu. Obsługa
   tylko na ekranie projekcji, bez przycisków w oknie operatora (jak w pps_viewer): ruch myszy nad
   obrazem pokazuje kursor, ramkę i narożniki (`CalibrationHandles`, bez napisów) na 3 s;
   K (na drugim ekranie, przy widocznych uchwytach) = tryb kalibracji: uchwyty i siatka
@@ -416,7 +429,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 
 `ustawienia.json` (`AppSettings`: motyw okna i ekranu, akordy, szerokości kolumn, ostatni plan,
 `MaxLinesPerSlide`, `JoinVerseAndChorus`, opcjonalny folder pieśni, narożniki „Dopasuj obraz”, `PictureOffsetMs`), `plany/`, `teksty/`,
-`prezentacje/` (kopie prezentacji i ich slajdy; nieużywane nie są dziś usuwane), `polaczenia/`
+`prezentacje/` (kopie prezentacji, obrazów i kiosków oraz ich slajdy; nieużywane nie są dziś usuwane), `polaczenia/`
 (tailcat-link; `uprawnienia.json` — urządzenia, które mogą dodawać pieśni), `aktualizacje.log`.
 
 ### Wygląd
@@ -434,6 +447,8 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
   Kolory: ciemny = czerń i ciepła kość słoniowa, jasny = biel i granat;
   tytuł pieśni w delikatnym ciepłym odcieniu z linią pod spodem; bez stałej wysokości wiersza
   (Literata ma długie ogonki liter). Slajd prezentacji: obraz na cały ekran na tle ekranu (czarnym albo jasnym).
+- Przełączniki pokazują obecny stan („Ekran: czarne tło”, „Ciemny wygląd”, podświetlone „Akordy”), kliknięcie zmienia go
+  na drugi; polecenia (np. „Włącz projekcję”) mówią, co zrobią.
 - Bez zbędnych objaśnień i podpisów: pusty stan, krótka podpowiedź w polu, ostrzeżenie przy
   usuwaniu — tak; opisy pod nagłówkami — nie. Teksty interfejsu po polsku.
 

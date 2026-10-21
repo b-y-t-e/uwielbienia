@@ -63,29 +63,49 @@ Zasada: **Plan** decyduje, co i w jakiej kolejności, **Pieśń** służy do czy
 
 ## 5. Obsługa (sterowanie)
 
+Jedna mapa klawiszy dla okna operatora i ekranu projekcji (`LiveKeyboard`). Klawisze nie działają
+w polach tekstowych, w edytorze i przy otwartej nakładce (poza wymienionymi niżej).
+
+**Slajdy i ekran**
+
 | Klawisz / gest | Działanie |
 |---|---|
-| `→`, `PageDown`, `↓` (pilot: krótko do przodu) | następny slajd; po ostatnim slajdzie → pierwszy slajd następnej pozycji planu. Przy filmie +15 s |
-| `Backspace`, `←`, `PageUp`, `↑` (pilot: krótko do tyłu) | poprzedni slajd. Przy filmie −15 s |
+| `→`, `↓`, `PageDown` (pilot: krótko do przodu) | następny slajd; po ostatnim — pierwszy slajd następnej pozycji planu. Przy filmie +15 s, a w ostatnich 2 s (i po końcu) filmu — następny slajd |
+| `←`, `↑`, `PageUp`, `Backspace` (pilot: krótko do tyłu) | poprzedni slajd. Przy filmie −15 s, a w pierwszych 2 s filmu — poprzedni slajd |
 | `Spacja` | następny slajd. Przy filmie pauza / wznowienie |
 | `Ctrl`+`PageDown` / `Ctrl`+`PageUp` | następna / poprzednia pozycja planu (od pierwszego slajdu) |
-| `B` (pilot: długo do przodu) | czarny ekran (włącz/wyłącz), jak w PowerPoint. Przy filmie pauza / wznowienie |
-| `Shift`+`F5` / `Escape` (pilot: długo do tyłu — na zmianę) | `Shift`+`F5` włącza projekcję (nigdy nie wyłącza), `Escape` zamyka okno / tryb jednego ekranu. Przy filmie oba to samo: podpowiedź na 4 s: potem długo do tyłu = poprzednia, długo do przodu = następna pozycja planu |
-| Dwuklik w planie | pokaż pieśń na ekranie — jedyny sposób w oknie operatora |
-| `.` | czarny ekran (włącz/wyłącz), także przy filmie |
-| `[` / `]` | przy filmie: obraz o 100 ms wcześniej / później względem dźwięku (zapamiętane dla wszystkich filmów) |
-| `Shift`+`1`–`9` | skok do n-tego slajdu bieżącej pieśni (same cyfry zaczynają wyszukiwanie numeru) |
-| Pisanie cyfr lub liter | **szybki wybór**: `47` albo `jezus mój` → okno „Dodaj do planu”, `Enter` = dodaj zaraz za pieśnią na ekranie. W trybie jednego ekranu (nakładka na projekcji) `Enter` pokazuje od razu, a pieśń trafia do planu zaraz za bieżącą; `Ctrl+Enter` = dodaj jako następną |
-| `F5` | włącz/wyłącz okno projekcji |
-| Pilot do prezentacji | działa od razu — krótko wysyła `PageUp` / `PageDown`, przytrzymany zwykle `B` / na zmianę `Shift`+`F5` i `Escape` |
+| `Shift`+`1`–`9` | n-ty slajd bieżącej pozycji (same cyfry zaczynają wyszukiwanie numeru) |
+| `.` | czarny ekran (włącz / wyłącz), także przy filmie — tylko z klawiatury, pilot go nie włącza |
+| `B` (pilot: długo do przodu) | przy filmie pauza / wznowienie; poza filmem nic |
+| `F5` | włącz / wyłącz projekcję (drugi ekran albo tryb jednego ekranu) |
+| `Shift`+`F5` / `Escape` (pilot: długo do tyłu — na zmianę) | `Shift`+`F5` tylko włącza projekcję (nigdy nie wyłącza); `Escape` zamyka nakładkę, a na ekranie projekcji w trybie jednego ekranu wraca do okna operatora. Przy filmie oba to samo: podpowiedź na 4 s, potem długo do tyłu = poprzednia, długo do przodu = następna pozycja planu |
+| `[` / `]` | przy filmie: obraz o 100 ms wcześniej / później względem dźwięku (jedno dla wszystkich filmów) |
+| `F11` | okno operatora na pełny ekran / z powrotem |
+| Pilot do prezentacji | działa od razu — krótko wysyła `PageDown` / `PageUp`, przytrzymany zwykle `B` (tylko pauza filmu) / na zmianę `Shift`+`F5` i `Escape`; działa też przy otwartym oknie „Dodaj do planu” |
+
+**Plan i szybki wybór**
+
+| Klawisz / gest | Działanie |
+|---|---|
+| Dwuklik w planie (albo prawy klik → „Pokaż na ekranie”) | pokaż pozycję na ekranie — jedyny sposób w oknie operatora |
+| Pisanie cyfr lub liter | **szybki wybór**: `47` albo `jezus mój` → okno „Dodaj do planu”; `↑` / `↓` wybór, `Enter` = dodaj zaraz za pozycją na ekranie, `Esc` = zamknij. W trybie jednego ekranu (nakładka na projekcji) `Enter` pokazuje od razu, a pieśń trafia do planu zaraz za bieżącą; `Ctrl`+`Enter` = tylko dodaj jako następną |
+| `Esc` | zamyka nakładkę („Plany”, „Telefon”, „Dodaj do planu”, potwierdzenie usuwania) |
+
+**Ekran projekcji — mysz i „Dopasuj obraz”**
+
+| Klawisz / gest | Działanie |
+|---|---|
+| Ruch myszy | ramka i narożniki obrazu na 3 s |
+| Przeciąganie w dowolnym miejscu | przesuwa najbliższy narożnik (także poza ekranem w sali); z `Shift` — cały obraz |
+| Kółko / `Shift`+kółko / `Ctrl`+kółko | wielkość / szerokość / wysokość obrazu |
+| Kliknięcie (tryb jednego ekranu) | prawa / lewa połowa = następny / poprzedni slajd; przy filmie pauza / wznowienie |
+| `K` (przy widocznych narożnikach) | tryb kalibracji: narożniki i siatka stale; w nim `G` = siatka, `R` = pełny obraz, `Tab` = następny narożnik, `Ctrl`+strzałki = narożnik o piksel (z `Shift` o 10), `Esc` / `K` = koniec |
+
+Kliknięcie w podgląd filmu w kolumnie „Na ekranie” = pauza / wznowienie. Telefon (S4) ma tylko
+Wstecz / Dalej, a przy filmie pauzę, ±15 s i przesunięcie obrazu.
 
 Szybki wybór to odpowiedź na sytuację „alarmową” i uwielbienie bez planu. Numer ze
 śpiewnika wystarcza, a wyszukiwarka ignoruje polskie znaki i interpunkcję.
-
-**Tryb jednego urządzenia (S2)** działa tak samo z klawiatury. Na ekranie dotykowym:
-- stuknięcie prawej / lewej połowy ekranu = następny / poprzedni slajd (przy filmie: pauza / wznowienie);
-- przeciągnięcie od dolnej krawędzi = szuflada z planem i wyszukiwarką; tekst na
-  ekranie zostaje, dopóki nie wybierzesz nowej pieśni.
 
 ## 6. Wygląd
 
@@ -152,8 +172,11 @@ Tekst na ekranie jest wyśrodkowany, a rozmiar czcionki dobiera się automatyczn
 najdłuższy wers zmieścił się na szerokość. Ma przy tym minimum, żeby rozmiar nie skakał
 między slajdami jednej pieśni. Na pierwszym slajdzie pieśni nad tekstem jest jej tytuł —
 tej samej wielkości co tekst, oddzielony linią w kolorze świecy.
-Nazwy części („Refren”) nigdy nie pojawiają się na ekranie. Przejście między slajdami to krótkie przenikanie (150 ms, wyłączalne) — jedyna
-animacja w aplikacji.
+Nazwy części („Refren”) nigdy nie pojawiają się na ekranie. Slajdy w obrębie jednej pozycji planu, czarny ekran i pieśń spoza planu zmieniają się krótkim
+przenikaniem (150 ms). Przejście na inną pozycję planu ma efekt wybrany dla planu (przycisk
+„Przejście: …” w pasku górnym, zapisany w planie; domyślnie Akwarela; żaden = przenikanie, kilka =
+losowo jeden). Kiosk ma własne efekty między elementami, niezależne od planu. Bez karty graficznej
+albo przy uporczywie wolnych klatkach zamiast efektów — przenikanie.
 
 ## 7. Architektura (Clean Code + SOLID)
 

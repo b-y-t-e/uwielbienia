@@ -42,6 +42,8 @@ public sealed class VideoTests : IDisposable
         /// <summary>Film doszedł do <paramref name="position"/> (jak zdarzenie czasu z VLC).</summary>
         public void PlayedTo(TimeSpan position, bool ended = false) => Status = Status with { Position = position, HasEnded = ended };
 
+        public TimeSpan Duration { set => Status = Status with { Duration = value }; }
+
         public void Stop()
         {
             Calls.Add("stop");
@@ -261,6 +263,7 @@ public sealed class VideoTests : IDisposable
     public void Remote_short_presses_only_skip_and_long_forward_pauses()
     {
         var (remote, _, _, _) = OnFilm();
+        _player.PlayedTo(TimeSpan.FromMinutes(1));
         var shown = 0; // rzutnik pokazuje wtedy na chwilę pasek postępu
         remote.FilmChanged += (_, _) => shown++;
 
@@ -273,6 +276,27 @@ public sealed class VideoTests : IDisposable
         Assert.Equal(["open film.mp4", "seek", "seek", "seek", "pause", "resume"], _player.Calls);
         Assert.Equal(5, shown);
         Assert.IsType<VideoSlide>(_session.State.Slide);
+    }
+
+    [Fact]
+    public void Short_presses_at_the_ends_of_the_film_leave_it_to_the_neighbouring_slides()
+    {
+        var (remote, _, _, _) = OnFilm();
+        _player.Duration = TimeSpan.FromMinutes(1);
+        _player.PlayedTo(FilmRemote.Edge + TimeSpan.FromSeconds(1));
+        Assert.True(remote.Back());           // jeszcze przewija …
+
+        _player.PlayedTo(FilmRemote.Edge);
+        Assert.False(remote.Back());          // … a na początku klawisz cofa slajd
+
+        _player.PlayedTo(TimeSpan.FromMinutes(1) - FilmRemote.Edge - TimeSpan.FromSeconds(1));
+        Assert.True(remote.Forward());
+        _player.PlayedTo(TimeSpan.FromMinutes(1) - FilmRemote.Edge);
+        Assert.False(remote.Forward());       // przy końcu — następny slajd
+        _player.PlayedTo(TimeSpan.FromSeconds(10), ended: true);
+        Assert.False(remote.Forward());
+
+        Assert.Equal(["open film.mp4", "seek", "seek"], _player.Calls);
     }
 
     [Fact]
@@ -348,6 +372,7 @@ public sealed class VideoTests : IDisposable
     public void Pause_and_skip_under_black_screen_do_not_signal_a_change()
     {
         var (remote, _, _, _) = OnFilm();
+        _player.PlayedTo(TimeSpan.FromMinutes(1));
         var shown = 0;
         remote.FilmChanged += (_, _) => shown++;
 

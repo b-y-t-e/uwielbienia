@@ -8,7 +8,7 @@ namespace Uwielbienia.App.Services;
 /// Jedna mapa klawiszy dla okna operatora i okna projekcji. Pilot do prezentacji wysyła PageDown / PageUp (krótko),
 /// a przytrzymany — inny klawisz: <c>b</c> (do przodu) i na zmianę <c>Shift+F5</c> / <c>Escape</c> (do tyłu);
 /// strzałki działają jak pilot.
-/// Krótko = slajd, przy filmie ±15 s; długo do przodu = czarny ekran, przy filmie pauza; długo do tyłu = włącz
+/// Krótko = slajd, przy filmie ±15 s (na początku / końcu filmu — slajd); długo do przodu = nic, przy filmie pauza (czarny ekran tylko <c>.</c>); długo do tyłu = włącz
 /// projekcję, przy filmie podpowiedź i wyjście z filmu (<see cref="FilmRemote"/>). Ctrl+PageDown / Ctrl+PageUp =
 /// następna / poprzednia pozycja planu. Spacja przy filmie = pauza, <c>[</c> / <c>]</c> = obraz o 100 ms wcześniej /
 /// później względem dźwięku.
@@ -39,10 +39,10 @@ public static class LiveKeyboard
                 if (!film.HoldBack() && projection.Mode == ProjectionMode.Off)
                     projection.Toggle(); // tylko włącza — przytrzymany pilot nie może zgasić projekcji
                 return true;
-            // pilot: przytrzymane „do przodu”
+            // pilot: przytrzymane „do przodu” — tylko przy filmie (pauza); czarnego ekranu pilot nie włącza, bo przytrzymanie
+            // zdarza się przypadkiem i sala traci tekst. Obsłużone zawsze — „b” nie otwiera szukania.
             case Key.B:
-                if (!film.HoldForward())
-                    control.ToggleBlank();
+                film.HoldForward();
                 return true;
             case Key.Right or Key.Down or Key.PageDown:
                 if (!film.Forward())
