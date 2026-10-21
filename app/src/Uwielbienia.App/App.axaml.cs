@@ -24,7 +24,9 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            _services = AppComposition.Build(new AppPaths());
+            var paths = new AppPaths();
+            Transitions.TransitionLog.Start(paths.TransitionLogFile);
+            _services = AppComposition.Build(paths);
             // Film gra, gdy jego slajd jest na ekranie — nasłuchuje od początku.
             _services.GetRequiredService<VideoDirector>();
             _services.GetRequiredService<PlansViewModel>().OpenInitial();

@@ -50,6 +50,9 @@ public sealed class AppPaths
     public string SettingsFile => Path.Combine(Root, "ustawienia.json");
 
     public string UpdateLogFile => Path.Combine(Root, "aktualizacje.log");
+
+    /// <summary>Dziennik przejść slajdów (<see cref="Transitions.TransitionLog"/>).</summary>
+    public string TransitionLogFile => Path.Combine(Root, "przejscia.log");
 }
 
 public interface ISettingsStore

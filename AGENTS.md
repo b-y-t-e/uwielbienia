@@ -301,7 +301,7 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   `ShaderPageTransition` (`IPageTransition` dla `TransitioningContentControl`): zrzut starej i nowej strony
   (`RenderTargetBitmap` → `SKImage`), na czas przejścia w ich miejscu `ShaderTransitionView` rysuje shader SkSL
   (`TransitionShaders`, `SKRuntimeEffect`; model gl-transitions: `from`, `to`, `progress`). Bez karty graficznej albo gdy odstępy między
-  klatkami (mierzone w `Animate`, czyli z rysowaniem na karcie) przekraczają 50 ms pięć razy pod rząd w jednym przejściu — przejście
+  klatkami (mierzone w `Animate`, czyli z rysowaniem na karcie) przekraczają 100 ms (`TransitionShaders.SlowFrame`; 50 ms wyłączało efekty przy płynnych 20 klatkach/s; każde przejście, jego miejsce, wybrane i wylosowane efekty, wynik, klatki i przyczyna przenikania oraz wyłączenie efektów trafiają do `przejscia.log` — `TransitionLog`) pięć razy pod rząd w jednym przejściu — przejście
   kończy się od razu, a do końca działania zwykłe przenikanie (`SmoothnessGuard`, `Begin()` = osobny licznik dla każdego przejścia:
   przejścia naraz — rzutnik i „Na ekranie” — nie sumują wolnych klatek; pojedyncze zacięcia nie wyłączają efektów). Gdy przed albo
   po nie ma treści (kiosk wchodzi na ekran lub z niego schodzi), bez efektu — przejście strony już go ma. Uwaga: w SkSL `pow` z ujemną podstawą jest niezdefiniowane (kwadrat = `x * x`);
@@ -434,7 +434,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 `ustawienia.json` (`AppSettings`: motyw okna i ekranu, akordy, szerokości kolumn, ostatni plan,
 `MaxLinesPerSlide`, `JoinVerseAndChorus`, opcjonalny folder pieśni, narożniki „Dopasuj obraz”, `PictureOffsetMs`), `plany/`, `teksty/`,
 `prezentacje/` (kopie prezentacji, obrazów i kiosków oraz ich slajdy; nieużywane nie są dziś usuwane), `polaczenia/`
-(tailcat-link; `uprawnienia.json` — urządzenia, które mogą dodawać pieśni), `aktualizacje.log`.
+(tailcat-link; `uprawnienia.json` — urządzenia, które mogą dodawać pieśni), `aktualizacje.log`, `przejscia.log` (dziennik przejść slajdów — `TransitionLog`; przy starcie ponad ok. 1 MB zaczyna się od nowa).
 
 ### Wygląd
 

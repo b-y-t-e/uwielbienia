@@ -168,12 +168,28 @@ public sealed partial class LiveViewModel : ObservableObject
         OnPropertyChanged(nameof(ProgressText));
     }
 
-    private IPageTransition TransitionTo(LiveState before, LiveState after) => after.TransitionsFrom(before) switch
+    private IPageTransition TransitionTo(LiveState before, LiveState after)
     {
-        [] => SlideChange,
-        var effects when PageTransition is ShaderPageTransition current && current.Effects.SequenceEqual(effects) => current,
-        var effects => ShaderPageTransition.For(effects),
-    };
+        var effects = after.TransitionsFrom(before);
+        LogScreenChange(before, after, effects);
+        return effects switch
+        {
+            [] => SlideChange,
+            _ when PageTransition is ShaderPageTransition current && current.Effects.SequenceEqual(effects) => current,
+            _ => ShaderPageTransition.For(effects),
+        };
+    }
+
+    /// <summary>Zmiana pozycji albo czarnego ekranu — do dziennika przejść z tym, czy dostała efekt, czy krótkie przenikanie.</summary>
+    private static void LogScreenChange(LiveState before, LiveState after, IReadOnlyList<SlideTransition> effects)
+    {
+        if (ReferenceEquals(before.Item, after.Item) && before.IsBlank == after.IsBlank)
+            return;
+        var blank = before.IsBlank || after.IsBlank ? $" (czarny ekran {before.IsBlank} → {after.IsBlank})" : "";
+        var chosen = string.Join(", ", (after.Item?.Transitions ?? []).Select(SlideTransitions.Name));
+        var result = effects.Count == 0 ? $"krótkie przenikanie — {after.NoTransitionsReason(before)}" : "efekt planu / pieśni";
+        TransitionLog.Write($"Ekran: „{before.Item?.Title}” → „{after.Item?.Title}”{blank}; pozycja ma [{chosen}] → {result}");
+    }
 }
 
 /// <summary>

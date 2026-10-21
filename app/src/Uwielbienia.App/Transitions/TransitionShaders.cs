@@ -13,18 +13,26 @@ public static class TransitionShaders
     private static readonly Dictionary<SlideTransition, SKRuntimeEffect?> Compiled = [];
 
     /// <summary>
-    /// Odstęp między klatkami jednego przejścia dłuższy niż 50 ms pięć razy pod rząd (słaba karta graficzna) albo brak karty
-    /// graficznej — przejście by się zacinało, więc od razu nowa strona, a do końca działania programu zwykłe przenikanie.
+    /// Wolna klatka: odstęp ponad 100 ms (poniżej 10 klatek/s). 50 ms było za mało — Witraż na rzutniku 1920 px chodzi na
+    /// zwykłym komputerze tuż przy 20 klatkach/s i efekty wyłączały się, choć przejście było płynne.
     /// </summary>
-    private static readonly SmoothnessGuard Guard = new(TimeSpan.FromMilliseconds(50), slowFramesInRow: 5);
+    public static readonly TimeSpan SlowFrame = TimeSpan.FromMilliseconds(100);
+
+    /// <summary>
+    /// Pięć wolnych klatek pod rząd w jednym przejściu (słaba karta graficzna) albo brak karty graficznej — przejście by się
+    /// zacinało, więc od razu nowa strona, a do końca działania programu zwykłe przenikanie.
+    /// </summary>
+    public const int SlowFramesInRow = 5;
+
+    private static readonly SmoothnessGuard Guard = new(SlowFrame, SlowFramesInRow);
 
     public static bool IsSmooth => Guard.IsSmooth;
 
     /// <summary>Nowe przejście: zgłasza odstępy między swoimi klatkami (czas rysowania na karcie graficznej razem z resztą).</summary>
     public static SmoothnessGuard.Run BeginTransition() => Guard.Begin();
 
-    /// <summary>Brak karty graficznej (wątek renderowania).</summary>
-    public static void DisableEffects() => Guard.Disable();
+    /// <summary>Brak karty graficznej (wątek renderowania). <c>true</c> = to wywołanie wyłączyło efekty.</summary>
+    public static bool DisableEffects() => Guard.Disable();
 
     public static SKRuntimeEffect? For(SlideTransition transition)
     {
@@ -34,7 +42,7 @@ public static class TransitionShaders
             {
                 effect = SKRuntimeEffect.CreateShader(Common + Body(transition), out var errors);
                 if (effect is null)
-                    System.Diagnostics.Debug.WriteLine($"Przejście {transition}: {errors}");
+                    TransitionLog.Write($"Shader {transition} się nie skompilował: {errors}");
                 Compiled[transition] = effect;
             }
             return effect;

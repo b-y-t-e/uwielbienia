@@ -46,10 +46,17 @@ public sealed record LiveState(
     /// pozycjami planu; poza tym (ten sam slajd lub pozycja, czarny ekran, pieśń spoza planu) pusta lista = krótkie przenikanie.
     /// </summary>
     public IReadOnlyList<SlideTransition> TransitionsFrom(LiveState before) =>
-        before.VisibleSlide is not null && VisibleSlide is not null
-        && Item is { PlanItemId: { } id, Transitions: { } effects } && before.Item?.PlanItemId is { } previousId && id != previousId
-            ? effects
-            : [];
+        NoTransitionsReason(before) is null ? Item!.Transitions! : [];
+
+    /// <summary>Dlaczego <see cref="TransitionsFrom"/> nie daje efektów (krótkie przenikanie); <c>null</c> = daje.</summary>
+    public string? NoTransitionsReason(LiveState before) =>
+        before.VisibleSlide is null ? "przed nie było widocznego slajdu (czarny lub pusty ekran)"
+        : VisibleSlide is null ? "po nie ma widocznego slajdu (czarny lub pusty ekran)"
+        : Item?.PlanItemId is not { } id ? "pieśń spoza planu"
+        : before.Item?.PlanItemId is not { } previousId ? "przed była pieśń spoza planu"
+        : id == previousId ? "ta sama pozycja planu"
+        : Item.Transitions is not { Count: > 0 } ? "pozycja ma wybrane samo przenikanie lub nie ma efektów"
+        : null;
 }
 
 public interface ILiveStateSource

@@ -41,12 +41,18 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
 
     public async Task Start(Visual? from, Visual? to, bool forward, CancellationToken cancellationToken)
     {
+        var id = TransitionLog.NextId();
+        var where = Where(to ?? from);
         if (cancellationToken.IsCancellationRequested)
+        {
+            TransitionLog.Write($"#{id} {where}: przerwane przed startem");
             return;
+        }
         // Przed albo po nie ma treści (kiosk wchodzi na ekran albo z niego schodzi — to już ma własne przejście strony):
         // od razu, bez drugiego efektu naraz.
         if (from is ContentPresenter { Content: null } || to is ContentPresenter { Content: null })
         {
+            TransitionLog.Write($"#{id} {where}: bez efektu — {(from is ContentPresenter { Content: null } ? "przed" : "po")} pusta strona");
             if (from is not null)
                 from.IsVisible = false;
             if (to is not null)
@@ -58,8 +64,14 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
         }
         var effect = SlideTransitions.Pick(Effects, Random);
         var shader = effect is { } chosen && TransitionShaders.IsSmooth ? TransitionShaders.For(chosen) : null;
+        var picked = $"wybrane [{string.Join(", ", Effects.Select(SlideTransitions.Name))}] → {(effect is { } e ? SlideTransitions.Name(e) : "—")}";
         if (from is null || to is null || shader is null || to.GetVisualParent() is not Panel host)
         {
+            var reason = from is null || to is null ? "brak starej lub nowej strony"
+                : !TransitionShaders.IsSmooth ? "efekty wyłączone (wcześniej za wolne klatki albo brak karty graficznej)"
+                : shader is null ? "shader się nie skompilował"
+                : "strona nie leży w panelu";
+            TransitionLog.Write($"#{id} {where}: {picked}; PRZENIKANIE — {reason}");
             await Fallback.Start(from, to, forward, cancellationToken);
             return;
         }
@@ -70,6 +82,7 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
         await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Loaded);
         if (cancellationToken.IsCancellationRequested)
         {
+            TransitionLog.Write($"#{id} {where}: {picked}; przerwane (kolejna zmiana) przed zrzutem");
             to.Opacity = 1;
             return;
         }
@@ -83,9 +96,11 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
             fromImage?.Dispose();
             toImage?.Dispose();
             to.Opacity = 0;
+            TransitionLog.Write($"#{id} {where}: {picked}; PRZENIKANIE — nie udał się zrzut strony ({from.Bounds.Size} → {to.Bounds.Size})");
             await Fallback.Start(from, to, forward, cancellationToken);
             return;
         }
+        TransitionLog.Write($"#{id} {where}: {picked}; start, zrzut {fromImage.Width}×{fromImage.Height}");
 
         var view = new ShaderTransitionView(fromImage, toImage, shader, (float)Random.NextDouble(), Direction(effect!.Value, forward))
         {
@@ -99,7 +114,7 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
         to.Opacity = 0;
         try
         {
-            await Animate(view, effect == SlideTransition.Slide ? SlideDuration : Duration, cancellationToken);
+            await Animate(view, effect == SlideTransition.Slide ? SlideDuration : Duration, id, where, cancellationToken);
         }
         finally
         {
@@ -135,31 +150,66 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
         };
     }
 
-    private static Task Animate(ShaderTransitionView view, TimeSpan duration, CancellationToken cancellationToken)
+    /// <summary>Gdzie rysuje się przejście: okno projekcji czy okno operatora (kolumna „Na ekranie”).</summary>
+    private static string Where(Visual? visual) => TopLevel.GetTopLevel(visual) switch
+    {
+        Views.ProjectionWindow => "rzutnik",
+        Views.MainWindow => "Na ekranie",
+        { } other => other.GetType().Name,
+        null => "poza oknem",
+    };
+
+    private static Task Animate(ShaderTransitionView view, TimeSpan duration, int id, string where, CancellationToken cancellationToken)
     {
         if (TopLevel.GetTopLevel(view) is not { } top)
+        {
+            TransitionLog.Write($"#{id} {where}: koniec od razu — widok efektu poza oknem");
             return Task.CompletedTask;
+        }
         var done = new TaskCompletionSource();
         var smoothness = TransitionShaders.BeginTransition();
         TimeSpan? start = null;
         TimeSpan? previous = null;
+        var frames = 0;
+        var slow = 0;
+        var longest = TimeSpan.Zero;
+        void Finish(string how)
+        {
+            TransitionLog.Write($"#{id} {where}: {how}; klatek {frames}, najdłuższy odstęp {longest.TotalMilliseconds:0} ms, " +
+                                $"wolnych (>{TransitionShaders.SlowFrame.TotalMilliseconds:0} ms) {slow}");
+            done.TrySetResult();
+        }
         void Frame(TimeSpan now)
         {
             // Odstępy między klatkami mierzą całe rysowanie (także na karcie graficznej); pierwszy pomijamy — kompilacja
             // shadera. Zbyt wolne pod rząd (albo brak karty graficznej) — przejście kończy się od razu, bez zacinania.
+            frames++;
             if (previous is { } last && last != start)
-                smoothness.ReportFrame(now - last);
-            previous = now;
-            if (cancellationToken.IsCancellationRequested || !TransitionShaders.IsSmooth)
             {
-                done.TrySetResult();
+                var interval = now - last;
+                if (interval > longest)
+                    longest = interval;
+                if (interval > TransitionShaders.SlowFrame)
+                    slow++;
+                if (smoothness.ReportFrame(interval))
+                    TransitionLog.Write($"#{id} {where}: EFEKTY WYŁĄCZONE do końca działania — {TransitionShaders.SlowFramesInRow} wolnych klatek pod rząd (ostatnia {interval.TotalMilliseconds:0} ms)");
+            }
+            previous = now;
+            if (cancellationToken.IsCancellationRequested)
+            {
+                Finish("przerwane kolejną zmianą");
+                return;
+            }
+            if (!TransitionShaders.IsSmooth)
+            {
+                Finish("urwane — efekty wyłączone");
                 return;
             }
             start ??= now;
             var progress = (now - start.Value) / duration;
             view.Progress = progress;
             if (progress >= 1)
-                done.TrySetResult();
+                Finish("koniec");
             else
                 top.RequestAnimationFrame(Frame);
         }

@@ -75,7 +75,8 @@ public sealed class ShaderTransitionView : Control
             {
                 // Bez karty graficznej shader liczyłby procesor — klatki po kilkaset ms. Od razu nowa strona, a dalsze
                 // przejścia to zwykłe przenikanie.
-                TransitionShaders.DisableEffects();
+                if (TransitionShaders.DisableEffects())
+                    TransitionLog.Write("EFEKTY WYŁĄCZONE do końca działania — brak karty graficznej (rysowanie programowe)");
                 lease.SkCanvas.DrawImage(to, SKRect.Create(width, height), new SKSamplingOptions(SKFilterMode.Linear), null);
                 return;
             }
