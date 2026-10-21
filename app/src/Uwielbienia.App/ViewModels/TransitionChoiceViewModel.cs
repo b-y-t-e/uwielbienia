@@ -34,6 +34,9 @@ public sealed class TransitionChoiceViewModel
     /// <summary>Np. „Akwarela”, „losowe (3)”, „przenikanie”.</summary>
     public string Description => SlideTransitions.Describe(Selected);
 
+    /// <summary>Opis jako samodzielny napis (bez „Przejście: ”), np. „Losowe (3)”.</summary>
+    public string Title => Description is [var first, .. var rest] ? char.ToUpper(first) + rest : Description;
+
     public void Show(IReadOnlyList<SlideTransition> chosen)
     {
         _showing = true;

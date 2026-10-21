@@ -292,10 +292,10 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   `TransformOperationsTransition`, bo Avalonia nie animuje `RenderTransform` klatkami kluczowymi; rusza po przejściu; tylko
   w ramce na wymiar zdjęcia — przesuwany element na cały ekran zostawiał jasną linię na brzegu).
 - **Przejścia slajdów** (`App/Transitions`, ogólne): między elementami kiosku — efekty kiosku; na rzutniku przy przejściu
-  na inną pozycję planu — efekty planu (`Plan.Transitions` — przycisk „Przejście: …” w pasku górnym, `PlanTransitionsViewModel`), a pieśń
+  na inną pozycję planu — efekty planu (`Plan.Transitions` — przycisk przejścia w pasku górnym — napis to sam efekt, np. „Akwarela”, `PlanTransitionsViewModel`), a pieśń
   lub tekst z własnymi efektami — jej (`SongPlanItem.Transitions`, `null` = jak w planie; przycisk „Przejście: …” w kolumnie „Pieśń”,
   `TransitionOverrideViewModel`); `ActivePlan` wpisuje je w każdy `LiveItem.Transitions`,
-  a między slajdami jednej pozycji — efekty „Slajdy: …” z paska górnego (`Plan.InnerTransitions`, `null` = jak w planie;
+  a między slajdami jednej pozycji — efekty drugiego przycisku przejścia w pasku górnym (napis „Jak w planie” albo efekt) (`Plan.InnerTransitions`, `null` = jak w planie;
   `PlanSlideTransitionsViewModel`) w `LiveItem.InnerTransitions`; `LiveState.TransitionsFrom` (Core) daje je tylko między dwoma widocznymi slajdami
   planu — `LiveViewModel.PageTransition` zamienia je na przejście; zapis i opis wyboru: `Plan.WithTransitions`, `SlideTransitions.Default` / `Describe`); ten sam slajd,
   czarny ekran i pieśń spoza planu — krótkie przenikanie (`LiveViewModel.SlideChange`). `SlideTransition` (Core:
@@ -453,7 +453,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
   Kolory: ciemny = czerń i ciepła kość słoniowa, jasny = biel i granat;
   tytuł pieśni w delikatnym ciepłym odcieniu z linią pod spodem; bez stałej wysokości wiersza
   (Literata ma długie ogonki liter). Slajd prezentacji: obraz na cały ekran na tle ekranu (czarnym albo jasnym).
-- Przełączniki pokazują obecny stan („Ekran: czarne tło”, „Ciemny wygląd”, podświetlone „Akordy”), kliknięcie zmienia go
+- Przełączniki pokazują obecny stan („Czarne tło” ekranu w sali, „Ciemny wygląd”, podświetlone „Akordy”), kliknięcie zmienia go
   na drugi; polecenia (np. „Włącz projekcję”) mówią, co zrobią.
 - Bez zbędnych objaśnień i podpisów: pusty stan, krótka podpowiedź w polu, ostrzeżenie przy
   usuwaniu — tak; opisy pod nagłówkami — nie. Teksty interfejsu po polsku.

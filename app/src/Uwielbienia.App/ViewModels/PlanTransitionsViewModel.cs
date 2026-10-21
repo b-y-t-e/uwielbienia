@@ -28,6 +28,9 @@ public sealed partial class PlanTransitionsViewModel : ObservableObject
     /// <summary>Np. „Przejście: Akwarela”, „Przejście: losowe (3)”, „Przejście: przenikanie”.</summary>
     public string ButtonText => "Przejście: " + _choice.Description;
 
+    /// <summary>Napis w pasku górnym obok ikony, np. „Akwarela”, „Losowe (3)”.</summary>
+    public string ShortText => _choice.Title;
+
     private void OnChosen(IReadOnlyList<SlideTransition> chosen)
     {
         if (_plan.Plan is not { } plan)
@@ -36,6 +39,7 @@ public sealed partial class PlanTransitionsViewModel : ObservableObject
             return;
         }
         OnPropertyChanged(nameof(ButtonText));
+        OnPropertyChanged(nameof(ShortText));
         if (!plan.ChosenTransitions.SequenceEqual(chosen))
             _plan.Update(p => p.WithTransitions(chosen));
     }
@@ -44,5 +48,6 @@ public sealed partial class PlanTransitionsViewModel : ObservableObject
     {
         _choice.Show(_plan.Plan?.ChosenTransitions ?? Plan.DefaultTransitions);
         OnPropertyChanged(nameof(ButtonText));
+        OnPropertyChanged(nameof(ShortText));
     }
 }

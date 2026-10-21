@@ -36,8 +36,7 @@
     <DockPanel Margin="16">
 
       <!-- Pasek górny: plan, stan projekcji, telefon, wygląd -->
-      <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="4,0,4,14"
-            Container.Name="topBar" Container.Sizing="Width">
+      <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*" Margin="4,0,4,14">
         <Button Classes="quiet" Command="{Binding Plans.ShowCommand}" ToolTip.Tip="Plany: otwórz, utwórz, użyj ponownie">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <TextBlock Classes="songTitle" Text="{Binding Plan.Name}" />
@@ -46,96 +45,100 @@
           </StackPanel>
         </Button>
 
-        <!-- Aktualizacja w kolumnie *, żeby w wąskim oknie zwężała się zamiast wypychać pozostałe przyciski -->
-        <DockPanel Grid.Column="1" Margin="8,0" HorizontalAlignment="Right" IsVisible="{Binding IsUpdateAvailable}">
-          <Button DockPanel.Dock="Right" Classes="primary" Command="{Binding ApplyUpdateCommand}"
-                  ToolTip.Tip="Pobrano nowszą wersję z GitHub — zainstaluj i uruchom ponownie">
-            <TextBlock Text="{Binding UpdateVersion, StringFormat='Aktualizuj do {0}'}" TextTrimming="CharacterEllipsis" />
-          </Button>
-          <TextBlock Classes="caption" VerticalAlignment="Center" Margin="0,0,8,0" Text="{Binding UpdateError}"
-                     MaxWidth="240" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding UpdateError}"
-                     IsVisible="{Binding UpdateError, Converter={x:Static ObjectConverters.IsNotNull}}" />
-        </DockPanel>
+        <DockPanel Grid.Column="1">
+          <!-- Przyciski mierzone pierwsze: dostają całe miejsce obok nazwy planu, a napisy chowają się tylko, gdy się nie mieszczą. -->
+          <v:FitLabelsPanel x:Name="BarButtons" DockPanel.Dock="Right" Spacing="8">
 
-        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
-          <Button Classes="barIcon" Command="{Binding ToggleProjectionCommand}">
-            <!-- Podpowiedź zaczyna się od stanu — w wąskim oknie pasek ma same ikony. -->
-            <ToolTip.Tip>
-              <MultiBinding StringFormat="{}{0} — {1}">
-                <Binding Path="ProjectionStatus" />
-                <Binding Path="ProjectionHint" />
-              </MultiBinding>
-            </ToolTip.Tip>
-            <StackPanel Classes="withIcon">
-              <Path Data="M3,8 H16 V17 H3 Z M7.5,12.5 A2,2 0 1 1 11.5,12.5 A2,2 0 1 1 7.5,12.5 Z M16,10.5 L21,8 M16,14.5 L21,17" />
-              <TextBlock Text="{Binding ProjectionStatus}" />
-            </StackPanel>
-          </Button>
-          <!-- Przejście z jednej pozycji planu na inną (rzutnik): efekty w panelu, każda zmiana od razu w planie. -->
-          <Button Classes="barIcon" ToolTip.Tip="{Binding Transitions.ButtonText, StringFormat='{}{0} — przejście na rzutniku z jednej pozycji planu na inną'}">
-            <StackPanel Classes="withIcon">
-              <Path Data="M3,5 H21 V19 H3 Z M14,5 L10,19" />
-              <TextBlock Text="{Binding Transitions.ButtonText}" />
-            </StackPanel>
-            <Button.Flyout>
-              <Flyout Placement="BottomEdgeAlignedRight">
-                <StackPanel Width="340" Spacing="10" Margin="4"
-                            ToolTip.Tip="Kilka zaznaczonych — za każdym razem losowo jeden; żadne — zwykłe przenikanie">
-                  <ItemsControl ItemsSource="{Binding Transitions.Options}">
-                    <ItemsControl.ItemsPanel>
-                      <ItemsPanelTemplate>
-                        <WrapPanel ItemSpacing="6" LineSpacing="6" />
-                      </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate x:DataType="vm:TransitionOptionViewModel">
-                        <ToggleButton Classes="chip" Content="{Binding Name}" IsChecked="{Binding IsSelected}" />
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                </StackPanel>
-              </Flyout>
-            </Button.Flyout>
-          </Button>
-          <!-- Przejście między slajdami jednej pozycji (zwrotki, slajdy prezentacji): jak w planie albo własne efekty. -->
-          <Button Classes="barIcon" ToolTip.Tip="{Binding SlideTransitions.ButtonText, StringFormat='{}{0} — przejście na rzutniku między slajdami jednej pozycji planu'}">
-            <StackPanel Classes="withIcon">
-              <Path Data="M3,4 H21 V15 H3 Z M7,19.5 H7.01 M12,19.5 H12.01 M17,19.5 H17.01" />
-              <TextBlock Text="{Binding SlideTransitions.ButtonText}" />
-            </StackPanel>
-            <Button.Flyout>
-              <Flyout Placement="BottomEdgeAlignedRight">
-                <ContentControl Content="{Binding SlideTransitions}" />
-              </Flyout>
-            </Button.Flyout>
-          </Button>
-          <!-- Obecne tło ekranu w sali; kliknięcie przełącza na drugie. -->
-          <Button Classes="barIcon" Command="{Binding ToggleProjectionThemeCommand}" ToolTip.Tip="Tło ekranu w sali — kliknij, żeby zmienić">
-            <StackPanel Classes="withIcon">
-              <Path Data="M2.5,4 H21.5 M4.5,4 V16 H19.5 V4 M12,16 V19 M13,7.2 A3,3 0 1 0 13,12.8 A2.3,2.3 0 0 1 13,7.2 Z"
-                    IsVisible="{Binding IsProjectionDark}" />
-              <Path Data="M2.5,4 H21.5 M4.5,4 V16 H19.5 V4 M12,16 V19 M10.5,10 A1.5,1.5 0 1 1 13.5,10 A1.5,1.5 0 1 1 10.5,10 Z M12,6.5 V7 M12,13 V13.5 M8.5,10 H9 M15,10 H15.5"
-                    IsVisible="{Binding !IsProjectionDark}" />
-              <TextBlock Text="Ekran: czarne tło" IsVisible="{Binding IsProjectionDark}" />
-              <TextBlock Text="Ekran: jasne tło" IsVisible="{Binding !IsProjectionDark}" />
-            </StackPanel>
-          </Button>
-          <Button Classes="barIcon" Command="{Binding Remote.ShowCommand}" ToolTip.Tip="{Binding Remote.BadgeText, StringFormat='{}{0} — sparuj telefon jako pilota albo przeglądarkę jako ekran'}">
-            <StackPanel Classes="withIcon">
-              <Path Data="M7,2.5 H17 V21.5 H7 Z M11,18.5 H13" />
-              <TextBlock Text="{Binding Remote.BadgeText}" />
-            </StackPanel>
-          </Button>
-          <Button Classes="barIcon" Command="{Binding ToggleThemeCommand}" ToolTip.Tip="Wygląd okna — kliknij, żeby zmienić">
-            <StackPanel Classes="withIcon">
-              <Path Data="M20,14.5 A8.5,8.5 0 1 1 9.5,4 A6.8,6.8 0 0 0 20,14.5 Z" IsVisible="{Binding IsDarkTheme}" />
-              <Path Data="M8,12 A4,4 0 1 1 16,12 A4,4 0 1 1 8,12 Z M12,2.5 V4.5 M12,19.5 V21.5 M2.5,12 H4.5 M19.5,12 H21.5 M5.3,5.3 L6.7,6.7 M17.3,17.3 L18.7,18.7 M5.3,18.7 L6.7,17.3 M17.3,6.7 L18.7,5.3"
-                    IsVisible="{Binding !IsDarkTheme}" />
-              <TextBlock Text="Ciemny wygląd" IsVisible="{Binding IsDarkTheme}" />
-              <TextBlock Text="Jasny wygląd" IsVisible="{Binding !IsDarkTheme}" />
-            </StackPanel>
-          </Button>
-        </StackPanel>
+            <Button Classes="barIcon" Command="{Binding ToggleProjectionCommand}">
+              <!-- Podpowiedź zaczyna się od stanu — w wąskim oknie pasek ma same ikony. -->
+              <ToolTip.Tip>
+                <MultiBinding StringFormat="{}{0} — {1}">
+                  <Binding Path="ProjectionStatus" />
+                  <Binding Path="ProjectionHint" />
+                </MultiBinding>
+              </ToolTip.Tip>
+              <StackPanel Classes="withIcon">
+                <Path Data="M3,8 H16 V17 H3 Z M7.5,12.5 A2,2 0 1 1 11.5,12.5 A2,2 0 1 1 7.5,12.5 Z M16,10.5 L21,8 M16,14.5 L21,17" />
+                <TextBlock Text="{Binding ProjectionStatus}" />
+              </StackPanel>
+            </Button>
+            <!-- Przejście z jednej pozycji planu na inną (rzutnik): efekty w panelu, każda zmiana od razu w planie. -->
+            <Button Classes="barIcon" ToolTip.Tip="{Binding Transitions.ButtonText, StringFormat='{}{0} — przejście na rzutniku z jednej pozycji planu na inną'}">
+              <StackPanel Classes="withIcon">
+                <Path Data="M3,5 H21 V19 H3 Z M14,5 L10,19" />
+                <TextBlock Text="{Binding Transitions.ShortText}" />
+              </StackPanel>
+              <Button.Flyout>
+                <Flyout Placement="BottomEdgeAlignedRight">
+                  <StackPanel Width="340" Spacing="10" Margin="4"
+                              ToolTip.Tip="Kilka zaznaczonych — za każdym razem losowo jeden; żadne — zwykłe przenikanie">
+                    <ItemsControl ItemsSource="{Binding Transitions.Options}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <WrapPanel ItemSpacing="6" LineSpacing="6" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:TransitionOptionViewModel">
+                          <ToggleButton Classes="chip" Content="{Binding Name}" IsChecked="{Binding IsSelected}" />
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+            <!-- Przejście między slajdami jednej pozycji (zwrotki, slajdy prezentacji): jak w planie albo własne efekty. -->
+            <Button Classes="barIcon" ToolTip.Tip="{Binding SlideTransitions.ButtonText, StringFormat='{}{0} — przejście na rzutniku między slajdami jednej pozycji planu'}">
+              <StackPanel Classes="withIcon">
+                <Path Data="M3,4 H21 V15 H3 Z M7,19.5 H7.01 M12,19.5 H12.01 M17,19.5 H17.01" />
+                <TextBlock Text="{Binding SlideTransitions.ShortText}" />
+              </StackPanel>
+              <Button.Flyout>
+                <Flyout Placement="BottomEdgeAlignedRight">
+                  <ContentControl Content="{Binding SlideTransitions}" />
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+            <!-- Obecne tło ekranu w sali; kliknięcie przełącza na drugie. -->
+            <Button Classes="barIcon" Command="{Binding ToggleProjectionThemeCommand}" ToolTip.Tip="Tło ekranu w sali (rzutnik) — kliknij, żeby zmienić">
+              <StackPanel Classes="withIcon">
+                <Path Data="M2.5,4 H21.5 M4.5,4 V16 H19.5 V4 M12,16 V19 M13,7.2 A3,3 0 1 0 13,12.8 A2.3,2.3 0 0 1 13,7.2 Z"
+                      IsVisible="{Binding IsProjectionDark}" />
+                <Path Data="M2.5,4 H21.5 M4.5,4 V16 H19.5 V4 M12,16 V19 M10.5,10 A1.5,1.5 0 1 1 13.5,10 A1.5,1.5 0 1 1 10.5,10 Z M12,6.5 V7 M12,13 V13.5 M8.5,10 H9 M15,10 H15.5"
+                      IsVisible="{Binding !IsProjectionDark}" />
+                <TextBlock Text="Czarne tło" IsVisible="{Binding IsProjectionDark}" />
+                <TextBlock Text="Jasne tło" IsVisible="{Binding !IsProjectionDark}" />
+              </StackPanel>
+            </Button>
+            <Button Classes="barIcon" Command="{Binding Remote.ShowCommand}" ToolTip.Tip="{Binding Remote.BadgeText, StringFormat='{}{0} — sparuj telefon jako pilota albo przeglądarkę jako ekran'}">
+              <StackPanel Classes="withIcon">
+                <Path Data="M7,2.5 H17 V21.5 H7 Z M11,18.5 H13" />
+                <TextBlock Text="{Binding Remote.BadgeText}" />
+              </StackPanel>
+            </Button>
+            <Button Classes="barIcon" Command="{Binding ToggleThemeCommand}" ToolTip.Tip="Wygląd okna — kliknij, żeby zmienić">
+              <StackPanel Classes="withIcon">
+                <Path Data="M20,14.5 A8.5,8.5 0 1 1 9.5,4 A6.8,6.8 0 0 0 20,14.5 Z" IsVisible="{Binding IsDarkTheme}" />
+                <Path Data="M8,12 A4,4 0 1 1 16,12 A4,4 0 1 1 8,12 Z M12,2.5 V4.5 M12,19.5 V21.5 M2.5,12 H4.5 M19.5,12 H21.5 M5.3,5.3 L6.7,6.7 M17.3,17.3 L18.7,18.7 M5.3,18.7 L6.7,17.3 M17.3,6.7 L18.7,5.3"
+                      IsVisible="{Binding !IsDarkTheme}" />
+                <TextBlock Text="Ciemny wygląd" IsVisible="{Binding IsDarkTheme}" />
+                <TextBlock Text="Jasny wygląd" IsVisible="{Binding !IsDarkTheme}" />
+              </StackPanel>
+            </Button>
+          </v:FitLabelsPanel>
+
+          <!-- Aktualizacja w pozostałym miejscu, żeby w wąskim oknie zwężała się zamiast wypychać przyciski -->
+          <DockPanel Margin="8,0" HorizontalAlignment="Right" IsVisible="{Binding IsUpdateAvailable}">
+            <Button DockPanel.Dock="Right" Classes="primary" Command="{Binding ApplyUpdateCommand}"
+                    ToolTip.Tip="Pobrano nowszą wersję z GitHub — zainstaluj i uruchom ponownie">
+              <TextBlock Text="{Binding UpdateVersion, StringFormat='Aktualizuj do {0}'}" TextTrimming="CharacterEllipsis" />
+            </Button>
+            <TextBlock Classes="caption" VerticalAlignment="Center" Margin="0,0,8,0" Text="{Binding UpdateError}"
+                       MaxWidth="240" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding UpdateError}"
+                       IsVisible="{Binding UpdateError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+          </DockPanel>
+        </DockPanel>
       </Grid>
 
       <Grid x:Name="Columns">
@@ -868,11 +871,14 @@
       <Setter Property="Orientation" Value="Horizontal" />
       <Setter Property="Spacing" Value="8" />
     </Style>
+    <!-- Ikony rysowane w siatce 24×24 i zmniejszane w całości (Stretch="Uniform" dosuwał szerokie ikony do górnej krawędzi). -->
     <Style Selector="Button.barIcon Path">
-      <Setter Property="Width" Value="16" />
-      <Setter Property="Height" Value="16" />
-      <Setter Property="Stretch" Value="Uniform" />
-      <Setter Property="StrokeThickness" Value="1.8" />
+      <Setter Property="Width" Value="18" />
+      <Setter Property="Height" Value="18" />
+      <Setter Property="Stretch" Value="None" />
+      <Setter Property="RenderTransformOrigin" Value="0%,0%" />
+      <Setter Property="RenderTransform" Value="scale(0.75)" />
+      <Setter Property="StrokeThickness" Value="2.4" />
       <Setter Property="StrokeLineCap" Value="Round" />
       <Setter Property="StrokeJoin" Value="Round" />
       <Setter Property="Stroke" Value="{DynamicResource MutedBrush}" />
@@ -881,15 +887,13 @@
     <Style Selector="Button.barIcon:pointerover Path">
       <Setter Property="Stroke" Value="{DynamicResource CandleBrush}" />
     </Style>
-    <!-- Wąskie okno: w pasku górnym same ikony (napis zostaje w podpowiedzi), żeby żaden przycisk nie wypadł poza okno. -->
-    <ContainerQuery Name="topBar" Query="max-width:1500">
-      <Style Selector="Button.barIcon StackPanel.withIcon">
-        <Setter Property="Spacing" Value="0" />
-      </Style>
-      <Style Selector="Button.barIcon StackPanel.withIcon > TextBlock">
-        <Setter Property="MaxWidth" Value="0" />
-      </Style>
-    </ContainerQuery>
+    <!-- Napisy nie mieszczą się obok nazwy planu: w pasku górnym same ikony (napis zostaje w podpowiedzi). -->
+    <Style Selector="v|FitLabelsPanel.compact Button.barIcon StackPanel.withIcon">
+      <Setter Property="Spacing" Value="0" />
+    </Style>
+    <Style Selector="v|FitLabelsPanel.compact Button.barIcon StackPanel.withIcon > TextBlock">
+      <Setter Property="MaxWidth" Value="0" />
+    </Style>
     <!-- „Dodaj do planu”: rodzaj pozycji — ikona (obrys w kolorze tekstu przycisku) i nazwa. -->
     <Style Selector="Button.addKind > StackPanel">
       <Setter Property="Orientation" Value="Horizontal" />

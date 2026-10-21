@@ -30,11 +30,14 @@ public sealed partial class TransitionOverrideViewModel : ObservableObject
 
     /// <summary>Pieśń nie ma własnego przejścia — używa przejścia planu.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ButtonText))]
+    [NotifyPropertyChangedFor(nameof(ButtonText), nameof(ShortText))]
     public partial bool FollowsPlan { get; set; } = true;
 
     /// <summary>Np. „Przejście: jak w planie”, „Przejście: Płomień”, „Przejście: losowe (2)”.</summary>
     public string ButtonText => _label + ": " + (FollowsPlan ? "jak w planie" : _choice.Description);
+
+    /// <summary>Napis w pasku górnym obok ikony, np. „Jak w planie”, „Płomień”.</summary>
+    public string ShortText => FollowsPlan ? "Jak w planie" : _choice.Title;
 
     /// <summary>Pokazuje wybór pozycji: własny albo (<paramref name="own"/> = <c>null</c>) przejście planu.</summary>
     public void Show(IReadOnlyList<SlideTransition>? own, IReadOnlyList<SlideTransition> plan)
@@ -44,6 +47,7 @@ public sealed partial class TransitionOverrideViewModel : ObservableObject
         _choice.Show(own ?? plan);
         _showing = false;
         OnPropertyChanged(nameof(ButtonText));
+        OnPropertyChanged(nameof(ShortText));
     }
 
     partial void OnFollowsPlanChanged(bool value)
@@ -58,6 +62,7 @@ public sealed partial class TransitionOverrideViewModel : ObservableObject
         FollowsPlan = false; // zaznaczenie efektu = własne przejście pieśni
         _showing = false;
         OnPropertyChanged(nameof(ButtonText));
+        OnPropertyChanged(nameof(ShortText));
         _save(chosen);
     }
 }
