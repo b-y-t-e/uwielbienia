@@ -222,7 +222,9 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   kilka = jedna prezentacja; „Obraz” — `ImportEachAsync`: każdy obraz osobno, wszystko albo nic) do
   `prezentacje/{id8}-{slug}/` — plan działa po wyjęciu pendrive'a. Import / kopia przerwane błędem usuwają swój folder.
   Slajdy prezentacji eksportuje raz, w tle, do `slajdy/` (najpierw `slajdy.tmp`, potem znacznik
-  `.complete`; PNG 1920 px, bez slajdów ukrytych) `SlideExporterChain` (Core) — pierwszy dostępny
+  `.complete`; PNG 1920 px, bez slajdów ukrytych; kroki animacji — kolejne kliknięcia — jako osobne slajdy: `AnimationStepsExporter`
+  przerabia kopię `.pptx/.ppsx/.pptm/.ppsm` przed eksportem, `AnimationSteps`; slajdy sprzed tego — pusty znacznik — prezentacja z animacjami
+  eksportuje jeszcze raz, a do tego czasu i przy błędzie pokazuje stare slajdy) `SlideExporterChain` (Core) — pierwszy dostępny
   `ISlideExporter` (App/Services), a gdy zawiedzie, następny: `PowerPointExporter` (automatyzacja COM
   na wątku STA, jak w pps_viewer; **tylko z ważną licencją Office** — `OfficeLicense` czyta `ExpiresOn`
   z `%LOCALAPPDATA%\Microsoft\Office\Licenses\5`, bo po wygaśnięciu subskrypcji PowerPoint może
@@ -290,7 +292,9 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   `TransformOperationsTransition`, bo Avalonia nie animuje `RenderTransform` klatkami kluczowymi; rusza po przejściu; tylko
   w ramce na wymiar zdjęcia — przesuwany element na cały ekran zostawiał jasną linię na brzegu).
 - **Przejścia slajdów** (`App/Transitions`, ogólne): między elementami kiosku — efekty kiosku; na rzutniku przy przejściu
-  na inną pozycję planu — efekty planu (`Plan.Transitions` — przycisk „Przejście: …” w pasku górnym, `PlanTransitionsViewModel`; `ActivePlan` wpisuje je w każdy `LiveItem.Transitions`,
+  na inną pozycję planu — efekty planu (`Plan.Transitions` — przycisk „Przejście: …” w pasku górnym, `PlanTransitionsViewModel`), a pieśń
+  lub tekst z własnymi efektami — jej (`SongPlanItem.Transitions`, `null` = jak w planie; przycisk „Przejście: …” w kolumnie „Pieśń”,
+  `SongTransitionsViewModel`); `ActivePlan` wpisuje je w każdy `LiveItem.Transitions`,
   a `LiveState.TransitionsFrom` (Core) daje je tylko między dwiema widocznymi pozycjami planu — `LiveViewModel.PageTransition` zamienia je na przejście; zapis i opis wyboru: `Plan.WithTransitions`, `SlideTransitions.Default` / `Describe`); slajd w tej samej pozycji,
   czarny ekran i pieśń spoza planu — krótkie przenikanie (`LiveViewModel.SlideChange`). `SlideTransition` (Core:
   Przesunięcie w losowym kierunku — wstecz w przeciwnym, Witraż, Płomień, Akwarela, Promień światła, Fala) →

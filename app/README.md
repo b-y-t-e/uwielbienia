@@ -22,7 +22,8 @@ akordów). „Edytuj” w kolumnie „Pieśń” zmienia wybraną. Zapis jest ty
 
 **Prezentacje i obrazy:** „Prezentacja” (albo „Obraz” — każdy obraz osobną pozycją) w oknie „Dodaj do planu” (albo upuszczenie pliku na plan) dodaje
 plik PowerPoint (`.pptx`, `.pps`, `.ppt`…) albo obrazy slajdów. Plik jest kopiowany do danych
-aplikacji, a slajdy przygotowuje w tle zainstalowany PowerPoint (Windows) — postęp widać w planie.
+aplikacji, a slajdy przygotowuje w tle zainstalowany PowerPoint (Windows) — postęp widać w planie. Animacje
+„po kliknięciu” (`.pptx`) stają się osobnymi slajdami — każde kliknięcie pilota pokazuje następny stan.
 Bez PowerPointa można dodać slajdy zapisane jako obrazy.
 
 **Filmy:** „Film” (albo upuszczenie pliku na plan) dodaje film w dowolnym formacie, który zna
