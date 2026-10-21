@@ -50,12 +50,12 @@ public sealed partial class LiveViewModel : ObservableObject
         _ => null,
     };
 
-    /// <summary>Zmiana slajdu w tej samej pozycji, czarny ekran i pozycja bez efektów: krótkie przenikanie.</summary>
+    /// <summary>Ten sam slajd, czarny ekran, pieśń spoza planu i wybrane samo przenikanie: krótkie przenikanie.</summary>
     public static readonly IPageTransition SlideChange = new CrossFade(TimeSpan.FromSeconds(0.15));
 
     /// <summary>
-    /// Przejście do strony <see cref="Page"/>: z jednej pozycji planu na inną — efekty planu (<see cref="LiveItem.Transitions"/>),
-    /// poza tym <see cref="SlideChange"/>. Ustawiane przed zmianą <see cref="Page"/>.
+    /// Przejście do strony <see cref="Page"/>: na inną pozycję planu — jej efekty (<see cref="LiveItem.Transitions"/>), między slajdami
+    /// jednej pozycji — efekty „Slajdy: …” (<see cref="LiveItem.InnerTransitions"/>), poza tym <see cref="SlideChange"/>. Ustawiane przed zmianą <see cref="Page"/>.
     /// </summary>
     [ObservableProperty]
     public partial IPageTransition PageTransition { get; private set; } = SlideChange;
@@ -180,14 +180,20 @@ public sealed partial class LiveViewModel : ObservableObject
         };
     }
 
-    /// <summary>Zmiana pozycji albo czarnego ekranu — do dziennika przejść z tym, czy dostała efekt, czy krótkie przenikanie.</summary>
+    /// <summary>Zmiana slajdu, pozycji albo czarnego ekranu — do dziennika przejść z tym, czy dostała efekt, czy krótkie przenikanie.</summary>
     private static void LogScreenChange(LiveState before, LiveState after, IReadOnlyList<SlideTransition> effects)
     {
-        if (ReferenceEquals(before.Item, after.Item) && before.IsBlank == after.IsBlank)
+        var within = after.IsWithinItem(before) && before.IsBlank == after.IsBlank;
+        if (within && before.SlideIndex == after.SlideIndex)
             return;
         var blank = before.IsBlank || after.IsBlank ? $" (czarny ekran {before.IsBlank} → {after.IsBlank})" : "";
-        var chosen = string.Join(", ", (after.Item?.Transitions ?? []).Select(SlideTransitions.Name));
-        var result = effects.Count == 0 ? $"krótkie przenikanie — {after.NoTransitionsReason(before)}" : "efekt planu / pieśni";
+        var chosen = string.Join(", ", ((within ? after.Item?.InnerTransitions : after.Item?.Transitions) ?? []).Select(SlideTransitions.Name));
+        var result = effects.Count == 0 ? $"krótkie przenikanie — {after.NoTransitionsReason(before)}" : within ? "efekt slajdów planu" : "efekt planu / pieśni";
+        if (within)
+        {
+            TransitionLog.Write($"Slajd {before.SlideIndex + 1} → {after.SlideIndex + 1} w „{after.Item?.Title}”; slajdy mają [{chosen}] → {result}");
+            return;
+        }
         TransitionLog.Write($"Ekran: „{before.Item?.Title}” → „{after.Item?.Title}”{blank}; pozycja ma [{chosen}] → {result}");
     }
 }
@@ -202,9 +208,11 @@ public record ProjectedPage(Slide Slide, string? Title)
 }
 
 /// <summary>Slajd prezentacji na rzutniku: obraz na cały ekran (wczytywany w tle).</summary>
-public sealed record ProjectedImage(ImageSlide Image) : ProjectedPage(Image, null)
+public sealed record ProjectedImage(ImageSlide Image) : ProjectedPage(Image, null), IWaitablePage
 {
     public Task<Bitmap?> Picture => SlideImages.LoadAsync(Image.ImageFile);
+
+    public Task Ready => Picture;
 }
 
 /// <summary>Film na rzutniku: klatki na cały ekran na czarnym tle.</summary>

@@ -6,19 +6,23 @@ using Uwielbienia.Core.Presentation;
 namespace Uwielbienia.App.ViewModels;
 
 /// <summary>
-/// Kolumna „Pieśń”: przejście na tę pieśń z innej pozycji planu (<see cref="SongPlanItem.Transitions"/>). „Jak w planie” —
-/// efekty z paska górnego (widać je zaznaczone); wybranie efektu daje pieśni własne przejście.
+/// Wybór efektów przejścia z „Jak w planie” — kolumna „Pieśń”: przejście na tę pieśń z innej pozycji planu (<see cref="SongPlanItem.Transitions"/>). „Jak w planie” —
+/// efekty z paska górnego (widać je zaznaczone); wybranie efektu daje pieśni własne przejście. Ten sam wybór służy
+/// przejściu między slajdami w pasku górnym (<see cref="PlanSlideTransitionsViewModel"/>).
 /// </summary>
-public sealed partial class SongTransitionsViewModel : ObservableObject
+public sealed partial class TransitionOverrideViewModel : ObservableObject
 {
     private readonly Action<IReadOnlyList<SlideTransition>?> _save;
     private readonly TransitionChoiceViewModel _choice = new();
+    private readonly string _label;
     private bool _showing;
 
-    /// <param name="save">Zapis w pozycji planu: własne efekty albo <c>null</c> = jak w planie.</param>
-    public SongTransitionsViewModel(Action<IReadOnlyList<SlideTransition>?> save)
+    /// <param name="save">Zapis: własne efekty albo <c>null</c> = jak w planie.</param>
+    /// <param name="label">Początek napisu na przycisku, np. „Przejście”, „Slajdy”.</param>
+    public TransitionOverrideViewModel(Action<IReadOnlyList<SlideTransition>?> save, string label = "Przejście")
     {
         _save = save;
+        _label = label;
         _choice.Chosen += (_, chosen) => OnChosen(chosen);
     }
 
@@ -30,7 +34,7 @@ public sealed partial class SongTransitionsViewModel : ObservableObject
     public partial bool FollowsPlan { get; set; } = true;
 
     /// <summary>Np. „Przejście: jak w planie”, „Przejście: Płomień”, „Przejście: losowe (2)”.</summary>
-    public string ButtonText => "Przejście: " + (FollowsPlan ? "jak w planie" : _choice.Description);
+    public string ButtonText => _label + ": " + (FollowsPlan ? "jak w planie" : _choice.Description);
 
     /// <summary>Pokazuje wybór pozycji: własny albo (<paramref name="own"/> = <c>null</c>) przejście planu.</summary>
     public void Show(IReadOnlyList<SlideTransition>? own, IReadOnlyList<SlideTransition> plan)

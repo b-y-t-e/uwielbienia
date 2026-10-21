@@ -27,6 +27,10 @@ public static class SlideTransitions
     /// <summary>Domyślny wybór (plan i kiosk): efektowne, a spokojne — nowy obraz rozlewa się jak farba.</summary>
     public static readonly IReadOnlyList<SlideTransition> Default = [SlideTransition.Watercolor];
 
+    /// <summary>Ten sam wybór efektów: te same w tej samej kolejności, a <c>null</c> („jak w planie”) tylko równy <c>null</c>.</summary>
+    public static bool SameChoice(IReadOnlyList<SlideTransition>? a, IReadOnlyList<SlideTransition>? b) =>
+        a is null ? b is null : b is not null && a.SequenceEqual(b);
+
     /// <summary>Wybór do zapisu: równy domyślnemu = <c>null</c> (podąża za domyślnym).</summary>
     public static IReadOnlyList<SlideTransition>? ToStored(IReadOnlyList<SlideTransition> chosen) =>
         chosen.SequenceEqual(Default) ? null : chosen;

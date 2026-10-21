@@ -17,6 +17,9 @@ public enum PlanKind
 /// Efekty przejścia z jednej pozycji planu na inną (rzutnik; kiosk ma własne — <see cref="KioskPlanItem.Transitions"/>) —
 /// przy kilku losowany jest jeden; pusta lista = zwykłe przenikanie; <c>null</c> = domyślne (<see cref="DefaultTransitions"/>).
 /// </param>
+/// <param name="InnerTransitions">
+/// Efekty przejścia między slajdami jednej pozycji (zwrotki pieśni, slajdy prezentacji); <c>null</c> = jak między pozycjami.
+/// </param>
 public sealed record Plan(
     Guid Id,
     string Name,
@@ -24,11 +27,18 @@ public sealed record Plan(
     PlanKind Kind,
     IReadOnlyList<PlanItem> Items,
     DateTimeOffset UpdatedAt,
-    IReadOnlyList<SlideTransition>? Transitions = null)
+    IReadOnlyList<SlideTransition>? Transitions = null,
+    IReadOnlyList<SlideTransition>? InnerTransitions = null)
 {
     public static IReadOnlyList<SlideTransition> DefaultTransitions => SlideTransitions.Default;
 
     public IReadOnlyList<SlideTransition> ChosenTransitions => Transitions ?? DefaultTransitions;
+
+    public IReadOnlyList<SlideTransition> ChosenInnerTransitions => InnerTransitions ?? ChosenTransitions;
+
+    /// <summary>Przejście między slajdami pozycji: własne efekty albo <c>null</c> = jak między pozycjami.</summary>
+    public Plan WithInnerTransitions(IReadOnlyList<SlideTransition>? chosen) =>
+        this with { InnerTransitions = chosen, UpdatedAt = DateTimeOffset.Now };
 
     /// <summary>Nowy wybór efektów przejścia (równy domyślnemu — plan podąża za domyślnymi).</summary>
     public Plan WithTransitions(IReadOnlyList<SlideTransition> chosen) =>
@@ -39,7 +49,7 @@ public sealed record Plan(
 
     /// <summary>Kopia z nowymi identyfikatorami — „Użyj ponownie” albo „Zapisz jako szablon”.</summary>
     public Plan CloneAs(string name, DateOnly? date, PlanKind kind) =>
-        new(Guid.NewGuid(), name, date, kind, Items.Select(i => i.WithNewId()).ToList(), DateTimeOffset.Now, Transitions);
+        new(Guid.NewGuid(), name, date, kind, Items.Select(i => i.WithNewId()).ToList(), DateTimeOffset.Now, Transitions, InnerTransitions);
 
     public Plan WithItems(IReadOnlyList<PlanItem> items) => this with { Items = items, UpdatedAt = DateTimeOffset.Now };
 

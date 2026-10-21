@@ -111,6 +111,7 @@ public static class AppComposition
         services.AddSingleton<PreviewViewModel>();
         services.AddSingleton<PlansViewModel>();
         services.AddSingleton<PlanTransitionsViewModel>();
+        services.AddSingleton<PlanSlideTransitionsViewModel>();
         services.AddSingleton<RemoteViewModel>();
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<MainWindow>();

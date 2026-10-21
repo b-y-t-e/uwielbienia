@@ -43,7 +43,7 @@ public sealed partial class PreviewViewModel : ObservableObject
         _planActions = planActions;
         _library = library;
         _editor = editor;
-        Transitions = new SongTransitionsViewModel(SaveTransitions);
+        Transitions = new TransitionOverrideViewModel(SaveTransitions);
         // Pieśń spoza planu po edycji: wczytaj nową wersję (pozycje planu odświeża plan).
         library.Changed += (_, _) =>
         {
@@ -115,7 +115,7 @@ public sealed partial class PreviewViewModel : ObservableObject
     public bool HasSong => Song is not null;
 
     /// <summary>Przejście na tę pieśń w planie (tylko pieśń z planu).</summary>
-    public SongTransitionsViewModel Transitions { get; }
+    public TransitionOverrideViewModel Transitions { get; }
 
     public string? Title => Song?.DisplayTitle;
 

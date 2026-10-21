@@ -268,8 +268,11 @@ public sealed partial class KioskEntryViewModel : ObservableObject, IReorderable
 /// Kiosk na rzutniku i w kolumnie „Na ekranie”. Strona równa poprzedniej, dopóki na ekranie jest ten sam kiosk — elementy
 /// przenikają się w niej same (<see cref="KioskPlayback.Frame"/>), bez ponownego przejścia całej strony.
 /// </summary>
-public sealed record ProjectedKiosk(KioskSlide Kiosk, KioskPlayback Playback) : ProjectedPage(Kiosk, null)
+public sealed record ProjectedKiosk(KioskSlide Kiosk, KioskPlayback Playback) : ProjectedPage(Kiosk, null), IWaitablePage
 {
+    /// <summary>Przejście na kiosk czeka na jego pierwszy element — inaczej efekt prowadziłby do pustego tła.</summary>
+    public Task Ready => Playback.Ready;
+
     // Równa każdej innej stronie tego kiosku — także po edycji treści na żywo (inny KioskSlide): strona nie przenika się
     // i nie buduje od nowa (zoom zdjęcia nie skacze); zmiany elementów przychodzą przez Playback.
     public bool Equals(ProjectedKiosk? other) => other is not null && ReferenceEquals(Playback, other.Playback);
@@ -295,6 +298,9 @@ public sealed partial class KioskPlayback : ObservableObject
 
     [ObservableProperty]
     public partial KioskFramePage? Frame { get; private set; }
+
+    /// <summary>Wczytanie elementu, który zaraz będzie <see cref="Frame"/> (obraz i układ).</summary>
+    public Task Ready { get; private set; } = Task.CompletedTask;
 
     [ObservableProperty]
     public partial IPageTransition Transition { get; private set; } = ShaderPageTransition.For([]);
@@ -323,6 +329,7 @@ public sealed partial class KioskPlayback : ObservableObject
         if (Frame?.Frame != frame)
         {
             var page = new KioskFramePage(frame, zoom);
+            Ready = page.Ready;
             await page.Ready;
             if (version == _version)
                 Frame = page;

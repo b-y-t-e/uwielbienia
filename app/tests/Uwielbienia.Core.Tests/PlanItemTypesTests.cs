@@ -83,16 +83,18 @@ public class PlanItemTypesTests
     }
 
     [Fact]
-    public void Plan_transitions_apply_only_between_two_visible_plan_items()
+    public void Plan_transitions_apply_between_visible_plan_slides()
     {
         var effects = new[] { SlideTransition.Flame };
-        LiveItem Item(Guid? planItemId) => new(planItemId, "x", null, "T", [new Slide("V1", "1", []), new Slide("V2", "2", [])], Transitions: effects);
+        LiveItem Item(Guid? planItemId) => new(planItemId, "x", null, "T", [new Slide("V1", "1", []), new Slide("V2", "2", [])], Transitions: effects, InnerTransitions: [SlideTransition.Ripple]);
         var first = Item(Guid.NewGuid());
         var second = Item(Guid.NewGuid());
         LiveState State(LiveItem item, int slide = 0, bool blank = false) => new(1, item, slide, blank, null);
 
         Assert.Equal(effects, State(second).TransitionsFrom(State(first)));
-        Assert.Empty(State(first, 1).TransitionsFrom(State(first)));
+        Assert.Equal([SlideTransition.Ripple], State(first, 1).TransitionsFrom(State(first)));
+        Assert.Empty(State(first).TransitionsFrom(State(first)));
+        Assert.Empty(State(first with { InnerTransitions = [] }, 1).TransitionsFrom(State(first)));
         Assert.Empty(State(second, blank: true).TransitionsFrom(State(first)));
         Assert.Empty(State(second).TransitionsFrom(State(first, blank: true)));
         Assert.Empty(State(second).TransitionsFrom(LiveState.Empty));
@@ -111,6 +113,37 @@ public class PlanItemTypesTests
         Assert.Equal("Akwarela", SlideTransitions.Describe(plan.ChosenTransitions));
         Assert.Equal("przenikanie", SlideTransitions.Describe([]));
         Assert.Equal("losowe (3)", SlideTransitions.Describe([SlideTransition.Flame, SlideTransition.Slide, SlideTransition.Ripple]));
+    }
+
+    [Fact]
+    public void Slide_transitions_follow_the_plan_until_chosen()
+    {
+        var plan = Plan.Create("Test", null).WithTransitions([SlideTransition.StainedGlass]);
+
+        Assert.Equal([SlideTransition.StainedGlass], plan.ChosenInnerTransitions);
+        var own = plan.WithInnerTransitions([]);
+        Assert.Empty(own.ChosenInnerTransitions);
+        Assert.Null(own.WithInnerTransitions(null).InnerTransitions);
+        var saved = System.Text.Json.JsonSerializer.Deserialize<Plan>(
+            System.Text.Json.JsonSerializer.Serialize(own, JsonPlanStore.JsonOptions), JsonPlanStore.JsonOptions);
+        Assert.Empty(saved!.InnerTransitions!);
+        Assert.Empty(own.CloneAs("Kopia", null, PlanKind.Template).InnerTransitions!);
+    }
+
+    [Fact]
+    public void New_effects_reach_the_item_on_screen_without_changing_the_slide()
+    {
+        var shown = new LiveItem(Guid.NewGuid(), "x", null, "T", [new Slide("V1", "1", []), new Slide("C", "2", [])],
+            Transitions: [SlideTransition.Flame], InnerTransitions: [SlideTransition.Flame]);
+        var session = new LiveSession();
+        session.SetPlaylist([shown]);
+        session.Show(shown, 1);
+
+        session.SetPlaylist([shown with { Transitions = [SlideTransition.Ripple], InnerTransitions = [SlideTransition.LightRay] }]);
+
+        Assert.Equal(1, session.State.SlideIndex);
+        Assert.Equal([SlideTransition.Ripple], session.State.Item!.Transitions);
+        Assert.Equal([SlideTransition.LightRay], session.State.Item.InnerTransitions);
     }
 
     [Fact]

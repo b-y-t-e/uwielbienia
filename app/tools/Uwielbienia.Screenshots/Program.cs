@@ -244,7 +244,7 @@ Save(projection, "projekcja-prezentacja", settle: true);
     }
 }
 
-// Przejście na inną pozycję planu: efekty planu; następny slajd tej samej pieśni — krótkie przenikanie.
+// Przejście na inną pozycję planu: efekty planu; następny slajd tej samej pieśni — „Slajdy: …” (domyślnie jak w planie).
 {
     // przejścia planu nie zmieniają kiosku — ten ma własne
     var kioskTransitions = active.FindLiveItem(kioskItem.Id)!.Slides.OfType<Uwielbienia.Core.Kiosks.KioskSlide>().Single().ChosenTransitions;
@@ -255,8 +255,13 @@ Save(projection, "projekcja-prezentacja", settle: true);
     var song = active.Playlist.First(i => i.Slides.Count > 1 && i.Slides[0] is not ImageSlide);
     control.Show(song);
     control.Next();
+    if (main.Live.PageTransition is not Uwielbienia.App.Transitions.ShaderPageTransition { Effects: [SlideTransition.Watercolor] })
+        throw new InvalidOperationException("Następny slajd pieśni bez efektu planu („Slajdy: jak w planie”)");
+    active.Update(p => p.WithInnerTransitions([]));
+    control.Next();
     if (main.Live.PageTransition != LiveViewModel.SlideChange)
-        throw new InvalidOperationException("Następny slajd pieśni nie powinien mieć efektu planu");
+        throw new InvalidOperationException("„Slajdy: przenikanie” — następny slajd pieśni nie powinien mieć efektu");
+    active.Update(p => p.WithInnerTransitions(null));
     control.NextItem();
     if (main.Live.PageTransition is not Uwielbienia.App.Transitions.ShaderPageTransition { Effects: [SlideTransition.Watercolor] })
         throw new InvalidOperationException("Następna pozycja planu bez efektu planu");
@@ -267,6 +272,20 @@ Save(projection, "projekcja-prezentacja", settle: true);
         Thread.Sleep(80);
     }
     Save(projection, "projekcja-nastepna-pozycja");
+    // Zrzut strony z tekstem (sama przezroczysta) ma tło ekranu — inaczej efekt w jasnym wyglądzie szedłby przez czerń.
+    control.Show(song);
+    Save(projection, "tmp", settle: true);
+    var textPage = projection.GetVisualDescendants().OfType<Avalonia.Controls.Presenters.ContentPresenter>()
+        .First(c => c.Content is ProjectedPage { Slide: not ImageSlide } && c.IsVisible);
+    using (var pageImage = Uwielbienia.App.Transitions.ShaderPageTransition.Capture(textPage)!)
+    using (var pixels = SkiaSharp.SKBitmap.FromImage(pageImage))
+    {
+        var corner = pixels.GetPixel(2, 2);
+        var expected = ((Avalonia.Media.ISolidColorBrush)main.Live.Appearance.Background).Color;
+        if (Math.Abs(corner.Red - expected.R) > 8 || Math.Abs(corner.Green - expected.G) > 8 || corner.Alpha != 255)
+            throw new InvalidOperationException($"Zrzut strony bez tła ekranu: {corner}, oczekiwane {expected}");
+    }
+    File.Delete(Path.Combine(output, (light ? "jasny-" : "") + "tmp.png"));
     active.Update(p => p with { Transitions = null });
 }
 

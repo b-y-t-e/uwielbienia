@@ -42,11 +42,17 @@ public sealed record LiveState(
     public Slide? VisibleSlide => IsBlank ? null : Slide;
 
     /// <summary>
-    /// Efekty przejścia ze stanu <paramref name="before"/> na ten: efekty planu tylko między dwiema widocznymi, różnymi
-    /// pozycjami planu; poza tym (ten sam slajd lub pozycja, czarny ekran, pieśń spoza planu) pusta lista = krótkie przenikanie.
+    /// Efekty przejścia ze stanu <paramref name="before"/> na ten, gdy oba slajdy są widoczne i z planu: między różnymi
+    /// pozycjami — efekty wejścia na pozycję, między slajdami jednej pozycji — efekty slajdów planu; poza tym (ten sam slajd,
+    /// czarny ekran, pieśń spoza planu) pusta lista = krótkie przenikanie.
     /// </summary>
     public IReadOnlyList<SlideTransition> TransitionsFrom(LiveState before) =>
-        NoTransitionsReason(before) is null ? Item!.Transitions! : [];
+        NoTransitionsReason(before) is not null ? []
+        : IsWithinItem(before) ? Item!.InnerTransitions! : Item!.Transitions!;
+
+    /// <summary>Zmiana slajdu w tej samej pozycji planu.</summary>
+    public bool IsWithinItem(LiveState before) =>
+        Item?.PlanItemId is { } id && before.Item?.PlanItemId == id;
 
     /// <summary>Dlaczego <see cref="TransitionsFrom"/> nie daje efektów (krótkie przenikanie); <c>null</c> = daje.</summary>
     public string? NoTransitionsReason(LiveState before) =>
@@ -54,7 +60,10 @@ public sealed record LiveState(
         : VisibleSlide is null ? "po nie ma widocznego slajdu (czarny lub pusty ekran)"
         : Item?.PlanItemId is not { } id ? "pieśń spoza planu"
         : before.Item?.PlanItemId is not { } previousId ? "przed była pieśń spoza planu"
-        : id == previousId ? "ta sama pozycja planu"
+        : id == previousId
+            ? SlideIndex == before.SlideIndex ? "ten sam slajd"
+            : Item.InnerTransitions is not { Count: > 0 } ? "slajdy pozycji mają wybrane samo przenikanie"
+            : null
         : Item.Transitions is not { Count: > 0 } ? "pozycja ma wybrane samo przenikanie lub nie ma efektów"
         : null;
 }
@@ -95,10 +104,12 @@ public sealed class LiveSession : ILiveControl, ILiveStateSource
                 slideIndex = MapSlide(current.Slides, updated.Slides, slideIndex);
                 current = updated;
             }
-            else if (current.Note != updated.Note)
+            else if (current.Note != updated.Note || !SlideTransitions.SameChoice(current.Transitions, updated.Transitions)
+                     || !SlideTransitions.SameChoice(current.InnerTransitions, updated.InnerTransitions))
             {
-                // np. prezentacja bez slajdów: „Przygotowywanie…” → komunikat błędu (slajdy te same — bez przejścia)
-                current = current with { Note = updated.Note };
+                // np. prezentacja bez slajdów: „Przygotowywanie…” → komunikat błędu albo nowe efekty przejść
+                // (slajdy te same — bez przejścia)
+                current = current with { Note = updated.Note, Transitions = updated.Transitions, InnerTransitions = updated.InnerTransitions };
             }
         }
         Publish(current, slideIndex, State.IsBlank);

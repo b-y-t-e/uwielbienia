@@ -18,6 +18,9 @@ namespace Uwielbienia.Core.Presentation;
 /// Efekty przejścia na tę pozycję z innej (z planu — <see cref="Plans.Plan.Transitions"/>); pusta lista albo <c>null</c>
 /// (spoza planu) = zwykłe krótkie przenikanie.
 /// </param>
+/// <param name="InnerTransitions">
+/// Efekty przejścia między slajdami tej pozycji (z planu — <see cref="Plans.Plan.InnerTransitions"/>); jak <paramref name="Transitions"/>.
+/// </param>
 public sealed record LiveItem(
     Guid? PlanItemId,
     string ContentId,
@@ -26,7 +29,8 @@ public sealed record LiveItem(
     IReadOnlyList<Slide> Slides,
     bool ShowTitle = true,
     string? Note = null,
-    IReadOnlyList<SlideTransition>? Transitions = null);
+    IReadOnlyList<SlideTransition>? Transitions = null,
+    IReadOnlyList<SlideTransition>? InnerTransitions = null);
 
 /// <summary>Pieśń spoza planu na ekran (szybki wybór na projekcji, telefon).</summary>
 public interface ISongPresenter

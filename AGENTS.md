@@ -294,8 +294,10 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
 - **Przejścia slajdów** (`App/Transitions`, ogólne): między elementami kiosku — efekty kiosku; na rzutniku przy przejściu
   na inną pozycję planu — efekty planu (`Plan.Transitions` — przycisk „Przejście: …” w pasku górnym, `PlanTransitionsViewModel`), a pieśń
   lub tekst z własnymi efektami — jej (`SongPlanItem.Transitions`, `null` = jak w planie; przycisk „Przejście: …” w kolumnie „Pieśń”,
-  `SongTransitionsViewModel`); `ActivePlan` wpisuje je w każdy `LiveItem.Transitions`,
-  a `LiveState.TransitionsFrom` (Core) daje je tylko między dwiema widocznymi pozycjami planu — `LiveViewModel.PageTransition` zamienia je na przejście; zapis i opis wyboru: `Plan.WithTransitions`, `SlideTransitions.Default` / `Describe`); slajd w tej samej pozycji,
+  `TransitionOverrideViewModel`); `ActivePlan` wpisuje je w każdy `LiveItem.Transitions`,
+  a między slajdami jednej pozycji — efekty „Slajdy: …” z paska górnego (`Plan.InnerTransitions`, `null` = jak w planie;
+  `PlanSlideTransitionsViewModel`) w `LiveItem.InnerTransitions`; `LiveState.TransitionsFrom` (Core) daje je tylko między dwoma widocznymi slajdami
+  planu — `LiveViewModel.PageTransition` zamienia je na przejście; zapis i opis wyboru: `Plan.WithTransitions`, `SlideTransitions.Default` / `Describe`); ten sam slajd,
   czarny ekran i pieśń spoza planu — krótkie przenikanie (`LiveViewModel.SlideChange`). `SlideTransition` (Core:
   Przesunięcie w losowym kierunku — wstecz w przeciwnym, Witraż, Płomień, Akwarela, Promień światła, Fala) →
   `ShaderPageTransition` (`IPageTransition` dla `TransitioningContentControl`): zrzut starej i nowej strony
@@ -304,7 +306,7 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   klatkami (mierzone w `Animate`, czyli z rysowaniem na karcie) przekraczają 100 ms (`TransitionShaders.SlowFrame`; 50 ms wyłączało efekty przy płynnych 20 klatkach/s; każde przejście, jego miejsce, wybrane i wylosowane efekty, wynik, klatki i przyczyna przenikania oraz wyłączenie efektów trafiają do `przejscia.log` — `TransitionLog`) pięć razy pod rząd w jednym przejściu — przejście
   kończy się od razu, a do końca działania zwykłe przenikanie (`SmoothnessGuard`, `Begin()` = osobny licznik dla każdego przejścia:
   przejścia naraz — rzutnik i „Na ekranie” — nie sumują wolnych klatek; pojedyncze zacięcia nie wyłączają efektów). Gdy przed albo
-  po nie ma treści (kiosk wchodzi na ekran lub z niego schodzi), bez efektu — przejście strony już go ma. Uwaga: w SkSL `pow` z ujemną podstawą jest niezdefiniowane (kwadrat = `x * x`);
+  po nie ma treści (kiosk wchodzi na ekran lub z niego schodzi), bez efektu — przejście strony już go ma. Nowa strona, której obraz jeszcze się wczytuje (`IWaitablePage` — `ProjectedImage`, `ProjectedKiosk`: pierwszy element), czeka na niego przed zrzutem (najwyżej 2 s) — inaczej efekt prowadziłby do pustego tła. Zrzut strony dostaje tło, na którym leży (`ShaderPageTransition.BackgroundOf` — strona z tekstem jest przezroczysta, a shadery rysują nieprzezroczyście: bez tła jasny ekran szedłby przez czerń). Uwaga: w SkSL `pow` z ujemną podstawą jest niezdefiniowane (kwadrat = `x * x`);
   `SKRuntimeShaderBuilder` nie zwalniamy (zwolniłby wspólny efekt). Klatki efektów: zrzuty `przejscie-*.png`.
 - **Przeciąganie** (plan, części pieśni, części w edytorze — za uchwyt ⠿): `ListReorderDrag` — zwykłe przeciąganie myszą ze
   znacznikiem miejsca i przewijaniem przy krawędzi; wiersze implementują `IReorderableItem`.

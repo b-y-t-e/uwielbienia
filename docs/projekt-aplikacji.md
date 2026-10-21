@@ -172,8 +172,9 @@ Tekst na ekranie jest wyśrodkowany, a rozmiar czcionki dobiera się automatyczn
 najdłuższy wers zmieścił się na szerokość. Ma przy tym minimum, żeby rozmiar nie skakał
 między slajdami jednej pieśni. Na pierwszym slajdzie pieśni nad tekstem jest jej tytuł —
 tej samej wielkości co tekst, oddzielony linią w kolorze świecy.
-Nazwy części („Refren”) nigdy nie pojawiają się na ekranie. Slajdy w obrębie jednej pozycji planu, czarny ekran i pieśń spoza planu zmieniają się krótkim
-przenikaniem (150 ms). Przejście na inną pozycję planu ma efekt wybrany dla planu (przycisk
+Nazwy części („Refren”) nigdy nie pojawiają się na ekranie. Czarny ekran i pieśń spoza planu zmieniają się krótkim
+przenikaniem (150 ms). Slajdy w obrębie jednej pozycji planu (zwrotki, slajdy prezentacji) mają efekt
+z przycisku „Slajdy: …” w pasku górnym (zapisany w planie; domyślnie „jak w planie”). Przejście na inną pozycję planu ma efekt wybrany dla planu (przycisk
 „Przejście: …” w pasku górnym, zapisany w planie; domyślnie Akwarela; żaden = przenikanie, kilka =
 losowo jeden). Pieśń lub tekst może mieć w planie własne przejście (przycisk „Przejście: …” w kolumnie „Pieśń”;
 domyślnie „jak w planie”). Kiosk ma własne efekty między elementami, niezależne od planu. Bez karty graficznej

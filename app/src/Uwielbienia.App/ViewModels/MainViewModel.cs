@@ -23,6 +23,7 @@ public sealed partial class MainViewModel : ObservableObject
         PreviewViewModel preview,
         PlansViewModel plans,
         PlanTransitionsViewModel transitions,
+        PlanSlideTransitionsViewModel slideTransitions,
         RemoteViewModel remote,
         ISettingsStore settings,
         IUpdateService updates,
@@ -43,6 +44,7 @@ public sealed partial class MainViewModel : ObservableObject
         Preview = preview;
         Plans = plans;
         Transitions = transitions;
+        SlideTransitions = slideTransitions.Choice;
         Remote = remote;
         Projection = projection;
         Control = control;
@@ -75,6 +77,9 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <summary>Przejście między pozycjami otwartego planu (pasek górny).</summary>
     public PlanTransitionsViewModel Transitions { get; }
+
+    /// <summary>Przejście między slajdami jednej pozycji planu („Slajdy: …”).</summary>
+    public TransitionOverrideViewModel SlideTransitions { get; }
 
     /// <summary>
     /// Kolumna „Pieśń” dla zaznaczonej pozycji planu. Nowy rodzaj elementu prezentacji dostaje tu
