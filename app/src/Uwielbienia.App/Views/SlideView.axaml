@@ -25,7 +25,7 @@
        polskie znaki) — spokojniejsza z daleka niż krój interfejsu. -->
   <Viewbox Stretch="Uniform">
     <Border Width="1920" Height="1080" Background="{Binding #Root.SlideBackground}">
-      <!-- Przejście strony: krótkie przenikanie, a na inną pozycję planu — efekty planu (LiveViewModel.PageTransition). -->
+      <!-- Przejście strony: efekty pozycji planu albo „Slajdy: …” w jej obrębie, poza tym krótkie przenikanie (LiveViewModel.PageTransition). -->
       <TransitioningContentControl Content="{Binding #Root.Page}" PageTransition="{Binding #Root.PageTransition}">
         <!-- Strona wybierana wg rodzaju: slajd prezentacji (obraz na cały ekran) i film przed stroną z tekstem. -->
         <TransitioningContentControl.DataTemplates>

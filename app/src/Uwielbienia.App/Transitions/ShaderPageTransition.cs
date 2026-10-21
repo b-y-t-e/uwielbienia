@@ -3,6 +3,9 @@ using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
+using Avalonia.Media;
+using Avalonia.Controls.Primitives;
+using Avalonia.Layout;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
@@ -26,6 +29,9 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
     /// <summary>Największa szerokość zrzutu w pikselach (płótno rzutnika ma 1920).</summary>
     private const int MaxCaptureWidth = 2560;
 
+    /// <summary>Najdłużej czeka na wczytanie nowej strony (<see cref="IWaitablePage"/>) — potem przejście i tak rusza.</summary>
+    private static readonly TimeSpan ReadyTimeout = TimeSpan.FromSeconds(2);
+
     public IReadOnlyList<SlideTransition> Effects { get; } = effects;
 
     public TimeSpan Duration { get; init; } = TimeSpan.FromSeconds(1.2);
@@ -42,6 +48,10 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
     public async Task Start(Visual? from, Visual? to, bool forward, CancellationToken cancellationToken)
     {
         var id = TransitionLog.NextId();
+        // Strony należą teraz do tego przejścia — przerwane poprzednie nie może ich już odsłonić (mignięcie nowej strony
+        // przed efektem: jej strona „przed” to strona „po” tego przejścia).
+        TransitionPageOwners.Claim(from, id);
+        TransitionPageOwners.Claim(to, id);
         var where = Where(to ?? from);
         if (cancellationToken.IsCancellationRequested)
         {
@@ -79,11 +89,27 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
         // Nowa strona jeszcze niewidoczna — ekran pokazuje starą, dopóki nowa się nie ułoży i nie da się jej sfotografować.
         to.IsVisible = true;
         to.Opacity = 0;
+        from.Opacity = 1; // po przerwanym przejściu mogła zostać ukryta
+        if (to is ContentPresenter { Content: IWaitablePage page } && !page.Ready.IsCompleted)
+        {
+            // obraz jeszcze się wczytuje — bez tego zrzut nowej strony byłby pustym tłem
+            var waited = await Task.WhenAny(page.Ready, Task.Delay(ReadyTimeout, cancellationToken)) == page.Ready;
+            TransitionLog.Write($"#{id} {where}: {(waited ? "czekał na wczytanie nowej strony" : $"nowa strona nie wczytała się w {ReadyTimeout.TotalSeconds:0} s")}");
+        }
         await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Loaded);
+        // Strona pokazywana pierwszy raz (szablony, obraz z wczytanego zadania) układa się dopiero w kolejnej klatce —
+        // zrzut przed nią byłby pustym tłem.
+        var pending = Pending(to);
+        if (pending > 0)
+        {
+            await NextFramesAsync(to, 2);
+            TransitionLog.Write($"#{id} {where}: nowa strona nieułożona ({pending} el.) — po 2 klatkach {Pending(to)} el.");
+        }
         if (cancellationToken.IsCancellationRequested)
         {
             TransitionLog.Write($"#{id} {where}: {picked}; przerwane (kolejna zmiana) przed zrzutem");
-            to.Opacity = 1;
+            if (TransitionPageOwners.Owns(to, id))
+                to.Opacity = 1;
             return;
         }
 
@@ -119,8 +145,10 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
         finally
         {
             host.Children.Remove(view);
-            to.Opacity = 1;
-            from.Opacity = 1;
+            if (TransitionPageOwners.Owns(to, id))
+                to.Opacity = 1;
+            if (TransitionPageOwners.Owns(from, id))
+                from.Opacity = 1;
             if (!cancellationToken.IsCancellationRequested)
                 from.IsVisible = false;
             // ostatnia klatka mogła jeszcze używać zrzutów — zwolnij je chwilę później
@@ -129,6 +157,25 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
                 fromImage.Dispose();
                 toImage.Dispose();
             }, TaskScheduler.Default);
+        }
+    }
+
+    /// <summary>Elementy strony jeszcze nieułożone albo obrazy bez wczytanego źródła.</summary>
+    private static int Pending(Visual page) =>
+        page.GetSelfAndVisualDescendants().Count(v =>
+            v is Layoutable { IsVisible: true } l && (!l.IsMeasureValid || !l.IsArrangeValid)
+            || v is Image { IsVisible: true, Source: null });
+
+    /// <summary>Czeka na <paramref name="count"/> klatek okna (w każdej najpierw układ), najwyżej 250 ms.</summary>
+    private static async Task NextFramesAsync(Visual visual, int count)
+    {
+        if (TopLevel.GetTopLevel(visual) is not { } top)
+            return;
+        for (var i = 0; i < count; i++)
+        {
+            var frame = new TaskCompletionSource();
+            top.RequestAnimationFrame(_ => frame.TrySetResult());
+            await Task.WhenAny(frame.Task, Task.Delay(250));
         }
     }
 
@@ -232,7 +279,37 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
         var pixels = new PixelSize(Math.Max(1, (int)Math.Round(size.Width * scale)), Math.Max(1, (int)Math.Round(size.Height * scale)));
         using var bitmap = new RenderTargetBitmap(pixels, new Vector(96 * scale, 96 * scale));
         bitmap.Render(visual);
-        return ToSkImage(bitmap);
+        var image = ToSkImage(bitmap);
+        return image is not null && BackgroundOf(visual) is { } background ? OnBackground(image, background) : image;
+    }
+
+    /// <summary>
+    /// Tło, na którym leży strona (np. tło ekranu: czarne albo jasne). Strona z tekstem sama jest przezroczysta, a efekty
+    /// rysują nieprzezroczyście — bez tła przezroczyste piksele zrzutu byłyby czarne.
+    /// </summary>
+    private static Color? BackgroundOf(Visual visual) =>
+        visual.GetSelfAndVisualAncestors()
+            .Select(v => v switch
+            {
+                Panel panel => panel.Background,
+                Border border => border.Background,
+                TemplatedControl control => control.Background,
+                _ => null,
+            })
+            .OfType<ISolidColorBrush>()
+            .Where(brush => brush.Color.A > 0 && brush.Opacity > 0)
+            .Select(brush => (Color?)brush.Color)
+            .FirstOrDefault();
+
+    private static SKImage OnBackground(SKImage image, Color background)
+    {
+        using (image)
+        {
+            using var surface = SKSurface.Create(new SKImageInfo(image.Width, image.Height, SKColorType.Bgra8888, SKAlphaType.Premul));
+            surface.Canvas.Clear(new SKColor(background.R, background.G, background.B));
+            surface.Canvas.DrawImage(image, 0, 0);
+            return surface.Snapshot();
+        }
     }
 
     public static SKImage? ToSkImage(Bitmap bitmap)
