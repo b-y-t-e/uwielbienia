@@ -71,7 +71,7 @@ public static class AnimationSteps
                 .Any(e =>
                 {
                     using var stream = e.Open();
-                    Changes(XDocument.Load(stream), out var steps);
+                    Changes(XDocument.Load(stream, LoadOptions.PreserveWhitespace), out var steps);
                     return steps > 0;
                 });
         }
@@ -304,7 +304,8 @@ public static class AnimationSteps
     private static XDocument Read(ZipArchive zip, string name)
     {
         using var stream = (zip.GetEntry(name) ?? throw new InvalidDataException(name)).Open();
-        return XDocument.Load(stream);
+        // spacja jako osobny fragment tekstu (<a:t> </a:t>) to sam biały znak — bez tego znika i słowa się sklejają
+        return XDocument.Load(stream, LoadOptions.PreserveWhitespace);
     }
 
     private static void Write(ZipArchive zip, string name, XDocument document)
@@ -318,8 +319,11 @@ public static class AnimationSteps
 /// <summary>Eksport z krokami animacji jako osobnymi slajdami (<see cref="AnimationSteps"/>) — przed właściwym eksporterem.</summary>
 public sealed class AnimationStepsExporter(ISlideExporter inner) : ISlideExporter, ISlideExportVersion
 {
-    /// <summary>Znacznik eksportu z krokami animacji (pusty = eksport sprzed nich).</summary>
-    public string Current => "kroki";
+    /// <summary>
+    /// Znacznik eksportu z krokami animacji (pusty = eksport sprzed nich; „kroki” = z nimi, ale bez spacji stojących osobno
+    /// — sklejone słowa, eksport od nowa).
+    /// </summary>
+    public string Current => "kroki-2";
 
     /// <summary>Eksport sprzed kroków animacji jest nieaktualny tylko dla prezentacji z animacjami.</summary>
     public bool IsOutdated(string presentation, string exported) =>

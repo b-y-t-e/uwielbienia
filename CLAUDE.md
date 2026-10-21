@@ -223,7 +223,7 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   `prezentacje/{id8}-{slug}/` — plan działa po wyjęciu pendrive'a. Import / kopia przerwane błędem usuwają swój folder.
   Slajdy prezentacji eksportuje raz, w tle, do `slajdy/` (najpierw `slajdy.tmp`, potem znacznik
   `.complete`; PNG 1920 px, bez slajdów ukrytych; kroki animacji — kolejne kliknięcia — jako osobne slajdy: `AnimationStepsExporter`
-  przerabia kopię `.pptx/.ppsx/.pptm/.ppsm` przed eksportem, `AnimationSteps`; slajdy sprzed tego — pusty znacznik — prezentacja z animacjami
+  przerabia kopię `.pptx/.ppsx/.pptm/.ppsm` przed eksportem, `AnimationSteps`; slajdy sprzed tego albo starszej wersji przeróbki — znacznik inny niż `AnimationStepsExporter.Current`, np. „kroki” ze sklejonymi słowami, bo XML wczytany bez `PreserveWhitespace` gubił spacje `<a:t> </a:t>` — prezentacja z animacjami
   eksportuje jeszcze raz, a do tego czasu i przy błędzie pokazuje stare slajdy) `SlideExporterChain` (Core) — pierwszy dostępny
   `ISlideExporter` (App/Services), a gdy zawiedzie, następny: `PowerPointExporter` (automatyzacja COM
   na wątku STA, jak w pps_viewer; **tylko z ważną licencją Office** — `OfficeLicense` czyta `ExpiresOn`

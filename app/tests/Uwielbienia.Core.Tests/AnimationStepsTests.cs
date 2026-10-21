@@ -17,7 +17,7 @@ public sealed class AnimationStepsTests : IDisposable
         <p:sp><p:nvSpPr><p:cNvPr id="2" name="Tytuł"/></p:nvSpPr></p:sp>
         <p:sp><p:nvSpPr><p:cNvPr id="3" name="Obraz"/></p:nvSpPr></p:sp>
         <p:sp><p:nvSpPr><p:cNvPr id="4" name="Punkty"/></p:nvSpPr>
-          <p:txBody><a:p><a:r><a:t>pierwszy</a:t></a:r></a:p><a:p><a:pPr><a:buChar char="•"/></a:pPr><a:r><a:rPr><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:rPr><a:t>drugi</a:t></a:r></a:p></p:txBody></p:sp>
+          <p:txBody><a:p><a:r><a:t>pierwszy</a:t></a:r><a:r><a:t> </a:t></a:r><a:r><a:t>akapit</a:t></a:r></a:p><a:p><a:pPr><a:buChar char="•"/></a:pPr><a:r><a:rPr><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:rPr><a:t>drugi</a:t></a:r></a:p></p:txBody></p:sp>
         """;
 
     /// <summary>Kliknięcie 1: obraz (3) i razem z nim drugi akapit (4); kliknięcie 2: tytuł (2) znika.</summary>
@@ -126,6 +126,24 @@ public sealed class AnimationStepsTests : IDisposable
         Assert.False(AnimationSteps.HasSteps(source));
         Assert.False(AnimationSteps.TryExpand(source, expanded));
         Assert.False(File.Exists(expanded));
+    }
+
+    [Fact]
+    public void Spaces_in_their_own_text_runs_survive_expanding()
+    {
+        var source = Presentation("spacje.pptx", animated: true);
+        var target = Path.Combine(_temp, "kroki.pptx");
+
+        Assert.True(AnimationSteps.TryExpand(source, target));
+
+        using var zip = ZipFile.OpenRead(target);
+        var slides = zip.Entries.Where(e => e.FullName.StartsWith("ppt/slides/slide", StringComparison.Ordinal) && e.FullName.EndsWith(".xml", StringComparison.Ordinal)).ToList();
+        Assert.Equal(3, slides.Count);
+        Assert.All(slides, entry =>
+        {
+            using var reader = new StreamReader(entry.Open());
+            Assert.Contains("<a:t> </a:t>", reader.ReadToEnd());
+        });
     }
 
     [Fact]
