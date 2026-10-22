@@ -513,3 +513,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 
 - **LibreOffice na Linuksie:** eksport (`LibreOfficeExporter`) sprawdzony na Windows (LibreOffice 26.2);
   ręczna próba na Linuksie (ścieżki `soffice`, natywny PDFium z `Docnet.Core` w pakiecie linux-x64).
+- **PWA dla pilota i panelu:** dziś `web/remote` i `web/panel` to zwykłe strony (bez manifestu i service workera),
+  więc „Dodaj do ekranu głównego” otwiera je z paskiem przeglądarki. Dodać `manifest.webmanifest`
+  (`display: standalone`, nazwa, `theme-color`, ikony z `Assets/icon.png`) i minimalny service worker na skorupę
+  strony — chodzi o tryb standalone i ikonę, nie o pracę bez aplikacji (bez połączenia strony nic nie pokazują).
