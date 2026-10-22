@@ -168,7 +168,8 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
 | `src/Uwielbienia.Desktop` | program Windows/Linux (`Program.cs`, Velopack) |
 | `tests/Uwielbienia.Core.Tests` | testy rdzenia i protokołu (m.in. parsowanie i zapis wszystkich pieśni z `Teksty/`) |
 | `tools/Uwielbienia.Screenshots` | renderuje okna do PNG bez wyświetlania (scenariusz w `Program.cs`) |
-| `web/remote` | strona pilota i ekranu w przeglądarce (`greysource.eu/uwielbienie`), bez kroku budowania |
+| `web/remote` | strona pilota i ekranu w przeglądarce (`greysource.eu/uwielbienie/telefon`), bez kroku budowania |
+| `web/landing` | strona startowa `greysource.eu/uwielbienie/` (React + Vite): linki do pilota i panelu, pobranie aplikacji; adresy z `#code=` / `#ekran` (kody QR starszych wersji aplikacji) przekierowuje do `telefon/` |
 | `web/panel` | panel na drugim komputerze / tablecie (`greysource.eu/uwielbienie/panel`): React + Vite + TypeScript, `npm run build` → `dist/` (robi to `build.py`) |
 
 .NET 10, Avalonia 12, CommunityToolkit.Mvvm, DI (`Microsoft.Extensions.DependencyInjection`),

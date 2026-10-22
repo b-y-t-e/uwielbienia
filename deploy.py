@@ -5,7 +5,7 @@ Wydanie nowej wersji — wszystko na tym komputerze (GitHub niczego nie buduje):
   1. sprawdza dane FTP, GITHUB_TOKEN i wersję vpk (przed zmianą wersji),
   2. podbija wersję w version.txt (x.y.z → x.y.z+1),
   3. buduje wszystko (build.py: testy, aplikacje Windows i Linux, Velopack, strona i panel),
-  4. wysyła stronę pilota przez FTP na greysource.eu/uwielbienie,
+  4. wysyła strony przez FTP na greysource.eu/uwielbienie (start, telefon/, panel/),
   5. commituje version.txt, wypycha commit i tag vX.Y.Z,
   6. tworzy GitHub Release „Uwielbienia vX.Y.Z” (REST API) i wysyła do niego pliki z release/
      (aplikacje i kanał aktualizacji Velopack, który czyta UpdateService).

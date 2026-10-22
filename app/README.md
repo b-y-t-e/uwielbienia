@@ -62,7 +62,8 @@ Klawisze, pilot, mysz na ekranie projekcji i „Dopasuj obraz”: [docs/projekt-
 | `src/Uwielbienia.Desktop` | program dla Windows i Linuksa |
 | `tests/Uwielbienia.Core.Tests` | testy (m.in. parsowanie wszystkich pieśni z `Teksty/`) |
 | `tools/Uwielbienia.Screenshots` | renderuje okna do PNG bez wyświetlania — do przeglądu wyglądu |
-| `web/remote` | strona pilota i ekranu w przeglądarce (`greysource.eu/uwielbienie`) |
+| `web/remote` | strona pilota i ekranu w przeglądarce (`greysource.eu/uwielbienie/telefon`) |
+| `web/landing` | strona startowa `greysource.eu/uwielbienie/` z linkami do pilota i panelu (React + Vite) |
 | `web/panel` | panel na drugim komputerze / tablecie (`greysource.eu/uwielbienie/panel`, React + Vite) |
 
 ## Testy i zrzuty

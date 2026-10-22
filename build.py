@@ -6,8 +6,9 @@ Buduje wszystko do folderu release/:
   release/Uwielbienia-<wersja>-linux-x64.tar.gz  aplikacja Linux (jeden plik wykonywalny)
   release/velopack/                              instalator i aktualizacje Windows (vpk pack: Setup.exe,
                                                  Portable.zip, pełny .nupkg, releases.win.json…)
-  release/web/uwielbienie/                       strona pilota gotowa do wysłania na serwer
-  release/web/uwielbienie/panel/                 panel (app/web/panel, React + Vite) — gdy jest w repozytorium
+  release/web/uwielbienie/                       strony do wysłania na serwer: strona startowa (app/web/landing, React)
+  release/web/uwielbienie/telefon/               pilot (app/web/remote)
+  release/web/uwielbienie/panel/                 panel (app/web/panel, React + Vite)
 
 Velopack powstaje tylko na Windows, razem z win-x64; vpk musi mieć wersję VelopackVersion
 z app/Directory.Build.props (dotnet tool update -g vpk --version X).
@@ -37,8 +38,10 @@ ICON = APP / "src" / "Uwielbienia.App" / "Assets" / "icon.ico"
 VELOPACK = RELEASE / "velopack"
 WEB_SOURCE = APP / "web" / "remote"
 WEB_TARGET = RELEASE / "web" / "uwielbienie"
+PILOT_TARGET = WEB_TARGET / "telefon"
 PANEL_SOURCE = APP / "web" / "panel"
 PANEL_TARGET = WEB_TARGET / "panel"
+LANDING_SOURCE = APP / "web" / "landing"
 DERP_MAP_URL = "https://tailcat.dev/derpmap.json"
 RIDS = ["win-x64", "linux-x64"]
 
@@ -149,26 +152,36 @@ def pack_velopack(ver: str) -> Path:
 
 
 def build_web() -> Path:
-    shutil.copytree(WEB_SOURCE, WEB_TARGET, ignore=shutil.ignore_patterns("*.md", "derpmap.json"))
+    # greysource.eu/uwielbienie/: strona startowa (React), telefon/ — pilot (bez budowania), panel/ — panel (React)
+    shutil.copytree(WEB_SOURCE, PILOT_TARGET, ignore=shutil.ignore_patterns("*.md", "derpmap.json"))
     # Mapa serwerów pośredniczących musi leżeć w tej samej domenie co strona (przeglądarka nie może
     # jej pobrać z tailcat.dev — brak nagłówka CORS), a nieaktualna wskazuje serwery, których już nie ma.
     with urllib.request.urlopen(DERP_MAP_URL, timeout=30) as response:
         derp_map = response.read()
-    (WEB_TARGET / "derpmap.json").write_bytes(derp_map)
-    print(f"→ {WEB_TARGET.relative_to(ROOT)}")
+    (PILOT_TARGET / "derpmap.json").write_bytes(derp_map)
+    print(f"→ {PILOT_TARGET.relative_to(ROOT)}")
     if (PANEL_SOURCE / "package.json").exists():
         build_panel(derp_map)
+    build_vite(LANDING_SOURCE)
+    shutil.copytree(LANDING_SOURCE / "dist", WEB_TARGET, dirs_exist_ok=True)
+    shutil.copy2(WEB_SOURCE / "web.config", WEB_TARGET / "web.config")  # typy plików i brak pamięci podręcznej
+    print(f"→ {WEB_TARGET.relative_to(ROOT)} (strona startowa)")
     return WEB_TARGET
+
+
+def build_vite(source: Path) -> None:
+    """Strona React + Vite (panel, strona startowa): npm ci + npm run build → source/dist."""
+    npm = shutil.which("npm")  # na Windows npm.cmd
+    if npm is None:
+        sys.exit(f"Brak npm (Node.js) — potrzebny do zbudowania {source.relative_to(ROOT)} (albo użyj --no-web).")
+    install = "ci" if (source / "package-lock.json").exists() else "install"
+    run([npm, install], cwd=source)
+    run([npm, "run", "build"], cwd=source)
 
 
 def build_panel(derp_map: bytes) -> Path:
     """Panel (React + Vite): npm run build → release/web/uwielbienie/panel/ z własną kopią derpmap.json."""
-    npm = shutil.which("npm")  # na Windows npm.cmd
-    if npm is None:
-        sys.exit("Brak npm (Node.js) — potrzebny do zbudowania app/web/panel (albo użyj --no-web).")
-    install = "ci" if (PANEL_SOURCE / "package-lock.json").exists() else "install"
-    run([npm, install], cwd=PANEL_SOURCE)
-    run([npm, "run", "build"], cwd=PANEL_SOURCE)
+    build_vite(PANEL_SOURCE)
     shutil.copytree(PANEL_SOURCE / "dist", PANEL_TARGET)
     # Panel pobiera derpmap.json względem własnego adresu.
     (PANEL_TARGET / "derpmap.json").write_bytes(derp_map)

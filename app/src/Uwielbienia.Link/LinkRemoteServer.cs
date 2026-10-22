@@ -61,10 +61,10 @@ public interface IRemoteServer : IRemoteDeviceManager, IAsyncDisposable
     Task<RemoteInvitation> InviteAsync(RemoteClient client = RemoteClient.Pilot, CancellationToken cancellationToken = default);
 }
 
-/// <param name="PanelUrl">Strona panelu (drugi komputer, tablet); <c>null</c> = obok strony pilota, w <c>panel/</c>.</param>
+/// <param name="PanelUrl">Strona panelu (drugi komputer, tablet); <c>null</c> = obok strony pilota (<c>../panel/</c>).</param>
 public sealed record RemoteServerOptions(string AppName, string StateDirectory, Uri PageUrl, int MaxDevices = 8, Uri? PanelUrl = null)
 {
-    public Uri PanelPageUrl => PanelUrl ?? new Uri(PageUrl, "panel/");
+    public Uri PanelPageUrl => PanelUrl ?? new Uri(PageUrl, "../panel/");
 }
 
 /// <summary>

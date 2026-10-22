@@ -14,7 +14,10 @@ namespace Uwielbienia.App;
 public partial class App : Application
 {
     /// <summary>Adres strony pilota; kod parowania trafia w fragment (#code=…), więc nie idzie do serwera WWW.</summary>
-    public static readonly Uri RemotePageUrl = new("https://greysource.eu/uwielbienie/");
+    public static readonly Uri RemotePageUrl = new("https://greysource.eu/uwielbienie/telefon/");
+
+    /// <summary>Adres panelu (drugi komputer, tablet).</summary>
+    public static readonly Uri PanelPageUrl = new("https://greysource.eu/uwielbienie/panel/");
 
     private ServiceProvider? _services;
 
