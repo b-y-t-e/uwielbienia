@@ -27,6 +27,17 @@ public sealed class PanelCommands(
     /// <summary>Wykonuje polecenie panelu (na wątku interfejsu).</summary>
     public async Task<CommandReply> ExecuteAsync(RemoteCommand command)
     {
+        var (planErrorBefore, libraryErrorBefore) = (plan.SaveError, plans.SaveError);
+        var reply = await ExecuteCommandAsync(command);
+        return (NewError(plan.SaveError, planErrorBefore) ?? NewError(plans.SaveError, libraryErrorBefore)) is { } error
+            ? new CommandReply(false, $"Nie udało się: {error.Message}", Plan: CurrentPlan())
+            : reply;
+    }
+
+    private static Exception? NewError(Exception? now, Exception? before) => now is not null && now != before ? now : null;
+
+    private async Task<CommandReply> ExecuteCommandAsync(RemoteCommand command)
+    {
         switch (command.Cmd)
         {
             case "plans":

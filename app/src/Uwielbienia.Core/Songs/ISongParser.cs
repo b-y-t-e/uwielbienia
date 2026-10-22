@@ -6,8 +6,8 @@ public interface ISongParser
     Song Parse(string id, string markdown);
 }
 
-public sealed class SongFormatException(string songId, string message)
-    : Exception($"{songId}: {message}")
+public sealed class SongFormatException(string songId, string message, Exception? inner = null)
+    : Exception($"{songId}: {message}", inner)
 {
     public string SongId { get; } = songId;
 }

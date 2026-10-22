@@ -34,6 +34,12 @@ public class SongParserTests
 
     private readonly Song _song = new MarkdownSongParser().Parse("001-maryjo", Sample);
 
+    [Theory]
+    [InlineData("numer: 1", "numer: abc")]
+    [InlineData("Matko Boga {x2}", "Matko Boga {x99999999999}")]
+    public void Invalid_number_is_a_format_error(string original, string broken) =>
+        Assert.Throws<SongFormatException>(() => new MarkdownSongParser().Parse("x", Sample.Replace(original, broken)));
+
     [Fact]
     public void Reads_front_matter()
     {

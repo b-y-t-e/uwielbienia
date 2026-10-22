@@ -40,7 +40,7 @@ public static class AppComposition
         services.AddSingleton<ISongSearch, SongSearch>();
 
         // plany i ekran
-        services.AddSingleton<IPlanStore>(sp => new JsonPlanStore(sp.GetRequiredService<AppPaths>().Plans));
+        services.AddSingleton<IPlanStore>(sp => new PendingPlanStore(new JsonPlanStore(sp.GetRequiredService<AppPaths>().Plans)));
         services.AddSingleton<ISlideBuilder>(sp =>
         {
             var settings = sp.GetRequiredService<ISettingsStore>().Current;
@@ -99,6 +99,7 @@ public static class AppComposition
             ShortCodeUrl: App.ShortCodeUrl));
         services.AddSingleton<IDevicePermissions>(sp => new DevicePermissions(sp.GetRequiredService<AppPaths>().LinkState));
         services.AddSingleton<PanelCommands>();
+        services.AddSingleton<IErrorLog, CrashGuardErrorLog>();
         services.AddSingleton<RemoteCommandHandler>();
         services.AddSingleton<IRemoteAdditions>(sp => sp.GetRequiredService<RemoteCommandHandler>());
         services.AddSingleton<IRemoteServer, LinkRemoteServer>();

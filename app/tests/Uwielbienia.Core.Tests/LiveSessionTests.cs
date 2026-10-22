@@ -35,6 +35,57 @@ public class LiveSessionTests
     }
 
     [Fact]
+    public void Next_after_removing_shown_item_goes_to_item_that_took_its_place()
+    {
+        var third = Item("Trzecia", 1);
+        _session.SetPlaylist([_first, _second, third]);
+        _session.Show(_second, 2);
+        _session.SetPlaylist([_first, third]);
+        _session.Next();
+        Assert.Equal((third, 0), (_session.State.Item, _session.State.SlideIndex));
+    }
+
+    [Fact]
+    public void Next_after_removing_shown_item_survives_further_plan_changes()
+    {
+        var a = Item("A", 1);
+        var d = Item("D", 1);
+        var x = Item("X", 1);
+        _session.SetPlaylist([a, _first, _second, d]);
+        _session.Show(_second, 2);
+        _session.SetPlaylist([a, _first, d]);
+        _session.SetPlaylist([_first, d]);
+        _session.SetPlaylist([x, _first, d]);
+        _session.Next();
+        Assert.Equal(d, _session.State.Item);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Removed_shown_item_on_middle_slide_is_left_for_its_neighbours(bool forward)
+    {
+        var third = Item("Trzecia", 1);
+        _session.SetPlaylist([_first, _second, third]);
+        _session.Show(_second, 1);
+        _session.SetPlaylist([_first, third]);
+        if (forward)
+            _session.Next();
+        else
+            _session.Previous();
+        Assert.Equal(forward ? (third, 0) : (_first, 1), (_session.State.Item, _session.State.SlideIndex));
+    }
+
+    [Fact]
+    public void Previous_after_removing_shown_item_goes_to_item_before_it()
+    {
+        _session.Show(_second);
+        _session.SetPlaylist([_first]);
+        _session.Previous();
+        Assert.Equal((_first, 1), (_session.State.Item, _session.State.SlideIndex));
+    }
+
+    [Fact]
     public void Next_at_end_of_plan_stays()
     {
         _session.Show(_second, 2);

@@ -31,6 +31,7 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var paths = new AppPaths();
+            CrashGuard.Start(paths.ErrorLogFile);
             Transitions.TransitionLog.Start(paths.TransitionLogFile);
             _services = AppComposition.Build(paths);
             // Film gra, gdy jego slajd jest na ekranie — nasłuchuje od początku.

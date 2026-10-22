@@ -8,12 +8,41 @@ public sealed class DirectorySongSource(string directory) : ISongSource
     public const string FileName = "piesn.md";
 
     public IEnumerable<SongDocument> Load() =>
-        !Directory.Exists(directory)
-            ? []
-            : Directory.EnumerateDirectories(directory)
-                .Select(dir => (Id: Path.GetFileName(dir), File: Path.Combine(dir, FileName)))
-                .Where(x => File.Exists(x.File))
-                .Select(x => new SongDocument(x.Id, File.ReadAllText(x.File)));
+        ListSongFolders()
+            .Select(x => TryRead(x.Id, x.File))
+            .OfType<SongDocument>()
+            .ToList();
+
+    /// <summary>Nośnik wyjęty albo folder niedostępny w trakcie przeglądania — ten folder pieśni nie ma, inne źródła działają.</summary>
+    private IReadOnlyList<(string Id, string File)> ListSongFolders()
+    {
+        try
+        {
+            return !Directory.Exists(directory)
+                ? []
+                : Directory.EnumerateDirectories(directory)
+                    .Select(dir => (Id: Path.GetFileName(dir), File: Path.Combine(dir, FileName)))
+                    .Where(x => File.Exists(x.File))
+                    .ToList();
+        }
+        catch (Exception ex) when (FileErrors.IsFileAccess(ex))
+        {
+            return [];
+        }
+    }
+
+    /// <summary>Plik zajęty albo nośnik wyjęty w trakcie — pomijamy tę pieśń, nie cały śpiewnik.</summary>
+    private static SongDocument? TryRead(string id, string file)
+    {
+        try
+        {
+            return new SongDocument(id, File.ReadAllText(file));
+        }
+        catch (Exception ex) when (FileErrors.IsFileAccess(ex))
+        {
+            return null;
+        }
+    }
 }
 
 /// <summary>

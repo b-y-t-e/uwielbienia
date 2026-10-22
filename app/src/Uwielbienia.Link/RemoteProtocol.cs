@@ -78,7 +78,12 @@ public sealed record StateMessage(
     bool IsVideo = false,
     bool IsKiosk = false)
 {
+    /// <summary>Uruchomienie aplikacji, z którego pochodzi stan — wersje porównuje się tylko w jednym uruchomieniu.</summary>
+    public static readonly string CurrentSession = Guid.NewGuid().ToString("N");
+
     public string Type => "state";
+
+    public string Session => CurrentSession;
 
     public static StateMessage From(LiveState state) => new(
         state.Version,
@@ -96,7 +101,7 @@ public sealed record StateMessage(
         // tylko slajd z tekstem (także sam tytuł bez wersów) — nie obraz ani film
         state.Item is { ShowTitle: true } && state.SlideIndex == 0 && state.Slide?.GetType() == typeof(Slide),
         // następny slajd tej samej pieśni — muzyk widzi, co nadchodzi (inna pieśń: tylko tytuł w Next)
-        state.Item is { } item && state.SlideIndex + 1 < item.Slides.Count ? LinesOf(item.Slides[state.SlideIndex + 1]) : null,
+        state.NextSlide is { } next ? LinesOf(next) : null,
         state.Slide is VideoSlide,
         state.Slide is KioskSlide);
 

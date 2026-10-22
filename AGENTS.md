@@ -397,6 +397,11 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   rozsyłane tylko panelom przy `PlanLibrary.Changed` / `ActivePlan.Opened`); kolumna „Pieśń” pyta `item` przy każdej zmianie planu.
   Próba bez aplikacji okienkowej: host z usługami Core + `LinkRemoteServer` (bez Avalonii), `npx vite preview` w `web/panel`
   z `public/derpmap.json` i `PanelUrl` = adres podglądu.
+- **Odporność na błędy plików.** Zajęty plik planu: `PendingPlanStore` trzyma plan w pamięci (widoczny w każdym odczycie),
+  następny udany zapis zapisuje całość; `ActivePlan.SaveError` / `PlanLibrary.SaveError` — panel odsyła „Nie udało się: …”.
+  Ustawienia zapisują się przez plik tymczasowy; nieczytelny plik pieśni albo zła liczba (`SongFormatException`) pomija tylko
+  tę pieśń. Pozycja z ekranu usunięta z planu: `LiveSession` pamięta jej sąsiadów (po `Id`) — „Dalej” / „Wstecz” idą do nich.
+  `StateMessage.Session` (uruchomienie aplikacji): pilot i panel porównują `Version` tylko w tym samym uruchomieniu.
 - **Aktualizacje.** `UpdateService` + `VelopackReleaseFeed`: tylko instalacja z
   `Uwielbienia-win-Setup.exe` sprawdza GitHub Releases, pobiera w tle i proponuje „Aktualizuj”.
 - **Start** (`App.OnFrameworkInitializationCompleted`): DI → otwarcie ostatniego planu →
@@ -471,7 +476,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 `ustawienia.json` (`AppSettings`: motyw okna i ekranu, akordy, szerokości kolumn, ostatni plan,
 `MaxLinesPerSlide`, `JoinVerseAndChorus`, opcjonalny folder pieśni, narożniki „Dopasuj obraz”, `PictureOffsetMs`), `plany/`, `teksty/`,
 `prezentacje/` (kopie prezentacji, obrazów i kiosków oraz ich slajdy; nieużywane nie są dziś usuwane), `polaczenia/`
-(tailcat-link; `uprawnienia.json` — urządzenia, które mogą dodawać pieśni, i panele), `aktualizacje.log`, `przejscia.log` (dziennik przejść slajdów — `TransitionLog`; przy starcie ponad ok. 1 MB zaczyna się od nowa).
+(tailcat-link; `uprawnienia.json` — urządzenia, które mogą dodawać pieśni, i panele), `aktualizacje.log`, `bledy.log` (nieoczekiwane błędy z datą — `CrashGuard`, `IErrorLog`: błąd czynności nie zamyka aplikacji), `przejscia.log` (dziennik przejść slajdów — `TransitionLog`; przy starcie ponad ok. 1 MB zaczyna się od nowa).
 
 ### Wygląd
 

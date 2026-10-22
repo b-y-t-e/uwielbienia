@@ -20,6 +20,19 @@ public sealed partial class MarkdownSongParser : ISongParser
 
     public Song Parse(string id, string markdown)
     {
+        try
+        {
+            return ParseSong(id, markdown);
+        }
+        catch (Exception ex) when (ex is FormatException or OverflowException)
+        {
+            // np. „numer: abc” albo {x99999999999}
+            throw new SongFormatException(id, $"nieprawidłowa liczba ({ex.Message})", ex);
+        }
+    }
+
+    private Song ParseSong(string id, string markdown)
+    {
         var lines = markdown.Replace("\r\n", "\n").Split('\n');
         var (meta, bodyStart) = ReadFrontMatter(id, lines);
         var kind = meta.GetValueOrDefault("rodzaj") is { } rodzaj && Unquote(rodzaj) == "tekst" ? SongKind.Text : SongKind.Song;

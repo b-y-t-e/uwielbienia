@@ -1,3 +1,4 @@
+using Uwielbienia.Core;
 using System.Text.Json;
 using Uwielbienia.Core.Plans;
 
@@ -53,6 +54,8 @@ public sealed class AppPaths
 
     /// <summary>Dziennik przejść slajdów (<see cref="Transitions.TransitionLog"/>).</summary>
     public string TransitionLogFile => Path.Combine(Root, "przejscia.log");
+
+    public string ErrorLogFile => Path.Combine(Root, "bledy.log");
 }
 
 public interface ISettingsStore
@@ -71,8 +74,11 @@ public sealed class JsonSettingsStore : ISettingsStore
     public JsonSettingsStore(AppPaths paths)
     {
         _file = paths.SettingsFile;
-        Current = Load(_file);
+        (Current, _unread) = Load(_file);
     }
+
+    /// <summary>Plik istnieje, ale nie dało się go przeczytać — nie nadpisujemy go domyślnymi ustawieniami.</summary>
+    private bool _unread;
 
     public AppSettings Current { get; private set; }
 
@@ -81,21 +87,64 @@ public sealed class JsonSettingsStore : ISettingsStore
     public void Update(Func<AppSettings, AppSettings> change)
     {
         Current = change(Current);
-        File.WriteAllText(_file, JsonSerializer.Serialize(Current, JsonPlanStore.JsonOptions));
+        if (_unread)
+            ReplayOnSaved(change);
+        if (!_unread)
+            Save();
         Changed?.Invoke(this, Current);
     }
 
-    private static AppSettings Load(string file)
+    /// <summary>
+    /// Plik był zajęty przy starcie — zapamiętujemy zmiany operatora (także wybór wartości domyślnej, np. pełny obraz);
+    /// gdy plik da się przeczytać, nakładamy je na zapisane ustawienia, a pozostałe (np. narożniki) zostają z pliku.
+    /// </summary>
+    private void ReplayOnSaved(Func<AppSettings, AppSettings> change)
+    {
+        _unsavedChanges.Add(change);
+        var (saved, stillUnread) = Load(_file);
+        if (stillUnread)
+            return;
+        Current = _unsavedChanges.Aggregate(saved, (settings, unsaved) => unsaved(settings));
+        _unsavedChanges.Clear();
+        _unread = false;
+    }
+
+    private readonly List<Func<AppSettings, AppSettings>> _unsavedChanges = [];
+
+    private void Save()
     {
         try
         {
-            return File.Exists(file)
-                ? JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(file), JsonPlanStore.JsonOptions) ?? new()
-                : new();
+            // przez plik tymczasowy — przerwany zapis nie gubi narożników „Dopasuj obraz”
+            var temp = _file + ".tmp";
+            File.WriteAllText(temp, JsonSerializer.Serialize(Current, JsonPlanStore.JsonOptions));
+            File.Move(temp, _file, overwrite: true);
+        }
+        catch (Exception ex) when (FileErrors.IsFileAccess(ex))
+        {
+            // plik chwilowo zajęty — ustawienia zostają w pamięci, zapisze je następna zmiana
+        }
+    }
+
+    /// <summary>Ustawienia z pliku; <c>Unread</c> = plik chwilowo niedostępny (zepsuty JSON to po prostu domyślne).</summary>
+    private static (AppSettings Settings, bool Unread) Load(string file)
+    {
+        try
+        {
+            // bez File.Exists: przy zabronionym dostępie do folderu mówi „brak pliku” i nadpisalibyśmy zapisane ustawienia
+            return (JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(file), JsonPlanStore.JsonOptions) ?? new(), false);
+        }
+        catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return (new(), false);
         }
         catch (JsonException)
         {
-            return new();
+            return (new(), false);
+        }
+        catch (Exception ex) when (FileErrors.IsFileAccess(ex))
+        {
+            return (new(), true);
         }
     }
 }

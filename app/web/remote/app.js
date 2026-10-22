@@ -60,6 +60,7 @@ async function command(cmd, extra = {}) {
   if (!link) return null;
   try {
     const reply = JSON.parse(await link.request(JSON.stringify({ cmd, ...extra })));
+    setStatus("connected", "Połączono"); // po chwilowym błędzie polecenia — połączenie znowu działa
     if (reply.state) receive({ ...reply.state, type: "state" });
     if (reply.video) receive({ ...reply.video, type: "video" });
     if (reply.device) receive({ ...reply.device, type: "device" });
@@ -75,7 +76,7 @@ const hello = () => command("hello");
 
 function receive(message) {
   if (message.type === "state") {
-    if (state && message.version < state.version) return; // starsza wiadomość po nowszej
+    if (state && message.session === state.session && message.version < state.version) return; // starsza wiadomość po nowszej (to samo uruchomienie aplikacji)
     state = message;
     renderState();
   } else if (message.type === "device") {

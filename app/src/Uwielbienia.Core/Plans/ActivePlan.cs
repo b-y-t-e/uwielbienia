@@ -25,6 +25,9 @@ public sealed class ActivePlan
 
     public IReadOnlyList<LiveItem> Playlist { get; private set; } = [];
 
+    /// <summary>Błąd ostatniego zapisu planu (<c>null</c> = zapisany) — zmiana i tak zostaje w pamięci.</summary>
+    public Exception? SaveError { get; private set; }
+
     public event EventHandler? Changed;
 
     /// <summary>Otwarto inny plan (po <see cref="Changed"/>) — widoki zaczynają od początku planu.</summary>
@@ -42,7 +45,8 @@ public sealed class ActivePlan
         if (Plan is null)
             return;
         Plan = change(Plan);
-        _store.Save(Plan);
+        // plik chwilowo zajęty — plan zostaje w pamięci (i w PendingPlanStore), następna zmiana zapisze całość
+        SaveError = _store.TrySave(Plan);
         Refresh();
     }
 

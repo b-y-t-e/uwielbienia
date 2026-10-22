@@ -27,16 +27,22 @@ public interface ILiveControl
 
 /// <summary>Migawka tego, co widzi sala. Niezmienna — bezpiecznie przekazywana do okien i przez sieć.</summary>
 /// <param name="Next">Co pokaże „Następny”: etykieta slajdu albo tytuł kolejnej pieśni.</param>
+/// <param name="IsRemovedFromPlan">Pozycję z ekranu usunięto z planu — „Dalej” idzie do sąsiada, nie do jej slajdów.</param>
 public sealed record LiveState(
     long Version,
     LiveItem? Item,
     int SlideIndex,
     bool IsBlank,
-    string? Next)
+    string? Next,
+    bool IsRemovedFromPlan = false)
 {
     public static readonly LiveState Empty = new(0, null, 0, false, null);
 
     public Slide? Slide => Item is { } item && SlideIndex < item.Slides.Count ? item.Slides[SlideIndex] : null;
+
+    /// <summary>Slajd, który pokaże „Dalej” w tej samej pozycji (<c>null</c> = „Dalej” przejdzie do innej pozycji).</summary>
+    public Slide? NextSlide =>
+        !IsRemovedFromPlan && Item is { } item && SlideIndex + 1 < item.Slides.Count ? item.Slides[SlideIndex + 1] : null;
 
     /// <summary>Slajd faktycznie widoczny na ekranie (<c>null</c> przy czarnym/pustym ekranie).</summary>
     public Slide? VisibleSlide => IsBlank ? null : Slide;
@@ -80,6 +86,12 @@ public sealed class LiveSession : ILiveControl, ILiveStateSource
 {
     private IReadOnlyList<LiveItem> _playlist = [];
 
+    /// <summary>
+    /// Sąsiedzi pozycji z ekranu, którą usunięto z planu — „Dalej” / „Wstecz” liczą od nich (po identyfikatorach:
+    /// dalsze zmiany planu nie przesuwają ich jak indeksu).
+    /// </summary>
+    private (Guid? Before, Guid? After)? _removedBetween;
+
     public LiveState State { get; private set; } = LiveState.Empty;
 
     public event EventHandler<LiveState>? StateChanged;
@@ -92,6 +104,15 @@ public sealed class LiveSession : ILiveControl, ILiveStateSource
     /// </summary>
     public void SetPlaylist(IReadOnlyList<LiveItem> playlist)
     {
+        if (State.Item?.PlanItemId is { } shown)
+        {
+            var before = IndexOf(_playlist, shown);
+            if (IndexOf(playlist, shown) >= 0)
+                _removedBetween = null;
+            else if (before >= 0)
+                _removedBetween = (before > 0 ? _playlist[before - 1].PlanItemId : null,
+                    before + 1 < _playlist.Count ? _playlist[before + 1].PlanItemId : null);
+        }
         _playlist = playlist;
         var current = State.Item;
         var slideIndex = State.SlideIndex;
@@ -180,7 +201,7 @@ public sealed class LiveSession : ILiveControl, ILiveStateSource
                 Show(_playlist[0]);
             return;
         }
-        if (State.SlideIndex < item.Slides.Count - 1)
+        if (State.NextSlide is not null)
             Publish(item, State.SlideIndex + 1, State.IsBlank);
         else if (Neighbour(item, +1) is { } next)
             Publish(next, 0, State.IsBlank);
@@ -191,11 +212,15 @@ public sealed class LiveSession : ILiveControl, ILiveStateSource
         var item = State.Item;
         if (item is null)
             return;
-        if (State.SlideIndex > 0)
+        if (State.SlideIndex > 0 && !WasRemoved(item))
             Publish(item, State.SlideIndex - 1, State.IsBlank);
         else if (Neighbour(item, -1) is { } previous)
             Publish(previous, Math.Max(0, previous.Slides.Count - 1), State.IsBlank);
     }
+
+    /// <summary>Pozycję z ekranu usunięto z planu — jej pozostałe slajdy pomijamy, „Dalej” / „Wstecz” idą do sąsiadów.</summary>
+    private bool WasRemoved(LiveItem item) =>
+        _removedBetween is not null && item.PlanItemId is { } id && IndexOf(_playlist, id) < 0;
 
     public void NextItem()
     {
@@ -225,9 +250,13 @@ public sealed class LiveSession : ILiveControl, ILiveStateSource
     {
         if (item.PlanItemId is not { } id)
             return null;
-        var index = _playlist.ToList().FindIndex(i => i.PlanItemId == id);
+        var index = IndexOf(_playlist, id);
         if (index < 0)
-            return null;
+        {
+            if (RemovedItemIndex(step) is not { } removedIndex)
+                return null;
+            index = removedIndex;
+        }
         // Pieśni ze wszystkimi częściami pominiętymi nie ma czego pokazać — przeskakujemy je.
         for (var target = index + step; target >= 0 && target < _playlist.Count; target += step)
             if (_playlist[target].Slides.Count > 0)
@@ -235,17 +264,42 @@ public sealed class LiveSession : ILiveControl, ILiveStateSource
         return null;
     }
 
+    /// <summary>
+    /// Miejsce usuniętej pozycji z ekranu w obecnym planie, od którego <see cref="Neighbour"/> robi krok:
+    /// dalej = ta, która była za nią, wstecz = ta przed nią (a gdy i tej już nie ma — od drugiego sąsiada).
+    /// </summary>
+    private int? RemovedItemIndex(int step)
+    {
+        if (_removedBetween is not var (before, after))
+            return null;
+        var beforeIndex = before is { } b ? IndexOf(_playlist, b) : -1;
+        var afterIndex = after is { } a ? IndexOf(_playlist, a) : -1;
+        if (beforeIndex < 0 && afterIndex < 0)
+            return null;
+        return step > 0 ? JustBefore(afterIndex, beforeIndex) : JustAfter(beforeIndex, afterIndex);
+    }
+
+    /// <summary>Krok do przodu trafi w <paramref name="afterIndex"/>; bez niego liczymy od poprzednika.</summary>
+    private static int JustBefore(int afterIndex, int beforeIndex) => afterIndex >= 0 ? afterIndex - 1 : beforeIndex;
+
+    /// <summary>Krok wstecz trafi w <paramref name="beforeIndex"/>; bez niego liczymy od następnika.</summary>
+    private static int JustAfter(int beforeIndex, int afterIndex) => beforeIndex >= 0 ? beforeIndex + 1 : afterIndex;
+
+    private static int IndexOf(IReadOnlyList<LiveItem> playlist, Guid id) =>
+        playlist.ToList().FindIndex(i => i.PlanItemId == id);
+
     private void Publish(LiveItem? item, int slideIndex, bool isBlank)
     {
-        State = new LiveState(State.Version + 1, item, slideIndex, isBlank, DescribeNext(item, slideIndex));
+        var removed = item is not null && WasRemoved(item);
+        State = new LiveState(State.Version + 1, item, slideIndex, isBlank, DescribeNext(item, slideIndex, removed), removed);
         StateChanged?.Invoke(this, State);
     }
 
-    private string? DescribeNext(LiveItem? item, int slideIndex)
+    private string? DescribeNext(LiveItem? item, int slideIndex, bool removed)
     {
         if (item is null)
             return _playlist.Count > 0 ? _playlist[0].Title : null;
-        if (slideIndex < item.Slides.Count - 1)
+        if (slideIndex < item.Slides.Count - 1 && !removed)
             return item.Slides[slideIndex + 1].Label;
         return Neighbour(item, +1)?.Title;
     }

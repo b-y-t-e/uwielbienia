@@ -12,6 +12,8 @@ export interface LineMessage {
 
 export interface StateMessage {
   type: "state";
+  /** Uruchomienie aplikacji — wersje porównuje się tylko w jednym. */
+  session: string;
   version: number;
   songId?: string | null;
   itemId?: string | null;

@@ -45,7 +45,7 @@ export function useConnection(): Snapshot {
 function receive(message: Notification) {
   switch (message.type) {
     case "state":
-      if (snapshot.state && message.version < snapshot.state.version) return; // starsza wiadomość po nowszej
+      if (snapshot.state && message.session === snapshot.state.session && message.version < snapshot.state.version) return; // starsza wiadomość po nowszej (to samo uruchomienie aplikacji)
       update({ state: message });
       break;
     case "plan":

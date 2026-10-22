@@ -32,7 +32,8 @@ public sealed class RemoteCommandHandler(
     UndoableAdditions? undoable = null,
     KioskRotation? kiosk = null,
     IImagePreviews? previews = null,
-    PanelCommands? panel = null) : IRemoteAdditions
+    PanelCommands? panel = null,
+    IErrorLog? errorLog = null) : IRemoteAdditions
 {
     private readonly UndoableAdditions _undoable = undoable ?? new(live);
     private EventHandler<PlanItem>? _itemAdded;
@@ -70,7 +71,21 @@ public sealed class RemoteCommandHandler(
         }
     }
 
+    /// <summary>Granica żądań: nieoczekiwany błąd polecenia trafia do dziennika, a urządzenie dostaje komunikat.</summary>
     public async Task<byte[]> HandleAsync(ReadOnlyMemory<byte> request, RemoteCaller? caller = null)
+    {
+        try
+        {
+            return await HandleRequestAsync(request, caller);
+        }
+        catch (Exception ex)
+        {
+            errorLog?.Report(ex);
+            return RemoteJson.Serialize(new CommandReply(false, $"Nie udało się: {ex.Message}"));
+        }
+    }
+
+    private async Task<byte[]> HandleRequestAsync(ReadOnlyMemory<byte> request, RemoteCaller? caller)
     {
         RemoteCommand? command;
         try
@@ -86,13 +101,26 @@ public sealed class RemoteCommandHandler(
         var reply = command is null ? new CommandReply(false, "Nieczytelne polecenie.")
             : panel is not null && PanelCommands.Handles(command.Cmd)
                 ? caller.IsPanel
-                    ? await await dispatcher.InvokeAsync(() => panel.ExecuteAsync(command))
+                    ? await ExecutePanelAsync(command)
                     : new CommandReply(false, "To urządzenie nie jest panelem — włącz „Panel” w oknie „Urządzenia” w aplikacji.")
             : await dispatcher.InvokeAsync(() => Execute(command, caller));
         // pełny stan po (ponownym) połączeniu — także bieżący element kiosku
         if (command?.Cmd == "hello" && reply.Ok)
             reply = reply with { Kiosk = await CurrentKioskAsync() };
         return RemoteJson.Serialize(reply);
+    }
+
+    /// <summary>Błąd zapisu (plik zajęty, kopiowanie) wraca do panelu jako komunikat, nie przerywa połączenia.</summary>
+    private async Task<CommandReply> ExecutePanelAsync(RemoteCommand command)
+    {
+        try
+        {
+            return await await dispatcher.InvokeAsync(() => panel!.ExecuteAsync(command));
+        }
+        catch (Exception ex) when (FileErrors.IsFileAccess(ex))
+        {
+            return new CommandReply(false, $"Nie udało się: {ex.Message}");
+        }
     }
 
     private CommandReply Execute(RemoteCommand command, RemoteCaller caller)

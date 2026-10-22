@@ -78,7 +78,7 @@ public sealed partial class LiveViewModel : ObservableObject
             : null;
 
     public SlideTabViewModel? NextTab =>
-        State.Item is not null && State.SlideIndex >= 0 && State.SlideIndex + 1 < Slides.Count
+        State.NextSlide is not null && State.SlideIndex >= 0 && State.SlideIndex + 1 < Slides.Count
             ? Slides[State.SlideIndex + 1]
             : null;
 

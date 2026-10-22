@@ -56,6 +56,21 @@ public sealed class PanelCommandsTests : IDisposable
     private Guid ItemAt(int index) => _plan.Plan!.Items[index].Id;
 
     [Fact]
+    public async Task Locked_plan_file_gives_readable_reply_and_change_stays()
+    {
+        var file = Path.Combine(_temp, "plany", $"{_plan.Plan!.Id}.json");
+        Assert.True(Ok(await Add(47)));
+        using (File.Open(file, FileMode.Open, FileAccess.Read, FileShare.None))
+        {
+            var reply = await Add(48);
+            Assert.False(Ok(reply));
+            Assert.StartsWith("Nie udało się: ", reply.GetProperty("error").GetString());
+        }
+        Assert.Equal([47, 48], Numbers());
+        Assert.True(Ok(await Add(49)));
+    }
+
+    [Fact]
     public async Task Phone_cannot_use_panel_commands()
     {
         var reply = await Send($$"""{"cmd":"planAdd","songId":"{{Id(47)}}"}""", RemoteCaller.Pilot);

@@ -15,6 +15,9 @@ public sealed class PlanLibrary(IPlanStore store, ActivePlan active)
     /// <summary>Zmieniła się lista planów (nowy, zmieniony, usunięty plan).</summary>
     public event EventHandler? Changed;
 
+    /// <summary>Błąd ostatniego zapisu planu innego niż otwarty (<c>null</c> = zapisany) — zmiana i tak zostaje w pamięci magazynu.</summary>
+    public Exception? SaveError { get; private set; }
+
     /// <summary>Wydarzenia od najnowszej daty, szablony alfabetycznie.</summary>
     public IReadOnlyList<Plan> List(PlanKind kind)
     {
@@ -38,7 +41,7 @@ public sealed class PlanLibrary(IPlanStore store, ActivePlan active)
     public Plan Create(string name, DateOnly? date, PlanKind kind)
     {
         var plan = Plan.Create(name.Trim(), kind == PlanKind.Template ? null : date, kind);
-        store.Save(plan);
+        Save(plan);
         Changed?.Invoke(this, EventArgs.Empty);
         active.Open(plan);
         return plan;
@@ -56,7 +59,7 @@ public sealed class PlanLibrary(IPlanStore store, ActivePlan active)
         if (planId == active.Plan?.Id)
             active.Update(Renamed);
         else
-            store.Save(Renamed(plan));
+            Save(Renamed(plan));
         Changed?.Invoke(this, EventArgs.Empty);
         return Find(planId);
     }
@@ -82,7 +85,7 @@ public sealed class PlanLibrary(IPlanStore store, ActivePlan active)
         if (Find(planId) is not { } plan)
             return null;
         var copy = plan.CloneAs(NameWithoutDate(plan), Today, PlanKind.Event);
-        store.Save(copy);
+        Save(copy);
         Changed?.Invoke(this, EventArgs.Empty);
         active.Open(copy);
         return copy;
@@ -94,7 +97,7 @@ public sealed class PlanLibrary(IPlanStore store, ActivePlan active)
         if (Find(planId) is not { } plan)
             return null;
         var template = plan.CloneAs(plan.Name, null, PlanKind.Template);
-        store.Save(template);
+        Save(template);
         Changed?.Invoke(this, EventArgs.Empty);
         return template;
     }
@@ -108,6 +111,9 @@ public sealed class PlanLibrary(IPlanStore store, ActivePlan active)
         Changed?.Invoke(this, EventArgs.Empty);
         return true;
     }
+
+    /// <summary>Plik chwilowo zajęty — plan zostaje w <see cref="PendingPlanStore"/>, następna zmiana zapisze całość.</summary>
+    private void Save(Plan plan) => SaveError = store.TrySave(plan);
 
     private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
 
