@@ -355,7 +355,9 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   szyfrowane); sparowane urządzenia łączą się same przy starcie. Do podyktowania pod kodem QR jest krótki kod
   (np. `ajk59`, 5 znaków bez i/l/o/0/1, ważny 5 min): `ShortInvitationCodes` zapisuje długi kod w `kod.php`
   (`web/landing/public`, PHP na greysource.eu; odczyt jednorazowy, limit nieudanych prób z adresu), a pilot i panel
-  zamieniają krótki kod (`#code=ajk59` albo wpisany) na długi; bez usługi zostaje sam kod QR. **Telefon zmienia slajdy** (dodawanie pieśni —
+  zamieniają krótki kod (`#code=ajk59` albo wpisany) na długi; bez usługi zostaje sam kod QR.
+  „Odłącz” (ikona w nagłówku pilota i panelu, z potwierdzeniem) wysyła `leave` — `LinkRemoteServer` zapomina
+  urządzenie jak „Zapomnij” (chwilę po odpowiedzi), a strona usuwa swoje parowanie; powrót tylko z nowym kodem. **Telefon zmienia slajdy** (dodawanie pieśni —
   tylko z uprawnieniem, niżej) —
   jeden prosty widok (`web/remote`, tokeny kolorów i kroje jak w aplikacji): bieżący slajd z akordami
   jak w śpiewniku (tekst Literatą, refren jej kursywą `fonts/Literata-Italic.ttf`, zawinięty wers wcięty;

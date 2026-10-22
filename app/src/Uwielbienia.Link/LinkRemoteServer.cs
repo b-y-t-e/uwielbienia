@@ -243,8 +243,20 @@ public sealed class LinkRemoteServer(
         };
     }
 
-    private async Task<ReadOnlyMemory<byte>> HandleAsync(ILinkPeer peer, ReadOnlyMemory<byte> request) =>
-        await handler.HandleAsync(request, CallerOf(peer));
+    private async Task<ReadOnlyMemory<byte>> HandleAsync(ILinkPeer peer, ReadOnlyMemory<byte> request)
+    {
+        if (!RemoteCommandHandler.IsLeave(request))
+            return await handler.HandleAsync(request, CallerOf(peer));
+        // urządzenie samo się odłącza („Odłącz” na stronie): zapominamy je jak „Zapomnij” w oknie „Urządzenia”,
+        // chwilę po odpowiedzi — inaczej zerwane połączenie zgubiłoby potwierdzenie
+        var key = KeyOf(peer);
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(TimeSpan.FromSeconds(1));
+            await ForgetAsync(key);
+        });
+        return RemoteJson.Serialize(new CommandReply(true));
+    }
 
     /// <summary>
     /// Stan filmu do telefonów: od razu przy pauzie, starcie, końcu, błędzie i każdej zmianie miejsca zatrzymanego filmu

@@ -9,6 +9,7 @@ export const MoreIcon = () => svg(<><circle cx="5" cy="12" r="1.6" /><circle cx=
 export const GripIcon = () => svg(<><circle cx="9" cy="6" r="1.4" /><circle cx="15" cy="6" r="1.4" /><circle cx="9" cy="12" r="1.4" /><circle cx="15" cy="12" r="1.4" /><circle cx="9" cy="18" r="1.4" /><circle cx="15" cy="18" r="1.4" /></>, true);
 export const SunIcon = () => svg(<><circle cx="12" cy="12" r="4.5" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>);
 export const MoonIcon = () => svg(<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />);
+export const LeaveIcon = () => svg(<path d="M15 4h3.5A1.5 1.5 0 0 1 20 5.5v13a1.5 1.5 0 0 1-1.5 1.5H15M10 8l-4 4 4 4M6 12h10" />);
 export const CloseIcon = () => svg(<path d="M6 6l12 12M18 6L6 18" />);
 export const PlayIcon = () => <svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M4.5,2 L14,8 L4.5,14 Z" /></svg>;
 export const PauseIcon = () => <svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M3,2 L5.6,2 L5.6,14 L3,14 Z M10.4,2 L13,2 L13,14 L10.4,14 Z" /></svg>;

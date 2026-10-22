@@ -57,6 +57,19 @@ public sealed class RemoteCommandHandler(
     /// <summary>Lista planów dla paneli; <c>null</c> = aplikacja bez panelu.</summary>
     public PlansMessage? CurrentPlans() => panel?.CurrentPlans();
 
+    /// <summary>Polecenie „leave”: urządzenie odłącza się samo (obsługuje je serwer — dotyczy połączenia, nie planu).</summary>
+    public static bool IsLeave(ReadOnlyMemory<byte> request)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<RemoteCommand>(request.Span, RemoteJson.Options)?.Cmd == "leave";
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
     public async Task<byte[]> HandleAsync(ReadOnlyMemory<byte> request, RemoteCaller? caller = null)
     {
         RemoteCommand? command;

@@ -45,8 +45,9 @@ async function connect(invitationCode) {
   history.replaceState(null, "", location.pathname + location.search + (isDisplayMode() ? "#ekran" : ""));
   link.onNotify((text) => receive(JSON.parse(text)));
   link.events.addEventListener("connected", () => { setStatus("connected", "Połączono"); hello(); });
-  link.events.addEventListener("disconnected", () => setStatus("connecting", "Łączenie ponownie…"));
+  link.events.addEventListener("disconnected", () => { if (link) setStatus("connecting", "Łączenie ponownie…"); });
   link.events.addEventListener("failed", (e) => {
+    if (!link) return; // odłączone na życzenie
     if (e.detail instanceof PairingRefusedError) showPairing("Aplikacja nie zna już tego urządzenia. Zeskanuj nowy kod.");
     else setStatus("failed", "Brak połączenia");
   });
@@ -445,6 +446,19 @@ document.addEventListener("keydown", (e) => {
   if (e.target instanceof HTMLInputElement || !link) return;
   if ([" ", "ArrowRight", "ArrowDown", "PageDown"].includes(e.key)) { command("next"); e.preventDefault(); }
   else if (["Backspace", "ArrowLeft", "ArrowUp", "PageUp"].includes(e.key)) { command("prev"); e.preventDefault(); }
+});
+
+// Odłączenie: aplikacja zapomina to urządzenie, a przeglądarka — parowanie (następnym razem nowy kod)
+$("leave").addEventListener("click", async () => {
+  if (!confirm("Odłączyć od aplikacji? Telefon przestanie zmieniać slajdy, a żeby wrócić, potrzebny będzie nowy kod.")) return;
+  const current = link;
+  link = null;
+  if (current) {
+    await current.request(JSON.stringify({ cmd: "leave" })).catch(() => {});
+    await current.close().catch(() => {});
+  }
+  await TailcatLink.forget(APP_NAME).catch(() => {});
+  showPairing(null);
 });
 
 $("pairForm").addEventListener("submit", (e) => {

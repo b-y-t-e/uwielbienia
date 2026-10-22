@@ -120,8 +120,9 @@ export async function connect(invitationCode: string | null) {
   history.replaceState(null, "", location.pathname + location.search);
   link.onNotify((text) => receive(JSON.parse(text) as Notification));
   link.events.addEventListener("connected", () => { update({ status: "connected" }); void command("hello"); });
-  link.events.addEventListener("disconnected", () => update({ status: "connecting" }));
+  link.events.addEventListener("disconnected", () => { if (link) update({ status: "connecting" }); });
   link.events.addEventListener("failed", (e) => {
+    if (!link) return; // odłączone na życzenie
     if ((e as CustomEvent).detail instanceof PairingRefusedError)
       update({ status: "pairing", pairingError: "Aplikacja nie zna już tego urządzenia. Zeskanuj nowy kod panelu." });
     else update({ status: "failed" });
@@ -137,6 +138,18 @@ async function expandShortCode(code: string | null): Promise<string | null> {
   const response = await fetch(new URL(`../kod.php?k=${short}`, location.href), { cache: "no-store" });
   if (!response.ok) throw new Error(`kod ${short}: ${response.status}`);
   return (await response.text()).trim();
+}
+
+/** Odłącza panel: aplikacja zapomina to urządzenie, a przeglądarka — parowanie (następnym razem nowy kod). */
+export async function leave() {
+  const current = link;
+  link = null;
+  if (current) {
+    await current.request(JSON.stringify({ cmd: "leave" })).catch(() => {});
+    await current.close().catch(() => {});
+  }
+  await panelStore.remove(APP_NAME).catch(() => {});
+  update({ status: "pairing", pairingError: null, device: null });
 }
 
 export function start() {

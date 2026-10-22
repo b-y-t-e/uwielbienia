@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { command, connect, useConnection, type Snapshot } from "./connection";
+import { command, connect, leave, useConnection, type Snapshot } from "./connection";
 import { useStored, useTheme } from "./settings";
 import { ItemColumn } from "./components/ItemColumn";
 import { LiveColumn } from "./components/LiveColumn";
-import { MoonIcon, SunIcon } from "./components/Icons";
+import { LeaveIcon, MoonIcon, SunIcon } from "./components/Icons";
+import { Confirm } from "./components/Dialog";
 import { PlanColumn } from "./components/PlanColumn";
 import { PlansDialog } from "./components/PlansDialog";
 
@@ -28,6 +29,7 @@ function Panel({ snapshot }: { snapshot: Snapshot }) {
   const { plan, state } = snapshot;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [plansOpen, setPlansOpen] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [column, setColumn] = useState<Column>("plan");
   const [chords, setChords] = useStored<boolean>("panel-akordy", true);
   const [theme, toggleTheme] = useTheme();
@@ -71,6 +73,9 @@ function Panel({ snapshot }: { snapshot: Snapshot }) {
         <button className="icon-button" aria-label={theme === "dark" ? "Jasny wygląd" : "Ciemny wygląd"} onClick={toggleTheme}>
           {theme === "dark" ? <SunIcon /> : <MoonIcon />}
         </button>
+        <button className="icon-button" aria-label="Odłącz od aplikacji" title="Odłącz od aplikacji" onClick={() => setLeaving(true)}>
+          <LeaveIcon />
+        </button>
       </header>
 
       <main className={`columns show-${column}`}>
@@ -88,6 +93,8 @@ function Panel({ snapshot }: { snapshot: Snapshot }) {
 
       {snapshot.error ? <div className="toast" role="alert">{snapshot.error}</div> : null}
       {plansOpen ? <PlansDialog plans={snapshot.plans} onClose={() => setPlansOpen(false)} /> : null}
+      {leaving ? <Confirm action="Odłącz" onCancel={() => setLeaving(false)} onConfirm={() => void leave()}
+                          text="Panel przestanie sterować aplikacją, a aplikacja zapomni to urządzenie. Żeby wrócić, potrzebny będzie nowy kod." /> : null}
     </div>
   );
 }
@@ -117,6 +124,7 @@ function NotPanel() {
       <h1 className="brand">Uwielbienia — panel</h1>
       <p>To urządzenie jest połączone, ale nie ma uprawnienia „Panel”.</p>
       <p className="muted">W aplikacji otwórz „Urządzenia” i zaznacz „Panel” przy tym urządzeniu (nazwa „panel”).</p>
+          <button onClick={() => void leave()}>Odłącz</button>
     </main>
   );
 }
