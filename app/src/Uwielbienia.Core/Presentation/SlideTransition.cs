@@ -2,7 +2,7 @@ namespace Uwielbienia.Core.Presentation;
 
 /// <summary>
 /// Efekt przejścia między dwoma slajdami (dziś w kiosku; ten sam mechanizm może służyć każdej zmianie slajdu).
-/// Brak efektu = zwykłe przenikanie.
+/// Pusty wybór = zwykłe przenikanie, <see cref="SlideTransition.None"/> = bez przejścia.
 /// </summary>
 public enum SlideTransition
 {
@@ -18,11 +18,23 @@ public enum SlideTransition
     LightRay,
     /// <summary>Krąg fali rozchodzi się od środka; za nim nowy obraz.</summary>
     Ripple,
+    /// <summary>„Brak efektu” — nowy slajd od razu, bez przenikania. Wybierany sam (wyklucza efekty).</summary>
+    None,
 }
 
 public static class SlideTransitions
 {
-    public static readonly IReadOnlyList<SlideTransition> All = Enum.GetValues<SlideTransition>();
+    /// <summary>Efekty do zaznaczania (bez <see cref="SlideTransition.None"/> — ten ma osobny przycisk, jak przenikanie).</summary>
+    public static readonly IReadOnlyList<SlideTransition> All =
+        Enum.GetValues<SlideTransition>().Where(t => t != SlideTransition.None).ToList();
+
+    /// <summary>„Przenikanie”: żaden efekt.</summary>
+    public static readonly IReadOnlyList<SlideTransition> CrossFade = [];
+
+    /// <summary>„Brak efektu”: nowy slajd od razu.</summary>
+    public static readonly IReadOnlyList<SlideTransition> Cut = [SlideTransition.None];
+
+    public static bool IsCut(IReadOnlyList<SlideTransition> chosen) => chosen is [SlideTransition.None];
 
     /// <summary>Domyślny wybór (plan i kiosk): efektowne, a spokojne — nowy obraz rozlewa się jak farba.</summary>
     public static readonly IReadOnlyList<SlideTransition> Default = [SlideTransition.Watercolor];
@@ -35,10 +47,11 @@ public static class SlideTransitions
     public static IReadOnlyList<SlideTransition>? ToStored(IReadOnlyList<SlideTransition> chosen) =>
         chosen.SequenceEqual(Default) ? null : chosen;
 
-    /// <summary>Opis wyboru: „przenikanie”, nazwa efektu albo „losowe (n)”.</summary>
+    /// <summary>Opis wyboru: „przenikanie”, „brak efektu”, nazwa efektu albo „losowe (n)”.</summary>
     public static string Describe(IReadOnlyList<SlideTransition> chosen) => chosen.Count switch
     {
         0 => "przenikanie",
+        1 when chosen[0] == SlideTransition.None => "brak efektu",
         1 => Name(chosen[0]),
         var n => $"losowe ({n})",
     };
@@ -51,10 +64,16 @@ public static class SlideTransitions
         SlideTransition.Watercolor => "Akwarela",
         SlideTransition.LightRay => "Promień światła",
         SlideTransition.Ripple => "Fala",
+        SlideTransition.None => "Brak efektu",
         _ => transition.ToString(),
     };
 
     /// <summary>Jeden z wybranych efektów (losowo, gdy jest ich kilka); <c>null</c> = nic nie wybrano — zwykłe przenikanie.</summary>
-    public static SlideTransition? Pick(IReadOnlyList<SlideTransition> chosen, Random random) =>
-        chosen.Count == 0 ? null : chosen[random.Next(chosen.Count)];
+    public static SlideTransition? Pick(IReadOnlyList<SlideTransition> chosen, Random random)
+    {
+        if (IsCut(chosen))
+            return SlideTransition.None;
+        var effects = chosen.Where(t => t != SlideTransition.None).ToList(); // „Brak efektu” działa tylko sam
+        return effects.Count == 0 ? null : effects[random.Next(effects.Count)];
+    }
 }

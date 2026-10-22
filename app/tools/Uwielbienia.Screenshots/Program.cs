@@ -113,6 +113,14 @@ if (window.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.Flyout 
     main.Transitions.Choice.Options[1].IsSelected = true;
     if (main.Transitions.Choice.IsCrossFade)
         throw new InvalidOperationException("Wybrany efekt nie odznaczył „Przenikanie”");
+    // „Brak efektu” — sam, bez efektów i przenikania; wybrany efekt go odznacza
+    main.Transitions.Choice.IsCut = true;
+    if (active.Plan!.ChosenTransitions is not [SlideTransition.None] || main.Transitions.Choice.IsCrossFade
+        || main.Transitions.Choice.Options.Any(o => o.IsSelected) || main.Transitions.ShortText != "Brak efektu")
+        throw new InvalidOperationException("„Brak efektu” nie trafił do planu");
+    main.Transitions.Choice.Options[2].IsSelected = true;
+    if (main.Transitions.Choice.IsCut || active.Plan!.ChosenTransitions is not [SlideTransition.Flame])
+        throw new InvalidOperationException("Wybrany efekt nie odznaczył „Brak efektu”");
     active.Update(p => p.WithTransitions(before));
 }
 

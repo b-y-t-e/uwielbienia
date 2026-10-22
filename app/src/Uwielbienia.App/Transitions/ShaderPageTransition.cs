@@ -19,7 +19,7 @@ namespace Uwielbienia.App.Transitions;
 /// Przejście strony (<see cref="IPageTransition"/> — działa w każdym <c>TransitioningContentControl</c>, więc może kiedyś
 /// służyć każdej zmianie slajdu): przy każdej zmianie losuje jeden z wybranych efektów, robi zrzut starej i nowej strony
 /// i na czas przejścia rysuje je shaderem (<see cref="ShaderTransitionView"/>) w miejscu obu stron.
-/// Bez wybranych efektów, bez zrzutu, gdy shader się nie skompilował albo komputer rysuje go za wolno — zwykłe przenikanie.
+/// „Brak efektu” (<see cref="SlideTransition.None"/>) — nowa strona od razu (<see cref="CutTransition"/>). Bez wybranych efektów, bez zrzutu, gdy shader się nie skompilował albo komputer rysuje go za wolno — zwykłe przenikanie.
 /// Wstecz (<c>forward = false</c>) przesunięcie jedzie w przeciwną stronę.
 /// </summary>
 public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects) : IPageTransition
@@ -41,6 +41,23 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
     /// <summary>Przejście dla wybranych efektów: żadnego — zwykłe przenikanie.</summary>
     public static IPageTransition For(IReadOnlyList<SlideTransition> effects) =>
         effects.Count == 0 ? new DirectCrossFade(TimeSpan.FromSeconds(0.6)) : new ShaderPageTransition(effects);
+
+    private WeakReference<object>? _pickedFor;
+    private SlideTransition? _picked;
+
+    /// <summary>
+    /// Efekt dla nowej strony — ten sam dla każdego widoku, który ją pokazuje z tym przejściem (rzutnik i „Na ekranie”
+    /// dostają tę samą treść, np. element kiosku), więc oba losują raz.
+    /// </summary>
+    private SlideTransition? PickFor(Visual? to)
+    {
+        var content = (to as ContentPresenter)?.Content;
+        if (content is not null && _pickedFor is not null && _pickedFor.TryGetTarget(out var last) && ReferenceEquals(last, content))
+            return _picked;
+        _picked = SlideTransitions.Pick(Effects, Random);
+        _pickedFor = content is null ? null : new WeakReference<object>(content);
+        return _picked;
+    }
 
     public async Task Start(Visual? from, Visual? to, bool forward, CancellationToken cancellationToken)
     {
@@ -69,7 +86,13 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
             }
             return;
         }
-        var effect = SlideTransitions.Pick(Effects, Random);
+        var effect = PickFor(to);
+        if (effect == SlideTransition.None)
+        {
+            TransitionLog.Write($"#{id} {where}: brak efektu");
+            await new CutTransition().Start(from, to, forward, cancellationToken);
+            return;
+        }
         var shader = effect is { } chosen && TransitionShaders.IsSmooth ? TransitionShaders.For(chosen) : null;
         var picked = $"wybrane [{string.Join(", ", Effects.Select(SlideTransitions.Name))}] → {(effect is { } e ? SlideTransitions.Name(e) : "—")}";
         if (from is null || to is null || shader is null || to.GetVisualParent() is not Panel host)

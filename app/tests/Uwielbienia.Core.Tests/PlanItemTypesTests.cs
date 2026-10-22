@@ -154,6 +154,21 @@ public class PlanItemTypesTests
     }
 
     [Fact]
+    public void No_effect_is_a_choice_of_its_own_and_survives_saving()
+    {
+        var plan = Plan.Create("Test", null).WithTransitions(SlideTransitions.Cut).WithInnerTransitions(SlideTransitions.Cut);
+
+        Assert.Equal("brak efektu", SlideTransitions.Describe(plan.ChosenTransitions));
+        Assert.True(SlideTransitions.IsCut(plan.ChosenInnerTransitions));
+        Assert.DoesNotContain(SlideTransition.None, SlideTransitions.All);
+        Assert.Equal(SlideTransition.None, SlideTransitions.Pick(SlideTransitions.Cut, new Random(1)));
+        var saved = System.Text.Json.JsonSerializer.Deserialize<Plan>(
+            System.Text.Json.JsonSerializer.Serialize(plan, JsonPlanStore.JsonOptions), JsonPlanStore.JsonOptions)!;
+        Assert.Equal([SlideTransition.None], saved.Transitions);
+        Assert.Equal([SlideTransition.None], saved.InnerTransitions);
+    }
+
+    [Fact]
     public void Slide_transitions_follow_the_plan_until_chosen()
     {
         var plan = Plan.Create("Test", null).WithTransitions([SlideTransition.StainedGlass]);

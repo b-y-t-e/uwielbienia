@@ -12,10 +12,13 @@
         WindowStartupLocation="CenterScreen"
         WindowState="Maximized">
   <Window.DataTemplates>
-    <!-- Wybór efektów przejścia: „Przenikanie” (żaden efekt) albo efekty — kilka = za każdym razem losowo jeden. -->
+    <!-- Wybór efektów przejścia: „Przenikanie” (żaden efekt), „Brak efektu” (od razu) albo efekty — kilka = za każdym razem losowo jeden. -->
     <DataTemplate DataType="vm:TransitionChoiceViewModel">
       <StackPanel Spacing="10" ToolTip.Tip="Kilka zaznaczonych — za każdym razem losowo jeden">
-        <ToggleButton Classes="chip" Content="Przenikanie" HorizontalAlignment="Left" IsChecked="{Binding IsCrossFade}" />
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <ToggleButton Classes="chip" Content="Przenikanie" IsChecked="{Binding IsCrossFade}" />
+          <ToggleButton Classes="chip" Content="Brak efektu" IsChecked="{Binding IsCut}" />
+        </StackPanel>
         <ItemsControl ItemsSource="{Binding Options}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
@@ -554,6 +557,7 @@
                       <!-- Kiosk: ten sam obraz co na rzutniku, elementy zmieniają się same. -->
                       <Border Classes="slideThumb" IsVisible="{Binding Live.HasCurrentKiosk}" Margin="0,0,0,4">
                         <v:SlideView Page="{Binding Live.CurrentKiosk}"
+                                     PageTransition="{Binding Live.PageTransition}"
                                      SlideBackground="{Binding Live.Appearance.Background}"
                                      SlideForeground="{Binding Live.Appearance.Foreground}"
                                      SlideMuted="{Binding Live.Appearance.Muted}"

@@ -16,6 +16,10 @@ internal static class PageReadiness
     /// <summary>Najdłużej czeka na wczytanie nowej strony (<see cref="IWaitablePage"/>) — potem przejście i tak rusza.</summary>
     private static readonly TimeSpan ReadyTimeout = TimeSpan.FromSeconds(2);
 
+    /// <summary>Czy obraz strony (<see cref="IWaitablePage"/>) już się wczytał.</summary>
+    public static bool IsLoaded(Visual page) =>
+        page is not ContentPresenter { Content: IWaitablePage { Ready.IsCompleted: false } };
+
     /// <summary>Czeka na wczytanie i ułożenie strony; zwraca opis czekania do dziennika (albo <c>null</c>, gdy była gotowa).</summary>
     public static async Task<string?> WaitAsync(Visual page, CancellationToken cancellationToken)
     {

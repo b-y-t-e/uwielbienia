@@ -311,7 +311,8 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   (też kilku obrazów); pieśń, tekst i prezentacja mogą mieć własny (`SongPlanItem.SlideEffects`, `PresentationPlanItem.SlideEffects`,
   `null` = jak w planie; przycisk „Slajdy: …” w kolumnie „Pieśń” tylko przy kilku slajdach, `TransitionOverrideViewModel`;
   `PlanItem.InnerTransitions`). Kiosk ma tylko własne efekty między elementami; film i pojedynczy obraz — jeden slajd, bez
-  przejść wewnętrznych. Wybór: „Przenikanie” albo efekty (kilka = losowo jeden; `TransitionChoiceViewModel`, jeden szablon
+  przejść wewnętrznych. Wybór: „Przenikanie”, „Brak efektu” (`SlideTransition.None`, zapis `[None]` — sam, wyklucza efekty; nowy slajd od razu,
+  gdy jest gotowy — `CutTransition`) albo efekty (kilka = losowo jeden; `TransitionChoiceViewModel`, jeden szablon
   w `MainWindow.axaml`). `ActivePlan` wpisuje efekty w `LiveItem.Transitions` / `InnerTransitions`; `LiveState.TransitionsFrom` (Core)
   daje je tylko między dwoma widocznymi slajdami planu — `LiveViewModel.PageTransition` zamienia je na przejście; zapis i opis
   wyboru: `Plan.WithTransitions`, `SlideTransitions.Default` / `Describe`. Ten sam slajd,

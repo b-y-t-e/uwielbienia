@@ -5,12 +5,13 @@ using Uwielbienia.Core.Presentation;
 namespace Uwielbienia.App.ViewModels;
 
 /// <summary>
-/// Lista efektów przejścia do zaznaczania (żaden — przenikanie, kilka — losowo jeden) z osobnym „Przenikanie”
-/// (<see cref="IsCrossFade"/>). <see cref="Chosen"/> zgłasza tylko zmiany operatora, nie <see cref="Show"/>.
+/// Lista efektów przejścia do zaznaczania (żaden — przenikanie, kilka — losowo jeden) z osobnymi „Przenikanie”
+/// (<see cref="IsCrossFade"/>) i „Brak efektu” (<see cref="IsCut"/>). <see cref="Chosen"/> zgłasza tylko zmiany operatora, nie <see cref="Show"/>.
 /// </summary>
 public sealed class TransitionChoiceViewModel : ObservableObject
 {
-    private bool _showing;
+    private bool _updatingOptions;
+    private bool _cut;
 
     public TransitionChoiceViewModel()
     {
@@ -19,9 +20,11 @@ public sealed class TransitionChoiceViewModel : ObservableObject
             var option = new TransitionOptionViewModel(transition, false);
             option.PropertyChanged += (_, _) =>
             {
-                if (_showing)
+                if (_updatingOptions)
                     return;
-                OnPropertyChanged(nameof(IsCrossFade));
+                if (option.IsSelected)
+                    _cut = false; // efekt wyklucza „Brak efektu”
+                NotifyExclusiveChoices();
                 Chosen?.Invoke(this, Selected);
             };
             Options.Add(option);
@@ -37,22 +40,31 @@ public sealed class TransitionChoiceViewModel : ObservableObject
     /// </summary>
     public bool IsCrossFade
     {
-        get => Options.All(o => !o.IsSelected);
+        get => !_cut && Options.All(o => !o.IsSelected);
         set
         {
             if (value && !IsCrossFade)
-            {
-                _showing = true;
-                foreach (var option in Options)
-                    option.IsSelected = false;
-                _showing = false;
-                Chosen?.Invoke(this, Selected);
-            }
-            OnPropertyChanged(); // odznaczony przycisk wraca do stanu z wyboru
+                ChooseWithoutEffects(SlideTransitions.CrossFade);
+            NotifyExclusiveChoices();
         }
     }
 
-    public IReadOnlyList<SlideTransition> Selected => Options.Where(o => o.IsSelected).Select(o => o.Transition).ToList();
+    /// <summary>
+    /// „Brak efektu” — nowy slajd od razu. Zaznaczenie odznacza efekty i przenikanie; odznaczyć się go nie da (jak „Przenikanie”).
+    /// </summary>
+    public bool IsCut
+    {
+        get => _cut;
+        set
+        {
+            if (value && !_cut)
+                ChooseWithoutEffects(SlideTransitions.Cut);
+            NotifyExclusiveChoices(); // odznaczony przycisk wraca do stanu z wyboru
+        }
+    }
+
+    public IReadOnlyList<SlideTransition> Selected =>
+        _cut ? SlideTransitions.Cut : Options.Where(o => o.IsSelected).Select(o => o.Transition).ToList();
 
     /// <summary>Np. „Akwarela”, „losowe (3)”, „przenikanie”.</summary>
     public string Description => SlideTransitions.Describe(Selected);
@@ -62,10 +74,28 @@ public sealed class TransitionChoiceViewModel : ObservableObject
 
     public void Show(IReadOnlyList<SlideTransition> chosen)
     {
-        _showing = true;
+        _updatingOptions = true;
+        _cut = SlideTransitions.IsCut(chosen);
         foreach (var option in Options)
-            option.IsSelected = chosen.Contains(option.Transition);
-        _showing = false;
+            option.IsSelected = !_cut && chosen.Contains(option.Transition);
+        _updatingOptions = false;
+        NotifyExclusiveChoices();
+    }
+
+    /// <summary>Wybór bez efektów do zaznaczania: „Przenikanie” albo „Brak efektu”.</summary>
+    private void ChooseWithoutEffects(IReadOnlyList<SlideTransition> choice)
+    {
+        _updatingOptions = true;
+        _cut = SlideTransitions.IsCut(choice);
+        foreach (var option in Options)
+            option.IsSelected = false;
+        _updatingOptions = false;
+        Chosen?.Invoke(this, Selected);
+    }
+
+    private void NotifyExclusiveChoices()
+    {
+        OnPropertyChanged(nameof(IsCut));
         OnPropertyChanged(nameof(IsCrossFade));
     }
 }
