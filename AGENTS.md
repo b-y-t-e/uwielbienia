@@ -16,9 +16,9 @@ tools/
   import_spiewnik.py   # jednorazowy import z PDF (PyMuPDF) — NIE uruchamiać ponownie
   validate.py          # walidator formatu: python tools/validate.py
 run.py                 # kompiluje i uruchamia aplikację: python run.py [--release]
-build.py               # buduje aplikacje i stronę do release/
-deploy.py              # wydanie: strona na FTP + tag → GitHub Release (.github/workflows/release.yml)
-app/                   # aplikacja rzutnika (Avalonia, .NET 10) + strona pilota — patrz app/README.md
+build.py               # buduje aplikacje, instalator Velopack i stronę do release/
+deploy.py              # wydanie (wszystko lokalnie): strona na FTP + tag + GitHub Release przez API
+app/                   # aplikacja rzutnika (Avalonia, .NET 10) + strona pilota i panel — patrz app/README.md
 docs/
   projekt-aplikacji.md # scenariusze, architektura i roadmapa aplikacji
 ```
@@ -163,12 +163,13 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
 | Projekt | Rola |
 |---|---|
 | `src/Uwielbienia.Core` | logika bez UI: pieśni (`Songs/`), plany (`Plans/`), ekran (`Presentation/`), prezentacje (`Slideshows/`), filmy (`Videos/`), kioski (`Kiosks/`), aktualizacje (`Updates/`) |
-| `src/Uwielbienia.Link` | tailcat-link: protokół JSON (`RemoteProtocol`), polecenia z telefonu (`RemoteCommandHandler`), serwer (`LinkRemoteServer`) |
+| `src/Uwielbienia.Link` | tailcat-link: protokół JSON (`RemoteProtocol`, panel — `PanelProtocol`), polecenia z telefonu i panelu (`RemoteCommandHandler`, `PanelCommands`), serwer (`LinkRemoteServer`) |
 | `src/Uwielbienia.App` | Avalonia: widoki (`Views/`), modele widoków (`ViewModels/`), usługi okienkowe (`Services/`), motywy (`Themes/`), czcionki, korzeń DI `AppComposition` |
 | `src/Uwielbienia.Desktop` | program Windows/Linux (`Program.cs`, Velopack) |
 | `tests/Uwielbienia.Core.Tests` | testy rdzenia i protokołu (m.in. parsowanie i zapis wszystkich pieśni z `Teksty/`) |
 | `tools/Uwielbienia.Screenshots` | renderuje okna do PNG bez wyświetlania (scenariusz w `Program.cs`) |
 | `web/remote` | strona pilota i ekranu w przeglądarce (`greysource.eu/uwielbienie`), bez kroku budowania |
+| `web/panel` | panel na drugim komputerze / tablecie (`greysource.eu/uwielbienie/panel`): React + Vite + TypeScript, `npm run build` → `dist/` (robi to `build.py`) |
 
 .NET 10, Avalonia 12, CommunityToolkit.Mvvm, DI (`Microsoft.Extensions.DependencyInjection`),
 `TreatWarningsAsErrors`. Clean Code i SOLID: logika w Core, UI tylko wyświetla i deleguje.
@@ -211,7 +212,18 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   (`%APPDATA%\Uwielbienia\plany\{id}.json`). `ActivePlan` trzyma otwarty plan, zapisuje każdą
   zmianę, buduje `Playlist` (`LiveItem`) i wysyła `Changed` / `Opened` (po otwarciu innego planu
   widoki zaczynają od początku: zaznaczona pierwsza pozycja, a na ekranie jej pierwszy slajd —
-  `PlanViewModel.StartFromBeginning`; także przy starcie z ostatnim planem). Dodawanie do planu: `PlanActions` (`Insert`, `InsertAt`, `ItemAdded`).
+  `PlanViewModel.StartFromBeginning`; także przy starcie z ostatnim planem).
+- **API hosta (Core) — jedno dla okna operatora i panelu.** Każda czynność na planach i planie jest w Core, a widoki
+  i `PanelCommands` tylko ją wywołują: `PlanLibrary` (lista wydarzeń / szablonów, `Create`, `Rename`, `Open`, `OpenInitial`,
+  `CopyToToday`, `SaveAsTemplate`, `Delete` — nie otwartego; `Changed` = zmiana listy), `PlanActions` (otwarty plan: `Insert` /
+  `InsertAt` / `AddAfterLive` / `AddToEnd`, `Move`, `Remove`, `DuplicateAsync`, `Show`, `SetLayout` — układ części, `Change` —
+  inna zmiana pozycji; `ItemAdded` = zaznacz w planie, z `select: false` — dodanie z innego urządzenia nie zmienia zaznaczenia
+  operatora), `SongPart.For` (część pieśni z wersami do kolumny „Pieśń”), ekran — `ILiveControl` / `ILiveStateSource`.
+  Nowa czynność = metoda w Core + wywołanie w modelu widoku + (dla panelu) polecenie w `PanelCommands`, typ w
+  `web/panel/src/protocol.ts` i przycisk w panelu. `ActivePlan.Opened` zapamiętuje `LastPlanId` (`PlansViewModel`).
+  Wyjątek (jeszcze nie w Core, panel ich nie obsługuje): edycja kiosku (`KioskViewModel`), przejścia planu
+  (`PlanTransitionsViewModel`, `PlanSlideTransitionsViewModel`) i prezentacji (`PresentationViewModel`) zmieniają plan przez
+  `ActivePlan.Update` — przed dodaniem ich do panelu przenieść do `PlanActions`.
 - **Rodzaje pozycji planu.** Plan nie zakłada, że pozycja to pieśń: `IPlanItemTypes`
   (`PlanItemTypes` — rejestr wszystkich `IPlanItemType`) daje opis na liście (`PlanItemInfo`:
   tytuł, numer, `PlanItemKind`, uwaga) i slajdy (`LiveItem`), a jego `Changed` (zmieniona treść)
@@ -366,6 +378,19 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   tylko własne dodanie z telefonu i tylko póki pieśni nie pokazano). W oknie operatora dodana pieśń ma przez 8 s obwódkę
   i „Dodane z telefonu” (`RemoteCommandHandler.ItemAdded` → `PlanItemViewModel.IsAddedRemotely`); zaznaczenie operatora
   się nie zmienia.
+- **Panel** (drugi komputer, tablet — `web/panel`, React): kolumny Plan · Pieśń · Na ekranie jak w oknie operatora (wąski
+  ekran: jedna naraz, przełączana na dole) i okno „Plany”. Plany (lista, nowy, nazwa / data, otwórz, kopia na dziś, szablon,
+  usuń), plan (dodaj z wyszukiwarki w miejsce, przeciąganie za ⠿ — zdarzenia wskaźnika, działa dotykiem, duplikuj, usuń,
+  pokaż), układ części pieśni (pominięcie, kolejność, „Powtórz”, usuń, przywróć) i ekran (slajdy, Wstecz / Dalej, czarny
+  ekran, film, kiosk). Edycja treści pieśni, nowe teksty, prezentacje, filmy i kioski — tylko w aplikacji (pliki są tam).
+  Parowanie: okno „Telefon” → zakładka „Panel” (kod QR na `RemoteServerOptions.PanelPageUrl`, domyślnie `panel/` obok pilota).
+  Urządzenie sparowane kodem panelu dostaje uprawnienie `DevicePermission.Panel` samo (`LinkRemoteServer.Recognize`: zaproszenie
+  jednorazowe, które zniknęło, gdy pojawiło się nowe urządzenie); w oknie „Telefon” pole „Panel” je nadaje / odbiera. Bez
+  uprawnienia polecenia panelu są odrzucane, a strona prosi o nie. Panel ma własną tożsamość w przeglądarce (`panelStore` —
+  inny klucz IndexedDB niż pilot na tej samej domenie). Stan zawsze z aplikacji: `hello` → stan, plan, plany (`plans` —
+  rozsyłane tylko panelom przy `PlanLibrary.Changed` / `ActivePlan.Opened`); kolumna „Pieśń” pyta `item` przy każdej zmianie planu.
+  Próba bez aplikacji okienkowej: host z usługami Core + `LinkRemoteServer` (bez Avalonii), `npx vite preview` w `web/panel`
+  z `public/derpmap.json` i `PanelUrl` = adres podglądu.
 - **Aktualizacje.** `UpdateService` + `VelopackReleaseFeed`: tylko instalacja z
   `Uwielbienia-win-Setup.exe` sprawdza GitHub Releases, pobiera w tle i proponuje „Aktualizuj”.
 - **Start** (`App.OnFrameworkInitializationCompleted`): DI → otwarcie ostatniego planu →
@@ -431,7 +456,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
     zapamiętane w planach pominięcia zostają przy tej samej treści.
 - Kolumna „Pieśń” nie zmienia projekcji — wyjątek: zmiana układu części granej pieśni działa na
   żywo. Dla prezentacji pokazuje miniatury slajdów. Pusty ekran: kolumna „Na ekranie” bez przycisków.
-- Nakładki: „Plany” (`PlansViewModel` — zakładki Wydarzenia/Szablony, lista + formularz; nazwa
+- Nakładki: „Plany” (`PlansViewModel` → `PlanLibrary` — zakładki Wydarzenia/Szablony, lista + formularz; nazwa
   wymagana, bez daty w nazwie), „Dodaj do planu”, „Telefon”, potwierdzenia usuwania. Esc zamyka;
   w edytorze klawisze globalne (spacja, pisanie) nie działają.
 
@@ -440,7 +465,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 `ustawienia.json` (`AppSettings`: motyw okna i ekranu, akordy, szerokości kolumn, ostatni plan,
 `MaxLinesPerSlide`, `JoinVerseAndChorus`, opcjonalny folder pieśni, narożniki „Dopasuj obraz”, `PictureOffsetMs`), `plany/`, `teksty/`,
 `prezentacje/` (kopie prezentacji, obrazów i kiosków oraz ich slajdy; nieużywane nie są dziś usuwane), `polaczenia/`
-(tailcat-link; `uprawnienia.json` — urządzenia, które mogą dodawać pieśni), `aktualizacje.log`, `przejscia.log` (dziennik przejść slajdów — `TransitionLog`; przy starcie ponad ok. 1 MB zaczyna się od nowa).
+(tailcat-link; `uprawnienia.json` — urządzenia, które mogą dodawać pieśni, i panele), `aktualizacje.log`, `przejscia.log` (dziennik przejść slajdów — `TransitionLog`; przy starcie ponad ok. 1 MB zaczyna się od nowa).
 
 ### Wygląd
 
@@ -451,7 +476,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
   13/15/18/24 (`Themes/Controls.axaml`). Kroje: Atkinson Hyperlegible Next (interfejs), Literata
   (tytuły, tekst na rzutniku).
 - Ikona: płomień świecy na nocnym granacie — `Assets/icon.ico` / `icon.png` (okna w XAML, `ApplicationIcon`
-  w `Uwielbienia.Desktop.csproj`, `vpk pack --icon` w `release.yml`); generuje ją `python app/tools/make_icon.py`.
+  w `Uwielbienia.Desktop.csproj`, `vpk pack --icon` w `build.py`); generuje ją `python app/tools/make_icon.py`.
 - Rzutnik (`ProjectionAppearance`): tekst w polu 1640×1000 (marginesy 140 px z boków, 40 px u góry
   i u dołu — brzegi ekranu w sali załatwia „Dopasuj obraz”), za długi zmniejsza się w całości.
   Kolory: ciemny = czerń i ciepła kość słoniowa, jasny = biel i granat;
@@ -466,9 +491,12 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 
 - Zmiana formatu `piesn.md` = zmiana parsera, writera i testów (`dotnet test app`).
 - Po zmianach w UI sprawdzić wygląd: `dotnet run --project app/tools/Uwielbienia.Screenshots`.
-- Strona pilota `app/web/remote` mówi protokołem z `Uwielbienia.Link/RemoteProtocol.cs`;
-  zmiana protokołu = zmiana w obu miejscach.
-- Wydanie: `python deploy.py` (wersja w `version.txt`, tag → `.github/workflows/release.yml`).
+- Strona pilota `app/web/remote` mówi protokołem z `Uwielbienia.Link/RemoteProtocol.cs`, a panel `app/web/panel` — także
+  z `PanelProtocol.cs` (typy w `web/panel/src/protocol.ts`); zmiana protokołu = zmiana po obu stronach. Strony pilota przy
+  zmianach panelu nie ruszamy (nowe pola i wiadomości ignoruje).
+- Wydanie: `python deploy.py` (wersja w `version.txt`; buduje lokalnie, GitHub niczego nie buduje — tag i GitHub
+  Release z plikami z `release/` przez API; `GITHUB_TOKEN` z Contents: write w `.env`; vpk w wersji `VelopackVersion`;
+  nieudany release po tagu: `python deploy.py --github-only`).
 
 ### Do zrobienia (TODO)
 

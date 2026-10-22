@@ -15,17 +15,25 @@ public enum RemoteServerStatus
     Failed,
 }
 
+/// <summary>Strona, na którą prowadzi zaproszenie: pilot w telefonie albo panel na drugim komputerze / tablecie.</summary>
+public enum RemoteClient
+{
+    Pilot,
+    Panel,
+}
+
 /// <summary>Zaproszenie do sparowania telefonu/przeglądarki: kod i gotowy adres strony (do kodu QR).</summary>
-public sealed record RemoteInvitation(string Code, Uri PageUrl, DateTimeOffset ExpiresAt);
+public sealed record RemoteInvitation(string Code, Uri PageUrl, DateTimeOffset ExpiresAt, RemoteClient Client = RemoteClient.Pilot);
 
 /// <summary>Sparowane urządzenie w oknie „Telefon”: nazwa (tylko podpowiedź), połączenie i uprawnienia.</summary>
-public sealed record RemoteDevice(string Key, string Name, DateTimeOffset PairedAt, bool IsConnected, bool CanAddSongs);
+public sealed record RemoteDevice(
+    string Key, string Name, DateTimeOffset PairedAt, bool IsConnected, bool CanAddSongs, bool IsPanel = false);
 
 /// <summary>Uprawnienia sparowanych urządzeń i ich zapominanie (wiersz urządzenia w oknie „Telefon”).</summary>
 public interface IRemoteDeviceManager
 {
-    /// <summary>Pozwala urządzeniu dodawać pieśni do planu (albo odbiera) — telefon dostaje to od razu.</summary>
-    void SetCanAddSongs(string deviceKey, bool allowed);
+    /// <summary>Nadaje urządzeniu uprawnienie (albo odbiera) — urządzenie dostaje to od razu.</summary>
+    void SetPermission(string deviceKey, DevicePermission permission, bool allowed);
 
     /// <summary>Rozparowuje urządzenie: rozłącza je i odrzuca, dopóki nie zeskanuje nowego kodu.</summary>
     Task ForgetAsync(string deviceKey, CancellationToken cancellationToken = default);
@@ -49,13 +57,19 @@ public interface IRemoteServer : IRemoteDeviceManager, IAsyncDisposable
 
     Task StartAsync(CancellationToken cancellationToken = default);
 
-    Task<RemoteInvitation> InviteAsync(CancellationToken cancellationToken = default);
+    /// <summary>Kod parowania; zaproszenie panelu nadaje urządzeniu uprawnienie „Panel”.</summary>
+    Task<RemoteInvitation> InviteAsync(RemoteClient client = RemoteClient.Pilot, CancellationToken cancellationToken = default);
 }
 
-public sealed record RemoteServerOptions(string AppName, string StateDirectory, Uri PageUrl, int MaxDevices = 8);
+/// <param name="PanelUrl">Strona panelu (drugi komputer, tablet); <c>null</c> = obok strony pilota, w <c>panel/</c>.</param>
+public sealed record RemoteServerOptions(string AppName, string StateDirectory, Uri PageUrl, int MaxDevices = 8, Uri? PanelUrl = null)
+{
+    public Uri PanelPageUrl => PanelUrl ?? new Uri(PageUrl, "panel/");
+}
 
 /// <summary>
-/// Host tailcat-link: przyjmuje polecenia od sparowanych urządzeń i rozsyła im stan ekranu oraz plan.
+/// Host tailcat-link: przyjmuje polecenia od sparowanych urządzeń i rozsyła im stan ekranu oraz plan (panelom także
+/// listę planów).
 /// </summary>
 public sealed class LinkRemoteServer(
     RemoteServerOptions options,
@@ -64,12 +78,19 @@ public sealed class LinkRemoteServer(
     ActivePlan plan,
     IDevicePermissions permissions,
     IVideoPlayer? video = null,
-    KioskRotation? kiosk = null) : IRemoteServer
+    KioskRotation? kiosk = null,
+    PlanLibrary? plans = null) : IRemoteServer
 {
     private readonly IDevicePermissions _permissions = permissions;
+    private readonly Lock _lock = new();
     private ILinkHost? _host;
     private VideoMessage? _lastVideo;
     private DateTime _lastVideoSent;
+
+    /// <summary>Urządzenia już sparowane — nowe porównujemy z zaproszeniami panelu.</summary>
+    private readonly HashSet<string> _knownKeys = [];
+
+    private readonly PairingInvitations _invitations = new();
 
     public RemoteServerStatus Status { get; private set; } = RemoteServerStatus.Off;
 
@@ -79,18 +100,19 @@ public sealed class LinkRemoteServer(
 
     public IReadOnlyList<RemoteDevice> Devices => _host?.Peers
         .OrderBy(p => p.PairedAt)
-        .Select(p => new RemoteDevice(KeyOf(p), p.Name ?? "urządzenie", p.PairedAt, p.IsConnected, _permissions.CanAddSongs(KeyOf(p))))
+        .Select(p => new RemoteDevice(KeyOf(p), p.Name ?? "urządzenie", p.PairedAt, p.IsConnected,
+            _permissions.CanAddSongs(KeyOf(p)), _permissions.Has(KeyOf(p), DevicePermission.Panel)))
         .ToList() ?? [];
 
     public event EventHandler? Changed;
 
     public string? DevicesError { get; private set; }
 
-    public void SetCanAddSongs(string deviceKey, bool allowed)
+    public void SetPermission(string deviceKey, DevicePermission permission, bool allowed)
     {
-        DevicesError = _permissions.SetCanAddSongs(deviceKey, allowed) ? null : PermissionsNotSaved;
+        DevicesError = _permissions.Set(deviceKey, permission, allowed) ? null : PermissionsNotSaved;
         if (DevicesError is null && _host?.Peers.FirstOrDefault(p => KeyOf(p) == deviceKey) is { IsConnected: true } peer)
-            _ = SendAsync(peer, DeviceMessage.From(CallerOf(peer)));
+            SendWelcome(peer);
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
@@ -98,10 +120,16 @@ public sealed class LinkRemoteServer(
     {
         if (_host?.Peers.FirstOrDefault(p => KeyOf(p) == deviceKey) is not { } peer)
             return;
-        // najpierw uprawnienie: po ponownym sparowaniu urządzenie zaczyna od zera — tylko zmiana slajdów
-        DevicesError = _permissions.SetCanAddSongs(deviceKey, false) ? null : PermissionsNotSaved;
+        // najpierw uprawnienia: po ponownym sparowaniu urządzenie zaczyna od zera — tylko zmiana slajdów
+        DevicesError = Enum.GetValues<DevicePermission>().All(p => _permissions.Set(deviceKey, p, false))
+            ? null
+            : PermissionsNotSaved;
         if (DevicesError is null)
+        {
             DevicesError = await TryForgetPeerAsync(_host, peer, cancellationToken);
+            lock (_lock)
+                _knownKeys.Remove(deviceKey);
+        }
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
@@ -123,7 +151,26 @@ public sealed class LinkRemoteServer(
 
     private static string KeyOf(ILinkPeer peer) => peer.Key.ToString();
 
-    private RemoteCaller CallerOf(ILinkPeer peer) => new(_permissions.CanAddSongs(KeyOf(peer)));
+    private RemoteCaller CallerOf(ILinkPeer peer)
+    {
+        Recognize(peer);
+        return _permissions.CallerFor(KeyOf(peer));
+    }
+
+    /// <summary>Nowe urządzenie sparowane kodem panelu dostaje uprawnienie „Panel” (<see cref="PairingInvitations"/>).</summary>
+    private void Recognize(ILinkPeer peer)
+    {
+        var key = KeyOf(peer);
+        lock (_lock)
+        {
+            if (_host is null || !_knownKeys.Add(key))
+                return;
+            if (!_invitations.NewDeviceIsPanel(_host.Invitations.Select(i => i.Id).ToHashSet(), DateTimeOffset.UtcNow))
+                return;
+        }
+        if (!_permissions.Set(key, DevicePermission.Panel, true))
+            DevicesError = PermissionsNotSaved;
+    }
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
@@ -145,11 +192,16 @@ public sealed class LinkRemoteServer(
             return;
         }
 
+        lock (_lock)
+            _knownKeys.UnionWith(_host.Peers.Select(KeyOf));
         _host.SetRequestHandler((peer, request, _) => HandleAsync(peer, request));
         _host.PeerJoined += OnPeerJoined;
         _host.PeerLeft += (_, _) => Changed?.Invoke(this, EventArgs.Empty);
         live.StateChanged += (_, state) => Broadcast(StateMessage.From(state));
         plan.Changed += (_, _) => Broadcast(handler.CurrentPlan());
+        plan.Opened += (_, _) => BroadcastPlans();
+        if (plans is not null)
+            plans.Changed += (_, _) => BroadcastPlans();
         if (video is not null)
             video.StatusChanged += (_, _) => BroadcastVideo();
         if (kiosk is not null)
@@ -157,18 +209,21 @@ public sealed class LinkRemoteServer(
         SetStatus(RemoteServerStatus.Ready);
     }
 
-    public async Task<RemoteInvitation> InviteAsync(CancellationToken cancellationToken = default)
+    public async Task<RemoteInvitation> InviteAsync(RemoteClient client = RemoteClient.Pilot, CancellationToken cancellationToken = default)
     {
         if (_host is null)
             throw new InvalidOperationException("Serwer połączeń nie działa.");
         var invitation = await _host.InviteAsync(new InvitationRequest
         {
-            Label = "telefon",
+            Label = client == RemoteClient.Panel ? "panel" : "telefon",
             Lifetime = TimeSpan.FromMinutes(10),
             SingleUse = true,
         }, cancellationToken);
+        lock (_lock)
+            _invitations.Issued(invitation.Id, client, invitation.ExpiresAt);
         var code = invitation.Code.Value;
-        return new RemoteInvitation(code, new Uri(options.PageUrl, "#code=" + Uri.EscapeDataString(code)), invitation.ExpiresAt);
+        var page = client == RemoteClient.Panel ? options.PanelPageUrl : options.PageUrl;
+        return new RemoteInvitation(code, new Uri(page, "#code=" + Uri.EscapeDataString(code)), invitation.ExpiresAt, client);
     }
 
     private async Task<ReadOnlyMemory<byte>> HandleAsync(ILinkPeer peer, ReadOnlyMemory<byte> request) =>
@@ -206,10 +261,28 @@ public sealed class LinkRemoteServer(
         Changed?.Invoke(this, EventArgs.Empty);
         _ = SendAsync(e.Peer, handler.CurrentPlan());
         _ = SendAsync(e.Peer, StateMessage.From(live.State));
-        _ = SendAsync(e.Peer, DeviceMessage.From(CallerOf(e.Peer)));
+        SendWelcome(e.Peer);
         if (handler.CurrentVideo() is { } videoState)
             _ = SendAsync(e.Peer, videoState);
         _ = SendKioskAsync(e.Peer);
+    }
+
+    /// <summary>Uprawnienia urządzenia, a panelowi — także lista planów.</summary>
+    private void SendWelcome(ILinkPeer peer)
+    {
+        var caller = CallerOf(peer);
+        _ = SendAsync(peer, DeviceMessage.From(caller));
+        if (caller.IsPanel && handler.CurrentPlans() is { } list)
+            _ = SendAsync(peer, list);
+    }
+
+    /// <summary>Lista planów tylko do paneli — telefon jej nie potrzebuje.</summary>
+    private void BroadcastPlans()
+    {
+        if (_host is null || handler.CurrentPlans() is not { } list)
+            return;
+        foreach (var peer in _host.Peers.Where(p => p.IsConnected && _permissions.Has(KeyOf(p), DevicePermission.Panel)))
+            _ = SendAsync(peer, list);
     }
 
     private async Task SendKioskAsync(ILinkPeer peer)

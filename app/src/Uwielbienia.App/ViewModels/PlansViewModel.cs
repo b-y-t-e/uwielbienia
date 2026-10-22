@@ -15,22 +15,34 @@ namespace Uwielbienia.App.ViewModels;
 /// </summary>
 public sealed partial class PlansViewModel : ObservableObject
 {
-    private static readonly CultureInfo Polish = CultureInfo.GetCultureInfo("pl-PL");
-
-    private const string DefaultEventName = "Uwielbienie";
-
-    private readonly IPlanStore _store;
+    private readonly PlanLibrary _plans;
     private readonly ActivePlan _active;
     private readonly ISettingsStore _settings;
     private readonly IPlanItemTypes _itemTypes;
 
-    public PlansViewModel(IPlanStore store, ActivePlan active, ISettingsStore settings, IPlanItemTypes itemTypes)
+    public PlansViewModel(PlanLibrary plans, ActivePlan active, ISettingsStore settings, IPlanItemTypes itemTypes)
     {
-        _store = store;
+        _plans = plans;
         _active = active;
         _settings = settings;
         _itemTypes = itemTypes;
         EditName = "";
+        // otwarty plan (stąd, z panelu w przeglądarce, przy starcie) — następne uruchomienie zaczyna od niego;
+        // okno zamyka tylko otwarcie z niego samego — otwarcie z panelu odświeża w nim listę (znacznik otwartego planu)
+        active.Opened += (_, _) =>
+        {
+            if (active.Plan is { } plan)
+                settings.Update(s => s with { LastPlanId = plan.Id });
+            ReloadUnlessEditing();
+        };
+        plans.Changed += (_, _) => ReloadUnlessEditing();
+    }
+
+    /// <summary>Zmiana z panelu w przeglądarce przy otwartym oknie — lista na nowo, chyba że operator coś tu wpisuje.</summary>
+    private void ReloadUnlessEditing()
+    {
+        if (IsOpen && !IsCreating && !IsDirty)
+            Reload(Selected?.Plan.Id);
     }
 
     [ObservableProperty]
@@ -115,7 +127,7 @@ public sealed partial class PlansViewModel : ObservableObject
     public bool CanCreate => IsCreating && IsFormValid;
 
     /// <summary>Nazwa zawsze wymagana; data tylko dla wydarzenia i tylko w osobnym polu, nie w nazwie.</summary>
-    private bool IsFormValid => !string.IsNullOrWhiteSpace(EditName) && (ShowingTemplates || EditDate is not null);
+    private bool IsFormValid => PlanLibrary.IsValid(EditName, EditDateOnly, ShowingTemplates ? PlanKind.Template : PlanKind.Event);
 
     private DateOnly? EditDateOnly => ShowingTemplates || EditDate is not { } d ? null : DateOnly.FromDateTime(d);
 
@@ -123,13 +135,7 @@ public sealed partial class PlansViewModel : ObservableObject
     public partial bool IsDeleteConfirmationOpen { get; set; }
 
     /// <summary>Przy starcie: ostatnio otwarty plan albo nowe „Uwielbienie” z dzisiejszą datą.</summary>
-    public void OpenInitial()
-    {
-        var plans = _store.LoadAll();
-        var last = plans.FirstOrDefault(p => p.Id == _settings.Current.LastPlanId);
-        var today = DateOnly.FromDateTime(DateTime.Today);
-        Open(last ?? CreateAndSave(DefaultEventName, today, PlanKind.Event));
-    }
+    public void OpenInitial() => _plans.OpenInitial(_settings.Current.LastPlanId);
 
     partial void OnSelectedChanged(PlanSummaryViewModel? value)
     {
@@ -184,8 +190,8 @@ public sealed partial class PlansViewModel : ObservableObject
     {
         if (!CanCreate)
             return;
-        var kind = ShowingTemplates ? PlanKind.Template : PlanKind.Event;
-        Open(CreateAndSave(EditName.Trim(), EditDateOnly, kind));
+        _plans.Create(EditName, EditDateOnly, ShowingTemplates ? PlanKind.Template : PlanKind.Event);
+        IsOpen = false;
     }
 
     [RelayCommand]
@@ -193,12 +199,7 @@ public sealed partial class PlansViewModel : ObservableObject
     {
         if (!CanSave || Selected is not { } selected)
             return;
-        var name = EditName.Trim();
-        var date = EditDateOnly;
-        if (selected.Plan.Id == _active.Plan?.Id)
-            _active.Update(p => p with { Name = name, Date = date, UpdatedAt = DateTimeOffset.Now });
-        else
-            _store.Save(selected.Plan with { Name = name, Date = date, UpdatedAt = DateTimeOffset.Now });
+        _plans.Rename(selected.Plan.Id, EditName, EditDateOnly);
         Reload(selected.Plan.Id);
     }
 
@@ -208,10 +209,9 @@ public sealed partial class PlansViewModel : ObservableObject
         if (Selected is not { } selected)
             return;
         // Ten plan już jest otwarty — tylko zamknij okno, bez przewijania widoków do początku.
-        if (selected.IsOpen)
-            IsOpen = false;
-        else
-            Open(selected.Plan);
+        if (!selected.IsOpen)
+            _plans.Open(selected.Plan.Id);
+        IsOpen = false;
     }
 
     /// <summary>Nowe wydarzenie na dziś z tymi samymi pieśniami — z szablonu albo z wcześniejszego wydarzenia.</summary>
@@ -220,19 +220,15 @@ public sealed partial class PlansViewModel : ObservableObject
     {
         if (Selected is not { } selected)
             return;
-        var today = DateOnly.FromDateTime(DateTime.Today);
-        var copy = selected.Plan.CloneAs(NameWithoutDate(selected.Plan), today, PlanKind.Event);
-        _store.Save(copy);
-        Open(copy);
+        _plans.CopyToToday(selected.Plan.Id);
+        IsOpen = false;
     }
 
     [RelayCommand]
     private void SaveAsTemplate()
     {
-        if (Selected is not { } selected)
+        if (Selected is not { } selected || _plans.SaveAsTemplate(selected.Plan.Id) is not { } template)
             return;
-        var template = selected.Plan.CloneAs(selected.Plan.Name, null, PlanKind.Template);
-        _store.Save(template);
         ShowingTemplates = true;
         Reload(template.Id);
     }
@@ -253,7 +249,7 @@ public sealed partial class PlansViewModel : ObservableObject
         IsDeleteConfirmationOpen = false;
         if (Selected is not { IsOpen: false } selected)
             return;
-        _store.Delete(selected.Plan.Id);
+        _plans.Delete(selected.Plan.Id);
         Reload(null);
     }
 
@@ -266,28 +262,10 @@ public sealed partial class PlansViewModel : ObservableObject
         Reload(_active.Plan?.Id);
     }
 
-    private Plan CreateAndSave(string name, DateOnly? date, PlanKind kind)
-    {
-        var plan = Plan.Create(name, date, kind);
-        _store.Save(plan);
-        return plan;
-    }
-
-    private void Open(Plan plan)
-    {
-        _active.Open(plan);
-        _settings.Update(s => s with { LastPlanId = plan.Id });
-        IsOpen = false;
-    }
-
     /// <summary>Wczytuje listę bieżącej zakładki i zaznacza wskazany plan (albo pierwszy).</summary>
     private void Reload(Guid? selectId)
     {
-        var kind = ShowingTemplates ? PlanKind.Template : PlanKind.Event;
-        var plans = _store.LoadAll().Where(p => p.Kind == kind);
-        plans = kind == PlanKind.Event
-            ? plans.OrderByDescending(p => p.Date ?? DateOnly.MinValue).ThenByDescending(p => p.UpdatedAt)
-            : plans.OrderBy(p => p.Name, StringComparer.CurrentCulture);
+        var plans = _plans.List(ShowingTemplates ? PlanKind.Template : PlanKind.Event);
 
         Selected = null;
         Items.Clear();
@@ -306,15 +284,6 @@ public sealed partial class PlansViewModel : ObservableObject
         OnPropertyChanged(nameof(IsDirty));
         OnPropertyChanged(nameof(CanSave));
         OnPropertyChanged(nameof(CanCreate));
-    }
-
-    /// <summary>Starsze plany miały datę w nazwie — kopia na inny dzień nie powinna jej powielać.</summary>
-    private static string NameWithoutDate(Plan plan)
-    {
-        if (plan.Date is not { } date)
-            return plan.Name;
-        var name = plan.Name.Replace(date.ToString("d MMMM yyyy", Polish), "", StringComparison.CurrentCultureIgnoreCase).Trim(' ', '—', '-');
-        return name.Length > 0 ? name : DefaultEventName;
     }
 }
 

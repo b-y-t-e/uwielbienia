@@ -18,6 +18,8 @@ namespace Uwielbienia.Link;
 //                                  |"addNext" (songId — pieśń zaraz za tą na ekranie; tylko z uprawnieniem)
 //                                  |"undoAdd" (itemId — cofnięcie własnego dodania, póki pieśni nie ma na ekranie), ...}
 //                           odpowiedź: CommandReply
+//
+// Panel (drugi komputer / tablet, uprawnienie „Panel”) — dodatkowo polecenia i wiadomości z PanelProtocol.cs.
 
 public sealed record RemoteCommand(
     string Cmd,
@@ -26,7 +28,13 @@ public sealed record RemoteCommand(
     string? SongId = null,
     string? Query = null,
     int? Seconds = null,
-    int? Milliseconds = null);
+    int? Milliseconds = null,
+    Guid? PlanId = null,
+    string? Name = null,
+    DateOnly? Date = null,
+    string? Kind = null,
+    int? Index = null,
+    IReadOnlyList<LayoutEntryMessage>? Layout = null);
 
 public sealed record CommandReply(
     bool Ok,
@@ -37,14 +45,19 @@ public sealed record CommandReply(
     VideoMessage? Video = null,
     DeviceMessage? Device = null,
     PlanItemMessage? Added = null,
-    KioskMessage? Kiosk = null);
+    KioskMessage? Kiosk = null,
+    PlansMessage? Plans = null,
+    ItemMessage? Item = null);
 
-/// <summary>Co wolno temu urządzeniu: z uprawnieniem telefon pokazuje „+” (dodaj pieśń jako następną).</summary>
-public sealed record DeviceMessage(bool CanAddSongs)
+/// <summary>
+/// Co wolno temu urządzeniu: z uprawnieniem telefon pokazuje „+” (dodaj pieśń jako następną); panel bez
+/// <see cref="IsPanel"/> prosi operatora o włączenie „Panel” w oknie „Telefon”.
+/// </summary>
+public sealed record DeviceMessage(bool CanAddSongs, bool IsPanel = false)
 {
     public string Type => "device";
 
-    public static DeviceMessage From(RemoteCaller caller) => new(caller.CanAddSongs);
+    public static DeviceMessage From(RemoteCaller caller) => new(caller.CanAddSongs, caller.IsPanel);
 }
 
 public sealed record StateMessage(
@@ -87,8 +100,10 @@ public sealed record StateMessage(
         state.Slide is VideoSlide,
         state.Slide is KioskSlide);
 
-    private static List<LineMessage> LinesOf(Slide? slide) =>
-        slide?.Lines.Select(l => new LineMessage(l.Text, l.Repeat, l.IsChorus, l.StartsPart, l.TitleLength, l.Chords)).ToList() ?? [];
+    private static List<LineMessage> LinesOf(Slide? slide) => LinesOf(slide?.Lines ?? []);
+
+    public static List<LineMessage> LinesOf(IEnumerable<SlideLine> lines) =>
+        lines.Select(l => new LineMessage(l.Text, l.Repeat, l.IsChorus, l.StartsPart, l.TitleLength, l.Chords)).ToList();
 }
 
 /// <param name="Chorus">Refren dołączony do zwrotki (kursywa).</param>
@@ -117,24 +132,45 @@ public sealed record VideoMessage(
         player.PictureOffsetMs());
 }
 
-public sealed record PlanMessage(string? Name, IReadOnlyList<PlanItemMessage> Items)
+/// <summary>Otwarty plan: pozycje w kolejności planu (także te bez slajdów — np. prezentacja w trakcie eksportu).</summary>
+/// <param name="Id">Plan; <c>null</c> = żaden nie jest otwarty.</param>
+/// <param name="PlanKind"><c>event</c> albo <c>template</c>.</param>
+public sealed record PlanMessage(
+    string? Name,
+    IReadOnlyList<PlanItemMessage> Items,
+    Guid? Id = null,
+    DateOnly? Date = null,
+    string? PlanKind = null)
 {
     public string Type => "plan";
 
     public static PlanMessage From(Plan? plan, IReadOnlyList<LiveItem> playlist, IPlanItemTypes itemTypes) =>
-        new(plan?.Name, playlist.Select(i => new PlanItemMessage(i.PlanItemId!.Value, i.ContentId, i.Number, i.Title, Kind(plan, i, itemTypes))).ToList());
+        new(plan?.Name,
+            (plan?.Items ?? []).Select(item => ItemOf(item, playlist, itemTypes)).OfType<PlanItemMessage>().ToList(),
+            plan?.Id, plan?.Date, plan is null ? null : KindName(plan.Kind));
+
+    public static string KindName(PlanKind kind) => kind == Core.Plans.PlanKind.Template ? "template" : "event";
 
     /// <summary>
     /// Znacznik na liście jak w aplikacji — z opisu pozycji (<see cref="PlanItemKind"/>): <c>song</c>, <c>text</c>,
-    /// <c>presentation</c>, <c>video</c>; nowy rodzaj pozycji działa bez zmian tutaj.
+    /// <c>presentation</c>, <c>video</c>, <c>kiosk</c>; nowy rodzaj pozycji działa bez zmian tutaj.
     /// </summary>
-    private static string Kind(Plan? plan, LiveItem item, IPlanItemTypes itemTypes) =>
-        plan?.Items.FirstOrDefault(p => p.Id == item.PlanItemId) is { } planItem && itemTypes.Describe(planItem) is { } info
-            ? JsonNamingPolicy.CamelCase.ConvertName(info.Kind.ToString())
-            : "song";
+    public static string KindName(PlanItemKind kind) => JsonNamingPolicy.CamelCase.ConvertName(kind.ToString());
+
+    private static PlanItemMessage? ItemOf(PlanItem item, IReadOnlyList<LiveItem> playlist, IPlanItemTypes itemTypes)
+    {
+        if (itemTypes.Describe(item) is not { } info)
+            return null;
+        var live = playlist.FirstOrDefault(i => i.PlanItemId == item.Id);
+        return new PlanItemMessage(item.Id, live?.ContentId ?? (item as SongPlanItem)?.SongId ?? "", info.Number, info.Title,
+            KindName(info.Kind), info.Note ?? (live is { Slides.Count: 0 } ? live.Note : null), live?.Slides.Count ?? 0);
+    }
 }
 
-public sealed record PlanItemMessage(Guid Id, string SongId, int? Number, string Title, string Kind = "song");
+/// <param name="Note">Uwaga pod tytułem jak w planie aplikacji (np. „Przygotowywanie slajdów…”, brak pliku).</param>
+/// <param name="SlideCount">Slajdy do pokazania; 0 = pozycji nie da się teraz pokazać.</param>
+public sealed record PlanItemMessage(
+    Guid Id, string SongId, int? Number, string Title, string Kind = "song", string? Note = null, int SlideCount = 0);
 
 public sealed record SongHit(string SongId, int? Number, string Title, string FirstLine, bool IsText = false);
 

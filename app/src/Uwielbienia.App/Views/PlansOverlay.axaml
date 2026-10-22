@@ -149,22 +149,6 @@
     <Style Selector="Border.form Button:not(.primary):not(.quiet):not(.danger)">
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
     </Style>
-    <Style Selector="Border.segmented">
-      <Setter Property="Background" Value="{DynamicResource InkBrush}" />
-      <Setter Property="CornerRadius" Value="12" />
-      <Setter Property="Padding" Value="4" />
-    </Style>
-    <Style Selector="Button.tab">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
-      <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="Padding" Value="18,8" />
-      <Setter Property="CornerRadius" Value="9" />
-    </Style>
-    <Style Selector="Button.tab.active">
-      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
-      <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-    </Style>
     <Style Selector="Border.badge">
       <Setter Property="Background" Value="{DynamicResource CandleSoftBrush}" />
       <Setter Property="CornerRadius" Value="999" />

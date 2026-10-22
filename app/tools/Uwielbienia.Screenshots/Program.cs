@@ -442,15 +442,17 @@ sealed class ShotRemoteServer : Uwielbienia.Link.IRemoteServer
     [
         new("a", "telefon", new DateTimeOffset(2026, 9, 12, 18, 0, 0, TimeSpan.Zero), true, _canAdd["a"]),
         new("b", "telefon", new DateTimeOffset(2026, 10, 2, 18, 0, 0, TimeSpan.Zero), false, _canAdd["b"]),
+        new("c", "panel", new DateTimeOffset(2026, 10, 20, 18, 0, 0, TimeSpan.Zero), true, false, IsPanel: true),
     ];
 
     public event EventHandler? Changed;
 
     public void Raise() => Changed?.Invoke(this, EventArgs.Empty);
 
-    public void SetCanAddSongs(string deviceKey, bool allowed)
+    public void SetPermission(string deviceKey, Uwielbienia.Link.DevicePermission permission, bool allowed)
     {
-        _canAdd[deviceKey] = allowed;
+        if (permission == Uwielbienia.Link.DevicePermission.AddSongs)
+            _canAdd[deviceKey] = allowed;
         Raise();
     }
 
@@ -458,7 +460,8 @@ sealed class ShotRemoteServer : Uwielbienia.Link.IRemoteServer
 
     public Task StartAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
 
-    public Task<Uwielbienia.Link.RemoteInvitation> InviteAsync(CancellationToken cancellationToken = default) =>
+    public Task<Uwielbienia.Link.RemoteInvitation> InviteAsync(
+        Uwielbienia.Link.RemoteClient client = Uwielbienia.Link.RemoteClient.Pilot, CancellationToken cancellationToken = default) =>
         throw new NotSupportedException();
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;

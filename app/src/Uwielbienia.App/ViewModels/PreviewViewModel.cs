@@ -305,8 +305,8 @@ public sealed partial class PreviewViewModel : ObservableObject
 
     private SongPartViewModel CreatePart(Song song, LayoutEntry entry)
     {
-        var lines = _slides.Build(song, [entry.Code]).SelectMany(s => s.Lines).ToList();
-        var part = new SongPartViewModel(entry.Code, song.FindSection(entry.Code)?.Name ?? entry.Code, lines, entry.Sung);
+        var source = SongPart.For(_slides, song, entry);
+        var part = new SongPartViewModel(source.Code, source.Name, source.Lines, source.Sung);
         part.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(SongPartViewModel.IsIncluded))
@@ -320,16 +320,18 @@ public sealed partial class PreviewViewModel : ObservableObject
     {
         if (_planItem is null || Song is not { } song)
             return;
-        _planItem = _planItem.WithLayout(song, Parts.Select(p => new LayoutEntry(p.Code, p.IsIncluded)).ToList());
-        _plan.Update(p => p.Replace(_planItem));
+        var layout = Parts.Select(p => new LayoutEntry(p.Code, p.IsIncluded)).ToList();
+        // przed zapisem: plan przebudowuje się w trakcie i ta sama pozycja z tym układem nie wczytuje listy części od nowa
+        _planItem = _planItem.WithLayout(song, layout);
+        _planActions.SetLayout(_planItem.Id, layout);
     }
 
     private void SavePlanItem(Func<SongPlanItem, SongPlanItem> change)
     {
         if (_planItem is null)
             return;
-        _planItem = change(_planItem);
-        _plan.Update(p => p.Replace(_planItem));
+        var changed = _planItem = change(_planItem);
+        _planActions.Change<SongPlanItem>(changed.Id, _ => changed);
     }
 
     private static bool SameLayout(SongPlanItem a, SongPlanItem b) =>

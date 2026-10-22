@@ -70,6 +70,7 @@ public static class AppComposition
         services.AddSingleton<ILiveStateSource>(sp => sp.GetRequiredService<LiveSession>());
         services.AddSingleton<ActivePlan>();
         services.AddSingleton<PlanActions>();
+        services.AddSingleton<PlanLibrary>();
         services.AddSingleton<IUiDispatcher, AvaloniaUiDispatcher>();
 
         // filmy: jeden odtwarzacz; gra, gdy film jest na ekranie (VideoDirector)
@@ -95,6 +96,7 @@ public static class AppComposition
             StateDirectory: sp.GetRequiredService<AppPaths>().LinkState,
             PageUrl: App.RemotePageUrl));
         services.AddSingleton<IDevicePermissions>(sp => new DevicePermissions(sp.GetRequiredService<AppPaths>().LinkState));
+        services.AddSingleton<PanelCommands>();
         services.AddSingleton<RemoteCommandHandler>();
         services.AddSingleton<IRemoteAdditions>(sp => sp.GetRequiredService<RemoteCommandHandler>());
         services.AddSingleton<IRemoteServer, LinkRemoteServer>();

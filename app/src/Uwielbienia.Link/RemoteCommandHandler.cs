@@ -22,6 +22,7 @@ public sealed class RemoteCommandHandler(
     ILiveControl control,
     ILiveStateSource live,
     ActivePlan plan,
+    PlanActions actions,
     ISongLibrary library,
     ISongSearch search,
     ISongPresenter songs,
@@ -30,12 +31,31 @@ public sealed class RemoteCommandHandler(
     IVideoPlayer? video = null,
     UndoableAdditions? undoable = null,
     KioskRotation? kiosk = null,
-    IImagePreviews? previews = null) : IRemoteAdditions
+    IImagePreviews? previews = null,
+    PanelCommands? panel = null) : IRemoteAdditions
 {
     private readonly UndoableAdditions _undoable = undoable ?? new(live);
+    private EventHandler<PlanItem>? _itemAdded;
 
-    /// <summary>Telefon dodał pieśń do planu — plan w oknie operatora na chwilę ją podświetla.</summary>
-    public event EventHandler<PlanItem>? ItemAdded;
+    /// <summary>Telefon lub panel dodał pieśń do planu — plan w oknie operatora na chwilę ją podświetla.</summary>
+    public event EventHandler<PlanItem>? ItemAdded
+    {
+        add
+        {
+            _itemAdded += value;
+            if (panel is not null)
+                panel.ItemAdded += value;
+        }
+        remove
+        {
+            _itemAdded -= value;
+            if (panel is not null)
+                panel.ItemAdded -= value;
+        }
+    }
+
+    /// <summary>Lista planów dla paneli; <c>null</c> = aplikacja bez panelu.</summary>
+    public PlansMessage? CurrentPlans() => panel?.CurrentPlans();
 
     public async Task<byte[]> HandleAsync(ReadOnlyMemory<byte> request, RemoteCaller? caller = null)
     {
@@ -49,9 +69,13 @@ public sealed class RemoteCommandHandler(
             command = null;
         }
 
-        var reply = command is null
-            ? new CommandReply(false, "Nieczytelne polecenie.")
-            : await dispatcher.InvokeAsync(() => Execute(command, caller ?? RemoteCaller.Pilot));
+        caller ??= RemoteCaller.Pilot;
+        var reply = command is null ? new CommandReply(false, "Nieczytelne polecenie.")
+            : panel is not null && PanelCommands.Handles(command.Cmd)
+                ? caller.IsPanel
+                    ? await await dispatcher.InvokeAsync(() => panel.ExecuteAsync(command))
+                    : new CommandReply(false, "To urządzenie nie jest panelem — włącz „Panel” w oknie „Telefon” w aplikacji.")
+            : await dispatcher.InvokeAsync(() => Execute(command, caller));
         // pełny stan po (ponownym) połączeniu — także bieżący element kiosku
         if (command?.Cmd == "hello" && reply.Ok)
             reply = reply with { Kiosk = await CurrentKioskAsync() };
@@ -64,7 +88,7 @@ public sealed class RemoteCommandHandler(
         {
             case "hello":
                 return new CommandReply(true, State: StateMessage.From(live.State), Plan: CurrentPlan(), Video: CurrentVideo(),
-                    Device: DeviceMessage.From(caller));
+                    Device: DeviceMessage.From(caller), Plans: caller.IsPanel ? CurrentPlans() : null);
             case "addNext" or "undoAdd" when !caller.CanAddSongs:
                 return new CommandReply(false, "To urządzenie nie może dodawać pieśni.");
             case "addNext":
@@ -93,8 +117,13 @@ public sealed class RemoteCommandHandler(
             case "goto" when command.Slide is { } slide:
                 control.GoToSlide(slide);
                 break;
-            case "showItem" when command.ItemId is { } id && plan.FindLiveItem(id) is { } item:
-                control.Show(item);
+            case "showItem" when command.ItemId is { } id && actions.Show(id, command.Slide ?? 0):
+                break;
+            case "nextItem" when caller.IsPanel:
+                control.NextItem();
+                break;
+            case "prevItem" when caller.IsPanel:
+                control.PreviousItem();
                 break;
             case "showSong" when command.SongId is { } songId && library.Find(songId) is { } song:
                 control.Show(songs.Present(song));
@@ -115,10 +144,9 @@ public sealed class RemoteCommandHandler(
             return new CommandReply(false, "W aplikacji nie ma otwartego planu.");
         if (songId is null || library.Find(songId) is not { } song)
             return new CommandReply(false, "Nie ma takiej pieśni.");
-        var item = SongPlanItem.For(song.Id);
-        plan.Update(p => p.InsertAfter(live.State.Item?.PlanItemId, item));
+        var item = actions.AddAfterLive(song, select: false);
         _undoable.Add(item.Id);
-        ItemAdded?.Invoke(this, item);
+        _itemAdded?.Invoke(this, item);
         return new CommandReply(true, Added: new PlanItemMessage(item.Id, song.Id, song.Number, song.DisplayTitle,
             song.IsText ? "text" : "song"));
     }
@@ -130,7 +158,7 @@ public sealed class RemoteCommandHandler(
             return new CommandReply(false, "Tej pieśni nie da się już cofnąć.");
         if (plan.Plan?.IndexOf(itemId) is not >= 0)
             return new CommandReply(false, "Tej pieśni nie ma już w planie.");
-        plan.Update(p => p.Remove(itemId));
+        actions.Remove(itemId);
         return new CommandReply(true);
     }
 

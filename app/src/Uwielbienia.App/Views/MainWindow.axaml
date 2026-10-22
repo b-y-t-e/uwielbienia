@@ -103,7 +103,7 @@
                 <TextBlock Text="Jasne tło" IsVisible="{Binding !IsProjectionDark}" />
               </StackPanel>
             </Button>
-            <Button Classes="barIcon" Command="{Binding Remote.ShowCommand}" ToolTip.Tip="{Binding Remote.BadgeText, StringFormat='{}{0} — sparuj telefon jako pilota albo przeglądarkę jako ekran'}">
+            <Button Classes="barIcon" Command="{Binding Remote.ShowCommand}" ToolTip.Tip="{Binding Remote.BadgeText, StringFormat='{}{0} — sparuj telefon jako pilota, przeglądarkę jako ekran albo panel na drugim komputerze'}">
               <StackPanel Classes="withIcon">
                 <Path Data="M7,2.5 H17 V21.5 H7 Z M11,18.5 H13" />
                 <TextBlock Text="{Binding Remote.BadgeText}" />

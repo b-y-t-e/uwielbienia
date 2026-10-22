@@ -63,6 +63,7 @@ Klawisze, pilot, mysz na ekranie projekcji i „Dopasuj obraz”: [docs/projekt-
 | `tests/Uwielbienia.Core.Tests` | testy (m.in. parsowanie wszystkich pieśni z `Teksty/`) |
 | `tools/Uwielbienia.Screenshots` | renderuje okna do PNG bez wyświetlania — do przeglądu wyglądu |
 | `web/remote` | strona pilota i ekranu w przeglądarce (`greysource.eu/uwielbienie`) |
+| `web/panel` | panel na drugim komputerze / tablecie (`greysource.eu/uwielbienie/panel`, React + Vite) |
 
 ## Testy i zrzuty
 
@@ -76,14 +77,22 @@ dotnet run --project app/tools/Uwielbienia.Screenshots -- <katalog> [light]
 Skrypty w głównym folderze repozytorium:
 
 ```
-python build.py        # testy + Windows (.exe) + Linux (.tar.gz) + strona → release/
-python deploy.py       # nowa wersja: build, strona na FTP, tag vX.Y.Z → GitHub Release
-python deploy.py --site-only   # tylko strona pilota
+python build.py        # testy + Windows (.exe) + Linux (.tar.gz) + Velopack + strona i panel → release/
+python deploy.py       # nowa wersja: build, strona na FTP, tag vX.Y.Z, GitHub Release
+python deploy.py --site-only     # tylko strona pilota
+python deploy.py --github-only   # dokończenie GitHub Release z plików w release/
 ```
 
-`deploy.py` podbija `version.txt`, a wypchnięty tag uruchamia `.github/workflows/release.yml`,
-który tym samym `build.py` buduje aplikacje i wystawia je na GitHubie. Dane FTP: zmienne
-`FTP_HOST`, `FTP_USER`, `FTP_PASS` albo plik `.env` w głównym folderze (w `.gitignore`).
+Wszystko buduje się na tym komputerze (Windows) — GitHub niczego nie buduje. `deploy.py` podbija
+`version.txt`, buduje (`build.py`), wysyła stronę, wypycha commit i tag, a potem przez API GitHuba
+tworzy release i wysyła do niego aplikacje oraz kanał aktualizacji Velopack (`release/velopack/`).
+Gdy release się nie uda, `--github-only` go dokończy (pliki już wysłane pomija). `--no-site` /
+`--no-github` pomijają stronę / release; `build.py --no-velopack` — instalator.
+
+Wymagania: narzędzie `vpk` w wersji `VelopackVersion` z `Directory.Build.props`
+(`dotnet tool update -g vpk --version X` — skrypty sprawdzają to przed zmianą wersji), Node.js dla
+panelu `web/panel`. Dane: zmienne `FTP_HOST`, `FTP_USER`, `FTP_PASS` i `GITHUB_TOKEN` (token z
+uprawnieniem Contents: write do repozytorium) albo plik `.env` w głównym folderze (w `.gitignore`).
 
 ## Aktualizacje (Windows)
 
@@ -95,3 +104,20 @@ automatycznie sprawdza, pobiera i proponuje nowsze wersje z GitHub.
 Pliki statyczne w `web/remote` (klient tailcat-link i tweetnacl skopiowane do `lib/`, bez kroku
 budowania). `build.py` dokłada aktualną mapę serwerów pośredniczących (`derpmap.json`), która
 musi leżeć w tej samej domenie co strona.
+
+## Panel (drugi komputer, tablet)
+
+Plany, plan, układ części pieśni i to, co jest na ekranie — jak w oknie operatora, w przeglądarce.
+Parowanie: w aplikacji „Telefon” → „Panel”, zeskanuj kod albo otwórz adres spod kodu (urządzenie
+dostaje uprawnienie „Panel”; w oknie „Telefon” można je odebrać). Treść pieśni, nowe teksty,
+prezentacje, filmy i kioski zmienia się w aplikacji.
+
+```
+cd app/web/panel
+npm install
+npm run dev      # podgląd z przeładowaniem (derpmap.json w public/ — pobierz z https://tailcat.dev/derpmap.json)
+npm run build    # dist/ — build.py robi to sam i kopiuje do release/web/uwielbienie/panel/
+```
+
+Klient tailcat-link, czcionki i ikona pochodzą z `web/remote` (wspólne pliki), tweetnacl — z npm.
+Protokół: `src/Uwielbienia.Link/RemoteProtocol.cs` + `PanelProtocol.cs`, typy w `web/panel/src/protocol.ts`.

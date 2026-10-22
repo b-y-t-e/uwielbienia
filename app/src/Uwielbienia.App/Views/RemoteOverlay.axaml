@@ -10,8 +10,13 @@
           <TextBlock Classes="songTitle" Text="Telefon lub drugi komputer" />
           <Button Grid.Column="1" Classes="quiet closeButton" Content="✕" ToolTip.Tip="Zamknij" Command="{Binding CloseCommand}" VerticalAlignment="Top" />
         </Grid>
-        <TextBlock TextWrapping="Wrap" FontSize="15"
-                   Text="Zeskanuj kod aparatem telefonu. Otworzy się pilot: tekst z akordami, Dalej i Wstecz. Na komputerze otwórz ten sam adres i wybierz „Ekran”, żeby pokazywać tekst w przeglądarce." />
+        <Border Classes="segmented" HorizontalAlignment="Left">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <Button Classes="tab" Classes.active="{Binding ForPilot}" Content="Telefon" Command="{Binding ShowPilotCommand}" />
+            <Button Classes="tab" Classes.active="{Binding ForPanel}" Content="Panel" Command="{Binding ShowPanelCommand}" />
+          </StackPanel>
+        </Border>
+        <TextBlock TextWrapping="Wrap" FontSize="15" Text="{Binding Hint}" />
         <Border Background="White" CornerRadius="12" Padding="8" HorizontalAlignment="Center" Width="300" Height="300">
           <Panel>
             <Image Source="{Binding QrCode}" Stretch="Uniform" />
@@ -32,7 +37,7 @@
           <ItemsControl ItemsSource="{Binding Devices}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:RemoteDeviceViewModel">
-                <Grid ColumnDefinitions="Auto,10,*,Auto,8,Auto" Margin="0,4">
+                <Grid ColumnDefinitions="Auto,10,*,Auto,8,Auto,8,Auto" Margin="0,4">
                   <Ellipse Width="8" Height="8" VerticalAlignment="Center"
                            Fill="{DynamicResource MutedBrush}" IsVisible="{Binding !IsConnected}" />
                   <Ellipse Width="8" Height="8" VerticalAlignment="Center"
@@ -42,8 +47,11 @@
                     <TextBlock Classes="caption" Text="{Binding Details}" />
                   </StackPanel>
                   <CheckBox Grid.Column="3" Content="Dodaje pieśni" IsChecked="{Binding CanAddSongs}" VerticalAlignment="Center"
+                            IsVisible="{Binding IsPilot}"
                             ToolTip.Tip="Telefon może dodać pieśń z wyszukiwarki jako następną w planie" />
-                  <Panel Grid.Column="5" VerticalAlignment="Center">
+                  <CheckBox Grid.Column="5" Content="Panel" IsChecked="{Binding IsPanel}" VerticalAlignment="Center"
+                            ToolTip.Tip="Panel na drugim komputerze lub tablecie: plany, plan, pieśni i ekran" />
+                  <Panel Grid.Column="7" VerticalAlignment="Center">
                     <Button Classes="quiet removeItem" Content="Zapomnij" Command="{Binding ForgetCommand}"
                             IsVisible="{Binding !IsConfirmingForget}" ToolTip.Tip="Rozparuj — połączy się znowu dopiero po nowym kodzie" />
                     <Button Classes="danger" Content="Zapomnieć?" Command="{Binding ForgetCommand}"

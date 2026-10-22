@@ -25,7 +25,8 @@ public sealed class VideoRemoteTests : IDisposable
         var songs = new SongPlanItemType(Library, new SectionSlideBuilder());
         var types = new PlanItemTypes([songs]);
         var plan = new ActivePlan(new JsonPlanStore(_plans), types, session);
-        _handler = new RemoteCommandHandler(session, session, plan, Library, new SongSearch(Library), songs,
+        _handler = new RemoteCommandHandler(session, session, plan,
+            TestPlanActions.Create(plan, session, Library, _plans), Library, new SongSearch(Library), songs,
             new ImmediateDispatcher(), types, _video);
     }
 

@@ -7,7 +7,10 @@ using Uwielbienia.Link;
 
 namespace Uwielbienia.App.ViewModels;
 
-/// <summary>Parowanie telefonu (pilot) lub przeglądarki (drugi ekran) przez tailcat-link.</summary>
+/// <summary>
+/// Parowanie przez tailcat-link: telefon (pilot, przeglądarka jako drugi ekran) albo panel na drugim komputerze lub
+/// tablecie (plany, plan, pieśń, ekran — jak w oknie operatora).
+/// </summary>
 public sealed partial class RemoteViewModel : ObservableObject
 {
     private readonly IRemoteServer _server;
@@ -32,6 +35,17 @@ public sealed partial class RemoteViewModel : ObservableObject
 
     [ObservableProperty]
     public partial bool IsBusy { get; private set; }
+
+    /// <summary>Kod prowadzi do panelu (drugi komputer, tablet) zamiast pilota w telefonie.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ForPilot), nameof(Hint))]
+    public partial bool ForPanel { get; private set; }
+
+    public bool ForPilot => !ForPanel;
+
+    public string Hint => ForPanel
+        ? "Na drugim komputerze lub tablecie zeskanuj kod albo otwórz adres spod kodu. Otworzy się panel: plany, plan, pieśni i to, co jest na ekranie — wszystko jak tutaj."
+        : "Zeskanuj kod aparatem telefonu. Otworzy się pilot: tekst z akordami, Dalej i Wstecz. Na komputerze otwórz ten sam adres i wybierz „Ekran”, żeby pokazywać tekst w przeglądarce.";
 
     public string StatusText => _server.Status switch
     {
@@ -72,6 +86,23 @@ public sealed partial class RemoteViewModel : ObservableObject
     private void Close() => IsOpen = false;
 
     [RelayCommand]
+    private async Task ShowPilot() => await Switch(panel: false);
+
+    [RelayCommand]
+    private async Task ShowPanel() => await Switch(panel: true);
+
+    private async Task Switch(bool panel)
+    {
+        if (ForPanel == panel && QrCode is not null)
+            return;
+        ForPanel = panel;
+        QrCode = null;
+        PageUrl = null;
+        ExpiresText = null;
+        await Invite();
+    }
+
+    [RelayCommand]
     private async Task Invite()
     {
         IsBusy = true;
@@ -80,7 +111,7 @@ public sealed partial class RemoteViewModel : ObservableObject
             await _server.StartAsync();
             if (_server.Status != RemoteServerStatus.Ready)
                 return;
-            var invitation = await _server.InviteAsync();
+            var invitation = await _server.InviteAsync(ForPanel ? RemoteClient.Panel : RemoteClient.Pilot);
             PageUrl = invitation.PageUrl.ToString();
             QrCode = QrCodeRenderer.Render(PageUrl);
             ExpiresText = $"Kod ważny do {invitation.ExpiresAt.ToLocalTime():HH:mm} i tylko dla jednego urządzenia.";
@@ -135,6 +166,15 @@ public sealed partial class RemoteDeviceViewModel(RemoteDevice device, IRemoteDe
     public bool CanAddSongs
     {
         get => device.CanAddSongs;
-        set => server.SetCanAddSongs(device.Key, value);
+        set => server.SetPermission(device.Key, DevicePermission.AddSongs, value);
     }
+
+    /// <summary>Panel: pełne sterowanie planami i planem (przy panelu „Dodaje pieśni” nie ma znaczenia).</summary>
+    public bool IsPanel
+    {
+        get => device.IsPanel;
+        set => server.SetPermission(device.Key, DevicePermission.Panel, value);
+    }
+
+    public bool IsPilot => !device.IsPanel;
 }

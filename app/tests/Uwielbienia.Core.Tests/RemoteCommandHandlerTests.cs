@@ -27,7 +27,8 @@ public sealed class RemoteCommandHandlerTests : IDisposable
             .Insert(0, SongPlanItem.For(Library.Songs.First(s => s.Number == 47).Id))
             .Insert(1, SongPlanItem.For(Library.Songs.First(s => s.Number == 94).Id))
             .Insert(2, VideoPlanItem.For(Path.Combine(Path.GetTempPath(), "film.mp4"))));
-        _handler = new RemoteCommandHandler(_session, _session, _plan, Library, new SongSearch(Library), songs, new ImmediateDispatcher(), types);
+        _handler = new RemoteCommandHandler(_session, _session, _plan,
+            TestPlanActions.Create(_plan, _session, Library, _plans), Library, new SongSearch(Library), songs, new ImmediateDispatcher(), types);
     }
 
     private async Task<JsonElement> Send(string json, RemoteCaller? caller = null) =>

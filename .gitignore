@@ -16,6 +16,8 @@ artifacts/
 # Node / web
 node_modules/
 app/web/remote/derpmap.json
+app/web/panel/dist/
+app/web/panel/public/derpmap.json
 
 # OS
 Thumbs.db
