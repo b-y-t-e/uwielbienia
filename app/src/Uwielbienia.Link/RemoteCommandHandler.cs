@@ -74,7 +74,7 @@ public sealed class RemoteCommandHandler(
             : panel is not null && PanelCommands.Handles(command.Cmd)
                 ? caller.IsPanel
                     ? await await dispatcher.InvokeAsync(() => panel.ExecuteAsync(command))
-                    : new CommandReply(false, "To urządzenie nie jest panelem — włącz „Panel” w oknie „Telefon” w aplikacji.")
+                    : new CommandReply(false, "To urządzenie nie jest panelem — włącz „Panel” w oknie „Urządzenia” w aplikacji.")
             : await dispatcher.InvokeAsync(() => Execute(command, caller));
         // pełny stan po (ponownym) połączeniu — także bieżący element kiosku
         if (command?.Cmd == "hello" && reply.Ok)

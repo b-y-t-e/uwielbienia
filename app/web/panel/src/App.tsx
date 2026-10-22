@@ -98,11 +98,11 @@ function Pairing({ error }: { error: string | null }) {
     <main className="pairing">
       <h1 className="brand">Uwielbienia — panel</h1>
       <p className="muted">
-        W aplikacji otwórz „Telefon”, wybierz „Panel” i zeskanuj kod albo otwórz adres spod kodu na tym urządzeniu.
+        W aplikacji otwórz „Urządzenia”, wybierz „Panel” i zeskanuj kod albo wpisz krótki kod spod niego.
       </p>
       <form onSubmit={(e) => { e.preventDefault(); if (code.trim()) void connect(code.trim()); }}>
-        <label htmlFor="code">Albo wklej kod parowania</label>
-        <input id="code" value={code} autoComplete="off" spellCheck={false} placeholder="kod z okna „Telefon” → „Panel”"
+        <label htmlFor="code">Kod parowania</label>
+        <input id="code" value={code} autoComplete="off" spellCheck={false} placeholder="np. ajk59"
                onChange={(e) => setCode(e.target.value)} />
         <button type="submit" className="primary">Połącz</button>
       </form>
@@ -116,7 +116,7 @@ function NotPanel() {
     <main className="pairing">
       <h1 className="brand">Uwielbienia — panel</h1>
       <p>To urządzenie jest połączone, ale nie ma uprawnienia „Panel”.</p>
-      <p className="muted">W aplikacji otwórz „Telefon” i zaznacz „Panel” przy tym urządzeniu (nazwa „panel”).</p>
+      <p className="muted">W aplikacji otwórz „Urządzenia” i zaznacz „Panel” przy tym urządzeniu (nazwa „panel”).</p>
     </main>
   );
 }

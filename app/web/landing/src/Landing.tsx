@@ -91,7 +91,7 @@ export function Landing() {
 
       <footer className="foot">
         <p>
-          Pierwsze połączenie: w programie otwórz „Telefon” i zeskanuj kod aparatem tego urządzenia.
+          Pierwsze połączenie: w programie otwórz „Urządzenia” i zeskanuj kod albo wpisz krótki kod.
           Potem łączy się samo.
         </p>
         <a href={RELEASES}>Wersja dla Linuksa i poprzednie wydania</a>

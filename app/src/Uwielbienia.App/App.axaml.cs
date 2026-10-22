@@ -19,6 +19,9 @@ public partial class App : Application
     /// <summary>Adres panelu (drugi komputer, tablet).</summary>
     public static readonly Uri PanelPageUrl = new("https://greysource.eu/uwielbienie/panel/");
 
+    /// <summary>Usługa krótkich kodów do podyktowania (długi kod trafia tam na 5 minut, odczyt jednorazowy).</summary>
+    public static readonly Uri ShortCodeUrl = new("https://greysource.eu/uwielbienie/kod.php");
+
     private ServiceProvider? _services;
 
     public override void Initialize() => AvaloniaXamlLoader.Load(this);

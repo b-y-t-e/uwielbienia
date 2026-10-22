@@ -20,10 +20,10 @@
   <main id="pairing" class="screen" hidden>
     <img class="brand-icon" src="icon.png" alt="" width="64" height="64">
     <h1 class="brand">Uwielbienia</h1>
-    <p class="lead">Na komputerze otwórz „Telefon” i zeskanuj kod aparatem.</p>
+    <p class="lead">Na komputerze otwórz „Urządzenia” i zeskanuj kod aparatem.</p>
     <form id="pairForm" class="pair-form">
-      <label for="codeInput">Albo wklej kod parowania</label>
-      <input id="codeInput" autocomplete="off" spellcheck="false" placeholder="kod z okna „Telefon”">
+      <label for="codeInput">Kod parowania</label>
+      <input id="codeInput" autocomplete="off" spellcheck="false" placeholder="np. ajk59">
       <button type="submit" class="primary">Połącz</button>
     </form>
     <p id="pairError" class="error" role="alert"></p>
@@ -36,7 +36,7 @@
       <span id="nowNumber" class="number"></span>
       <span id="nowTitle" class="now-title">Ekran jest pusty</span>
       <span id="status" class="status" data-state="connecting" role="status">Łączenie…</span>
-      <!-- tylko z uprawnieniem z okna „Telefon” w aplikacji: pieśń jako następna w planie -->
+      <!-- tylko z uprawnieniem z okna „Urządzenia” w aplikacji: pieśń jako następna w planie -->
       <button id="addSong" class="icon-button add-song" aria-label="Dodaj pieśń jako następną" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
       </button>

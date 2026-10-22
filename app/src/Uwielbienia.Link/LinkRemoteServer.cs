@@ -22,14 +22,20 @@ public enum RemoteClient
     Panel,
 }
 
-/// <summary>Zaproszenie do sparowania telefonu/przeglądarki: kod i gotowy adres strony (do kodu QR).</summary>
-public sealed record RemoteInvitation(string Code, Uri PageUrl, DateTimeOffset ExpiresAt, RemoteClient Client = RemoteClient.Pilot);
+/// <summary>
+/// Zaproszenie do sparowania telefonu/przeglądarki: kod i gotowy adres strony (do kodu QR). <paramref name="ShortCode"/> —
+/// krótki kod do podyktowania (np. „ajk59”, ważny <see cref="ShortInvitationCodes.Lifetime"/>), a <paramref name="ShortPageUrl"/>
+/// adres z nim; <c>null</c>, gdy usługa krótkich kodów nie odpowiedziała.
+/// </summary>
+public sealed record RemoteInvitation(
+    string Code, Uri PageUrl, DateTimeOffset ExpiresAt, RemoteClient Client = RemoteClient.Pilot,
+    string? ShortCode = null, Uri? ShortPageUrl = null, DateTimeOffset? ShortExpiresAt = null);
 
-/// <summary>Sparowane urządzenie w oknie „Telefon”: nazwa (tylko podpowiedź), połączenie i uprawnienia.</summary>
+/// <summary>Sparowane urządzenie w oknie „Urządzenia”: nazwa (tylko podpowiedź), połączenie i uprawnienia.</summary>
 public sealed record RemoteDevice(
     string Key, string Name, DateTimeOffset PairedAt, bool IsConnected, bool CanAddSongs, bool IsPanel = false);
 
-/// <summary>Uprawnienia sparowanych urządzeń i ich zapominanie (wiersz urządzenia w oknie „Telefon”).</summary>
+/// <summary>Uprawnienia sparowanych urządzeń i ich zapominanie (wiersz urządzenia w oknie „Urządzenia”).</summary>
 public interface IRemoteDeviceManager
 {
     /// <summary>Nadaje urządzeniu uprawnienie (albo odbiera) — urządzenie dostaje to od razu.</summary>
@@ -62,7 +68,9 @@ public interface IRemoteServer : IRemoteDeviceManager, IAsyncDisposable
 }
 
 /// <param name="PanelUrl">Strona panelu (drugi komputer, tablet); <c>null</c> = obok strony pilota (<c>../panel/</c>).</param>
-public sealed record RemoteServerOptions(string AppName, string StateDirectory, Uri PageUrl, int MaxDevices = 8, Uri? PanelUrl = null)
+/// <param name="ShortCodeUrl">Usługa krótkich kodów (<c>kod.php</c>); <c>null</c> = tylko długi kod.</param>
+public sealed record RemoteServerOptions(
+    string AppName, string StateDirectory, Uri PageUrl, int MaxDevices = 8, Uri? PanelUrl = null, Uri? ShortCodeUrl = null)
 {
     public Uri PanelPageUrl => PanelUrl ?? new Uri(PageUrl, "../panel/");
 }
@@ -223,7 +231,16 @@ public sealed class LinkRemoteServer(
             _invitations.Issued(invitation.Id, client, invitation.ExpiresAt);
         var code = invitation.Code.Value;
         var page = client == RemoteClient.Panel ? options.PanelPageUrl : options.PageUrl;
-        return new RemoteInvitation(code, new Uri(page, "#code=" + Uri.EscapeDataString(code)), invitation.ExpiresAt, client);
+        var result = new RemoteInvitation(code, new Uri(page, "#code=" + Uri.EscapeDataString(code)), invitation.ExpiresAt, client);
+        if (options.ShortCodeUrl is null)
+            return result;
+        var shortCode = await ShortInvitationCodes.RegisterAsync(options.ShortCodeUrl, code, cancellationToken);
+        return shortCode is null ? result : result with
+        {
+            ShortCode = shortCode,
+            ShortPageUrl = new Uri(page, "#code=" + shortCode),
+            ShortExpiresAt = DateTimeOffset.Now + ShortInvitationCodes.Lifetime,
+        };
     }
 
     private async Task<ReadOnlyMemory<byte>> HandleAsync(ILinkPeer peer, ReadOnlyMemory<byte> request) =>

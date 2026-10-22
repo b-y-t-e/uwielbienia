@@ -95,7 +95,8 @@ public static class AppComposition
             AppName: "uwielbienia",
             StateDirectory: sp.GetRequiredService<AppPaths>().LinkState,
             PageUrl: App.RemotePageUrl,
-            PanelUrl: App.PanelPageUrl));
+            PanelUrl: App.PanelPageUrl,
+            ShortCodeUrl: App.ShortCodeUrl));
         services.AddSingleton<IDevicePermissions>(sp => new DevicePermissions(sp.GetRequiredService<AppPaths>().LinkState));
         services.AddSingleton<PanelCommands>();
         services.AddSingleton<RemoteCommandHandler>();

@@ -51,7 +51,7 @@ public sealed record CommandReply(
 
 /// <summary>
 /// Co wolno temu urządzeniu: z uprawnieniem telefon pokazuje „+” (dodaj pieśń jako następną); panel bez
-/// <see cref="IsPanel"/> prosi operatora o włączenie „Panel” w oknie „Telefon”.
+/// <see cref="IsPanel"/> prosi operatora o włączenie „Panel” w oknie „Urządzenia”.
 /// </summary>
 public sealed record DeviceMessage(bool CanAddSongs, bool IsPanel = false)
 {

@@ -232,7 +232,7 @@
     <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
   </Style>
 
-  <!-- Zakładki (okna „Plany”, „Telefon”) -->
+  <!-- Zakładki (okna „Plany”, „Urządzenia”) -->
   <Style Selector="Border.segmented">
     <Setter Property="Background" Value="{DynamicResource InkBrush}" />
     <Setter Property="CornerRadius" Value="12" />

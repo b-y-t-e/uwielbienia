@@ -25,6 +25,12 @@ let state = null;
 async function connect(invitationCode) {
   setStatus("connecting", "Łączenie…");
   try {
+    invitationCode = await expandShortCode(invitationCode);
+  } catch {
+    showPairing("Kod wygasł albo został już użyty. Poproś o nowy w aplikacji.");
+    return;
+  }
+  try {
     link = await TailcatLink.join({
       appName: APP_NAME,
       invitationCode,
@@ -343,7 +349,7 @@ $("leaveDisplay").onclick = () => {
 };
 ui.display.addEventListener("dblclick", () => document.documentElement.requestFullscreen?.().catch(() => {}));
 
-// ---------- dodawanie pieśni (tylko z uprawnieniem z okna „Telefon”) ----------
+// ---------- dodawanie pieśni (tylko z uprawnieniem z okna „Urządzenia”) ----------
 // Telefon bez uprawnienia nic nie dodaje (można dać dziecku). Z uprawnieniem: „+” → wyszukiwarka → dotknięcie wyniku
 // = pieśń zaraz za tą na ekranie; ekran się nie zmienia, a „Cofnij” przez chwilę wycofuje pomyłkę.
 
@@ -448,6 +454,15 @@ $("pairForm").addEventListener("submit", (e) => {
 });
 
 // ---------- pomocnicze ----------
+
+/** Krótki kod do podyktowania (np. „ajk59”) zamienia na długi kod parowania — raz, przez kod.php obok stron. */
+async function expandShortCode(code) {
+  const short = code?.replace(/[\s-]/g, "").toLowerCase();
+  if (!short || !/^[a-z0-9]{4,8}$/.test(short)) return code;
+  const response = await fetch(new URL(`../kod.php?k=${short}`, location.href), { cache: "no-store" });
+  if (!response.ok) throw new Error(`kod ${short}: ${response.status}`);
+  return (await response.text()).trim();
+}
 
 function paragraph(text) {
   return Object.assign(document.createElement("p"), { textContent: text });

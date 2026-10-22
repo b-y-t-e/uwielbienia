@@ -24,6 +24,9 @@
                        IsVisible="{Binding IsBusy}" />
           </Panel>
         </Border>
+        <!-- krótki kod do podyktowania: wpisuje się go na stronie albo w adresie po #code= -->
+        <SelectableTextBlock Text="{Binding ShortCode}" IsVisible="{Binding HasShortCode}" HorizontalAlignment="Center"
+                             FontFamily="Consolas, Menlo, monospace" FontSize="40" FontWeight="SemiBold" LetterSpacing="6" />
         <SelectableTextBlock Text="{Binding PageUrl}" TextWrapping="Wrap" FontSize="13" HorizontalAlignment="Center"
                              Foreground="{DynamicResource MutedBrush}" />
         <TextBlock Classes="caption" Text="{Binding ExpiresText}" HorizontalAlignment="Center" />

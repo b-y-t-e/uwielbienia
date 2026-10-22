@@ -119,7 +119,9 @@ if (window.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => b.Flyout 
 // Okno „Telefon” ze sparowanymi urządzeniami (serwer udawany — bez sieci).
 {
     var server = new ShotRemoteServer();
-    var remoteWindow = new Window { Width = 900, Height = 960, Content = new RemoteOverlay { DataContext = new RemoteViewModel(server) } };
+    var remoteModel = new RemoteViewModel(server);
+    remoteModel.ShowCommand.Execute(null);
+    var remoteWindow = new Window { Width = 900, Height = 1080, Content = new RemoteOverlay { DataContext = remoteModel } };
     remoteWindow.Show();
     server.Raise();
     Save(remoteWindow, "telefon");
@@ -462,7 +464,10 @@ sealed class ShotRemoteServer : Uwielbienia.Link.IRemoteServer
 
     public Task<Uwielbienia.Link.RemoteInvitation> InviteAsync(
         Uwielbienia.Link.RemoteClient client = Uwielbienia.Link.RemoteClient.Pilot, CancellationToken cancellationToken = default) =>
-        throw new NotSupportedException();
+        Task.FromResult(new Uwielbienia.Link.RemoteInvitation(
+            "tco2FwWCDSeyRbjMTA2mWu3c", new Uri("https://greysource.eu/uwielbienie/telefon/#code=tco2FwWCDSeyRbjMTA2mWu3c"),
+            DateTimeOffset.Now.AddMinutes(10), client, "ajk59", new Uri("https://greysource.eu/uwielbienie/telefon/#code=ajk59"),
+            DateTimeOffset.Now.AddMinutes(5)));
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

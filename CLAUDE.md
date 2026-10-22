@@ -352,7 +352,10 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   dokładnie, Esc = koniec kalibracji. Kliknięcie bez przeciągania w trybie jednego ekranu = dalej /
   wstecz (prawa / lewa połowa). Zapis: `AppSettings.ProjectionCorners` (8 liczb 0..1).
 - **Telefon / przeglądarka.** `RemoteViewModel` paruje przez kod QR (tailcat-link, połączenie
-  szyfrowane); sparowane urządzenia łączą się same przy starcie. **Telefon zmienia slajdy** (dodawanie pieśni —
+  szyfrowane); sparowane urządzenia łączą się same przy starcie. Do podyktowania pod kodem QR jest krótki kod
+  (np. `ajk59`, 5 znaków bez i/l/o/0/1, ważny 5 min): `ShortInvitationCodes` zapisuje długi kod w `kod.php`
+  (`web/landing/public`, PHP na greysource.eu; odczyt jednorazowy, limit nieudanych prób z adresu), a pilot i panel
+  zamieniają krótki kod (`#code=ajk59` albo wpisany) na długi; bez usługi zostaje sam kod QR. **Telefon zmienia slajdy** (dodawanie pieśni —
   tylko z uprawnieniem, niżej) —
   jeden prosty widok (`web/remote`, tokeny kolorów i kroje jak w aplikacji): bieżący slajd z akordami
   jak w śpiewniku (tekst Literatą, refren jej kursywą `fonts/Literata-Italic.ttf`, zawinięty wers wcięty;

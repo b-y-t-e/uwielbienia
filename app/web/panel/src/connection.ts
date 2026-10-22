@@ -96,6 +96,12 @@ export function showError(error: string) {
 export async function connect(invitationCode: string | null) {
   update({ status: "connecting", pairingError: null });
   try {
+    invitationCode = await expandShortCode(invitationCode);
+  } catch {
+    update({ status: "pairing", pairingError: "Kod wygasł albo został już użyty. Poproś o nowy w aplikacji (okno „Urządzenia” → „Panel”)." });
+    return;
+  }
+  try {
     link = await TailcatLink.join({
       appName: APP_NAME,
       invitationCode,
@@ -106,7 +112,7 @@ export async function connect(invitationCode: string | null) {
   } catch {
     update({
       status: "pairing",
-      pairingError: invitationCode ? "Nie udało się użyć kodu. Poproś o nowy w aplikacji (okno „Telefon” → „Panel”)." : null,
+      pairingError: invitationCode ? "Nie udało się użyć kodu. Poproś o nowy w aplikacji (okno „Urządzenia” → „Panel”)." : null,
     });
     return;
   }
@@ -122,6 +128,15 @@ export async function connect(invitationCode: string | null) {
   });
   const reply = await command("hello");
   if (reply) update({ status: "connected" });
+}
+
+/** Krótki kod do podyktowania (np. „ajk59”) zamienia na długi kod parowania — raz, przez kod.php obok stron. */
+async function expandShortCode(code: string | null): Promise<string | null> {
+  const short = code?.replace(/[\s-]/g, "").toLowerCase();
+  if (!short || !/^[a-z0-9]{4,8}$/.test(short)) return code;
+  const response = await fetch(new URL(`../kod.php?k=${short}`, location.href), { cache: "no-store" });
+  if (!response.ok) throw new Error(`kod ${short}: ${response.status}`);
+  return (await response.text()).trim();
 }
 
 export function start() {

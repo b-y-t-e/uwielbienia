@@ -47,7 +47,7 @@ public static class DevicePermissionsExtensions
 
 /// <summary>
 /// Uprawnienia sparowanych urządzeń (klucz publiczny urządzenia — jedyne, co połączenie uwierzytelnia; nazwa jest tylko
-/// podpowiedzią). Domyślnie telefon tylko zmienia slajdy; dodawanie pieśni i panel operator włącza w oknie „Telefon”
+/// podpowiedzią). Domyślnie telefon tylko zmienia slajdy; dodawanie pieśni i panel operator włącza w oknie „Urządzenia”
 /// (panel — też samo sparowanie kodem panelu). Zapis w <c>polaczenia/uprawnienia.json</c>.
 /// </summary>
 public sealed class DevicePermissions : IDevicePermissions

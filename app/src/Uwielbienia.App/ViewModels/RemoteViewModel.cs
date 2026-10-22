@@ -30,6 +30,13 @@ public sealed partial class RemoteViewModel : ObservableObject
     [ObservableProperty]
     public partial string? PageUrl { get; private set; }
 
+    /// <summary>Krótki kod do podyktowania (np. „ajk59”); <c>null</c>, gdy usługa nie odpowiedziała.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasShortCode))]
+    public partial string? ShortCode { get; private set; }
+
+    public bool HasShortCode => ShortCode is not null;
+
     [ObservableProperty]
     public partial string? ExpiresText { get; private set; }
 
@@ -97,6 +104,7 @@ public sealed partial class RemoteViewModel : ObservableObject
             return;
         ForPanel = panel;
         QrCode = null;
+        ShortCode = null;
         PageUrl = null;
         ExpiresText = null;
         await Invite();
@@ -112,9 +120,13 @@ public sealed partial class RemoteViewModel : ObservableObject
             if (_server.Status != RemoteServerStatus.Ready)
                 return;
             var invitation = await _server.InviteAsync(ForPanel ? RemoteClient.Panel : RemoteClient.Pilot);
-            PageUrl = invitation.PageUrl.ToString();
-            QrCode = QrCodeRenderer.Render(PageUrl);
-            ExpiresText = $"Kod ważny do {invitation.ExpiresAt.ToLocalTime():HH:mm} i tylko dla jednego urządzenia.";
+            // kod QR z długim kodem (działa bez usługi krótkich kodów); do dyktowania — adres z krótkim
+            QrCode = QrCodeRenderer.Render(invitation.PageUrl.ToString());
+            ShortCode = invitation.ShortCode;
+            PageUrl = (invitation.ShortPageUrl ?? invitation.PageUrl).ToString();
+            ExpiresText = invitation.ShortExpiresAt is { } shortExpires
+                ? $"Kod ważny do {shortExpires.ToLocalTime():HH:mm} (kod QR do {invitation.ExpiresAt.ToLocalTime():HH:mm}) i tylko dla jednego urządzenia."
+                : $"Kod ważny do {invitation.ExpiresAt.ToLocalTime():HH:mm} i tylko dla jednego urządzenia.";
         }
         finally
         {
@@ -137,7 +149,7 @@ public sealed partial class RemoteViewModel : ObservableObject
 }
 
 /// <summary>
-/// Wiersz urządzenia w oknie „Telefon”; przełącznik od razu zmienia uprawnienie (telefon pokazuje albo chowa „+”).
+/// Wiersz urządzenia w oknie „Urządzenia”; przełącznik od razu zmienia uprawnienie (telefon pokazuje albo chowa „+”).
 /// „Zapomnij” pyta raz („Zapomnieć?”), drugie kliknięcie rozparowuje.
 /// </summary>
 public sealed partial class RemoteDeviceViewModel(RemoteDevice device, IRemoteDeviceManager server) : ObservableObject
