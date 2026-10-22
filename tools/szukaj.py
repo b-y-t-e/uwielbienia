@@ -175,7 +175,8 @@ def wczytaj():
 
 
 def szukaj(songs, slowa):
-    """(trafienia w tytule, wszystkie trafienia — tytuł albo treść).
+    """(trafienia w tytule, wszystkie trafienia — tytuł albo treść; w wyniku
+    trafienia w tytule idą na początku listy).
 
     Wszystkie słowa muszą pasować; sam numer = pieśń o tym numerze."""
     numer = _liczba(slowa[0]) if len(slowa) == 1 else None
@@ -265,6 +266,11 @@ def main(argv):
     akordy = "--akordy" in argv
     plik = "--plik" in argv
     argv = [a for a in argv if a not in ("--akordy", "--plik")]
+    nieznane = [a for a in argv if a.startswith("--")]
+    if nieznane:
+        print(f"Nieznana opcja: {' '.join(nieznane)}", file=sys.stderr)
+        print(__doc__, file=sys.stderr)
+        return 2
     if not argv:
         print(__doc__)
         return 2
@@ -274,7 +280,7 @@ def main(argv):
         print("Nic nie znaleziono.", file=sys.stderr)
         return 1
     if nr is None:
-        trafienia = w_tytule or wszystkie
+        trafienia = w_tytule + [s for s in wszystkie if s not in w_tytule]
     else:
         trafienia = [s for s in wszystkie if s.numer == nr]
         if not trafienia:
