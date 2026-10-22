@@ -109,8 +109,8 @@ musi leżeć w tej samej domenie co strona.
 ## Panel (drugi komputer, tablet)
 
 Plany, plan, układ części pieśni i to, co jest na ekranie — jak w oknie operatora, w przeglądarce.
-Parowanie: w aplikacji „Telefon” → „Panel”, zeskanuj kod albo otwórz adres spod kodu (urządzenie
-dostaje uprawnienie „Panel”; w oknie „Telefon” można je odebrać). Treść pieśni, nowe teksty,
+Parowanie: w aplikacji „Urządzenia” → „Panel”, zeskanuj kod albo otwórz adres spod kodu (urządzenie
+dostaje uprawnienie „Panel”; w oknie „Urządzenia” można je odebrać). Treść pieśni, nowe teksty,
 prezentacje, filmy i kioski zmienia się w aplikacji.
 
 ```

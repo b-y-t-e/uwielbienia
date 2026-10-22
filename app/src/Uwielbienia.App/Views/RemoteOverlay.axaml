@@ -7,7 +7,7 @@
     <Border Classes="panel" Width="640" Padding="28" VerticalAlignment="Center">
       <StackPanel Spacing="14">
         <Grid ColumnDefinitions="*,Auto">
-          <TextBlock Classes="songTitle" Text="Telefon lub drugi komputer" />
+          <TextBlock Classes="songTitle" Text="Urządzenia" />
           <Button Grid.Column="1" Classes="quiet closeButton" Content="✕" ToolTip.Tip="Zamknij" Command="{Binding CloseCommand}" VerticalAlignment="Top" />
         </Grid>
         <Border Classes="segmented" HorizontalAlignment="Left">

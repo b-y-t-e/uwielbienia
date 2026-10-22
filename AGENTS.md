@@ -368,7 +368,7 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   polecenia `videoToggle`, `videoSkip`, `videoOffset`). Polecenia `blank` / `goto` / `showItem` /
   `showSong` zostają w protokole, strona ich nie używa. Podgląd bez aplikacji: kopia strony
   z udawanym `lib/tailcat/index.js`.
-  **Dodawanie pieśni z telefonu** — uprawnienie urządzenia, domyślnie wyłączone: okno „Telefon” (`RemoteOverlay`) ma listę
+  **Dodawanie pieśni z telefonu** — uprawnienie urządzenia, domyślnie wyłączone: okno „Urządzenia” (`RemoteOverlay`) ma listę
   sparowanych urządzeń (`IRemoteServer.Devices`, `RemoteDeviceViewModel`) z polem „Dodaje pieśni” i „Zapomnij”
   (drugie kliknięcie „Zapomnieć?” rozparowuje — `ForgetAsync`, uprawnienie znika; wraca tylko z nowym kodem). Uprawnienie jest przy
   kluczu urządzenia (`ILinkPeer.Key` — nazwy nic nie uwierzytelnia), zapis `DevicePermissions` w
@@ -384,9 +384,9 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   usuń), plan (dodaj z wyszukiwarki w miejsce, przeciąganie za ⠿ — zdarzenia wskaźnika, działa dotykiem, duplikuj, usuń,
   pokaż), układ części pieśni (pominięcie, kolejność, „Powtórz”, usuń, przywróć) i ekran (slajdy, Wstecz / Dalej, czarny
   ekran, film, kiosk). Edycja treści pieśni, nowe teksty, prezentacje, filmy i kioski — tylko w aplikacji (pliki są tam).
-  Parowanie: okno „Telefon” → zakładka „Panel” (kod QR na `RemoteServerOptions.PanelPageUrl`, domyślnie `panel/` obok pilota).
+  Parowanie: okno „Urządzenia” → zakładka „Panel” (kod QR na `RemoteServerOptions.PanelPageUrl`, domyślnie `panel/` obok pilota).
   Urządzenie sparowane kodem panelu dostaje uprawnienie `DevicePermission.Panel` samo (`LinkRemoteServer.Recognize`: zaproszenie
-  jednorazowe, które zniknęło, gdy pojawiło się nowe urządzenie); w oknie „Telefon” pole „Panel” je nadaje / odbiera. Bez
+  jednorazowe, które zniknęło, gdy pojawiło się nowe urządzenie); w oknie „Urządzenia” pole „Panel” je nadaje / odbiera. Bez
   uprawnienia polecenia panelu są odrzucane, a strona prosi o nie. Panel ma własną tożsamość w przeglądarce (`panelStore` —
   inny klucz IndexedDB niż pilot na tej samej domenie). Stan zawsze z aplikacji: `hello` → stan, plan, plany (`plans` —
   rozsyłane tylko panelom przy `PlanLibrary.Changed` / `ActivePlan.Opened`); kolumna „Pieśń” pyta `item` przy każdej zmianie planu.
@@ -458,7 +458,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 - Kolumna „Pieśń” nie zmienia projekcji — wyjątek: zmiana układu części granej pieśni działa na
   żywo. Dla prezentacji pokazuje miniatury slajdów. Pusty ekran: kolumna „Na ekranie” bez przycisków.
 - Nakładki: „Plany” (`PlansViewModel` → `PlanLibrary` — zakładki Wydarzenia/Szablony, lista + formularz; nazwa
-  wymagana, bez daty w nazwie), „Dodaj do planu”, „Telefon”, potwierdzenia usuwania. Esc zamyka;
+  wymagana, bez daty w nazwie), „Dodaj do planu”, „Urządzenia”, potwierdzenia usuwania. Esc zamyka;
   w edytorze klawisze globalne (spacja, pisanie) nie działają.
 
 ### Dane i ustawienia (`AppPaths`, `%APPDATA%\Uwielbienia`, Linux `~/.config/Uwielbienia`)

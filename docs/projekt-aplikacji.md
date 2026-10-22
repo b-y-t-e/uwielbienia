@@ -17,7 +17,7 @@ odznaczenie albo przywrócenie części działa na żywo.
 | S1 | **Laptop + drugi ekran** (główny) | Okno operatora na ekranie, na którym jest aplikacja. Okno projekcji otwiera się na pełnym ekranie na **innym** monitorze (wykrywanym automatycznie; przy podłączeniu/odłączeniu przenosi się samo). |
 | S2 | **Jedno urządzenie, bez drugiego ekranu** (awaryjny) | Laptop, tablet lub telefon sam jest ekranem. Tryb sceniczny: pełny ekran z tekstem, a szybki wybór pieśni nakłada się na chwilę na tekst (opis w p. 4). |
 | S3 | **Dwa komputery sparowane** (tailcat-link) | Komputer A = operator, komputer B = tylko ekran (ta sama aplikacja w trybie „Ekran”). A wysyła stan: pieśń, slajd, czarny ekran. |
-| S4 | **Telefon jako pilot** (strona `greysource.eu/uwielbienie`) | Parowanie kodem QR z okna operatora. Na telefonie tylko zmiana slajdów: bieżący slajd z akordami, początek następnego, Wstecz / Dalej — bez planu i edycji (może go obsługiwać dziecko albo muzyk z gitarą). Urządzenie, któremu operator pozwoli w oknie „Telefon” („Dodaje pieśni”), ma też „+”: wyszukiwarka i pieśń jako następna w planie, z „Cofnij”. |
+| S4 | **Telefon jako pilot** (strona `greysource.eu/uwielbienie`) | Parowanie kodem QR z okna operatora. Na telefonie tylko zmiana slajdów: bieżący slajd z akordami, początek następnego, Wstecz / Dalej — bez planu i edycji (może go obsługiwać dziecko albo muzyk z gitarą). Urządzenie, któremu operator pozwoli w oknie „Urządzenia” („Dodaje pieśni”), ma też „+”: wyszukiwarka i pieśń jako następna w planie, z „Cofnij”. |
 | S5 | **Telefon jako ekran** (przyszłość) | Ta sama strona w trybie „ekran” — wymaga tylko renderowania stanu, który już wysyłamy w S3/S4. |
 
 Wspólny mianownik S3–S5: **stan projekcji** (`LiveState`) to mały, samowystarczalny
@@ -89,7 +89,7 @@ w polach tekstowych, w edytorze i przy otwartej nakładce (poza wymienionymi ni�
 |---|---|
 | Dwuklik w planie (albo prawy klik → „Pokaż na ekranie”) | pokaż pozycję na ekranie — jedyny sposób w oknie operatora |
 | Pisanie cyfr lub liter | **szybki wybór**: `47` albo `jezus mój` → okno „Dodaj do planu”; `↑` / `↓` wybór, `Enter` = dodaj zaraz za pozycją na ekranie, `Esc` = zamknij. W trybie jednego ekranu (nakładka na projekcji) `Enter` pokazuje od razu, a pieśń trafia do planu zaraz za bieżącą; `Ctrl`+`Enter` = tylko dodaj jako następną |
-| `Esc` | zamyka nakładkę („Plany”, „Telefon”, „Dodaj do planu”, potwierdzenie usuwania) |
+| `Esc` | zamyka nakładkę („Plany”, „Urządzenia”, „Dodaj do planu”, potwierdzenie usuwania) |
 
 **Ekran projekcji — mysz i „Dopasuj obraz”**
 

@@ -60,7 +60,7 @@ public sealed partial class RemoteViewModel : ObservableObject
         },
     };
 
-    public string BadgeText => _server.ConnectedDevices > 0 ? $"Telefon: {_server.ConnectedDevices}" : "Telefon";
+    public string BadgeText => _server.ConnectedDevices > 0 ? $"Urządzenia: {_server.ConnectedDevices}" : "Urządzenia";
 
     public bool HasDevices => _server.ConnectedDevices > 0;
 
