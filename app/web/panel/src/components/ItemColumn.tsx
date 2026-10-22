@@ -78,7 +78,12 @@ export function ItemColumn({ itemId, planVersion, chords }: { itemId: string | n
           {item.number ? <span className="item-number">{item.number}</span> : null}
           <h3>{item.title}</h3>
         </div>
-        {item.category || origin ? <p className="muted small item-meta">{[item.category, origin].filter(Boolean).join(" · ")}</p> : null}
+        {item.category || origin ? (
+          <p className="item-meta">
+            {item.category ? <span>{item.category}</span> : null}
+            {origin ? <span className="badge">{origin}</span> : null}
+          </p>
+        ) : null}
         {item.note ? <p className="note">{item.note}</p> : null}
         {!item.parts ? (
           <p className="muted">{item.slideCount === 1 ? "1 slajd" : `Slajdy: ${item.slideCount}`}</p>
@@ -91,12 +96,10 @@ export function ItemColumn({ itemId, planVersion, chords }: { itemId: string | n
                 {item.canReorder ? (
                   <span className="grip" onPointerDown={start(index)} aria-hidden="true"><GripIcon /></span>
                 ) : null}
-                <label className="part-check">
-                  <input type="checkbox" checked={part.sung}
-                         onChange={(e) => change((layout) => { layout[index].sung = e.target.checked; })} />
-                  <span>{part.name}</span>
-                </label>
+                <label className="part-name" htmlFor={`part-${index}`}>{part.name}</label>
                 <Menu actions={partActions(part, index)} />
+                <input id={`part-${index}`} type="checkbox" checked={part.sung} title={part.sung ? "Śpiewana" : "Pominięta"}
+                       onChange={(e) => change((layout) => { layout[index].sung = e.target.checked; })} />
               </header>
               <Lines lines={part.lines} chords={chords && item.kind === "song"} />
             </article>

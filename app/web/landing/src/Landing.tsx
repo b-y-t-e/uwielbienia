@@ -1,45 +1,101 @@
+import { useEffect, useState } from "react";
 import icon from "../../remote/icon.png";
 
 const RELEASES = "https://github.com/b-y-t-e/uwielbienia/releases/latest";
 
-/** Strona startowa: dwie strony do sparowania z aplikacją (pilot, panel) i pobranie aplikacji. */
+interface Line {
+  text: string;
+  /** Słowa powtarzające tytuł pieśni — na rzutniku w kolorze tytułu. */
+  title?: string;
+  repeat?: number;
+}
+
+// Pieśń 47 ze śpiewnika, w kolejności z pliku (refren, zwrotka, refren) — tak, jak pokazuje ją rzutnik.
+const SLIDES: Line[][] = [
+  [{ title: "Jezus mój Pan", text: "" }, { text: "Jezus mój Król" }, { text: "Jezus Zbawiciel mój", repeat: 2 }],
+  [
+    { text: "On mój przyjaciel, On wierny Bóg" },
+    { text: "umarł na krzyżu, zmartwychwstał, to wielki cud" },
+    { text: "On mą Opoką, On zbawił mnie" },
+    { text: "On mą pomocą, prowadzi mnie" },
+    { text: "do nieba, do nieba, do nieba bram", repeat: 2 },
+  ],
+  [{ text: "Jezus mój Pan" }, { text: "Jezus mój Król" }, { text: "Jezus Zbawiciel mój", repeat: 2 }],
+];
+
+/** Kolejne slajdy z przenikaniem, jak na rzutniku; bez ruchu, gdy system prosi o ograniczenie animacji. */
+function useSlide(count: number, interval: number) {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const timer = setInterval(() => setIndex((i) => (i + 1) % count), interval);
+    return () => clearInterval(timer);
+  }, [count, interval]);
+  return index;
+}
+
+function Projection() {
+  const current = useSlide(SLIDES.length, 5200);
+  return (
+    <figure className="projection" aria-label="Tak wygląda pieśń na rzutniku">
+      {SLIDES.map((lines, i) => (
+        <div key={i} className={`slide${i === current ? " shown" : ""}`} aria-hidden={i !== current}>
+          {lines.map((line, j) => (
+            <p key={j}>
+              {line.title ? <span className="slide-title-words">{line.title}</span> : null}
+              {line.text}
+              {line.repeat ? <span className="repeat">×{line.repeat}</span> : null}
+            </p>
+          ))}
+        </div>
+      ))}
+    </figure>
+  );
+}
+
+/** Strona startowa: czym jest program, dwie strony do połączenia z nim (pilot, panel) i pobranie. */
 export function Landing() {
   return (
-    <main className="landing">
-      <header className="hero">
-        <img className="logo" src={icon} alt="" width="72" height="72" />
-        <h1>Uwielbienia</h1>
-        <p className="lead">Teksty pieśni na rzutniku — śpiewnik, plany nabożeństw, prezentacje i filmy.</p>
+    <div className="page">
+      <header className="bar">
+        <a className="brand" href="./">
+          <img src={icon} alt="" width="36" height="36" />
+          Uwielbienia
+        </a>
+        <a className="download" href={`${RELEASES}/download/Uwielbienia-win-Setup.exe`}>Pobierz<span className="download-long"> dla Windows</span></a>
       </header>
 
-      <section className="cards">
-        <a className="card" href="telefon/">
-          <span className="card-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5" /><path d="M10.5 18.5h3" /></svg>
-          </span>
-          <span className="card-title">Pilot w telefonie</span>
-          <span className="card-text">Tekst z akordami, Dalej i Wstecz. Muzyk widzi bieżący i następny slajd.</span>
-          <span className="card-go">Otwórz pilota →</span>
-        </a>
-        <a className="card" href="panel/">
-          <span className="card-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24"><rect x="2.5" y="4" width="19" height="13" rx="2" /><path d="M8 20.5h8M12 17v3.5M9 4v13M15 4v13" /></svg>
-          </span>
-          <span className="card-title">Panel na komputerze lub tablecie</span>
-          <span className="card-text">Plany, plan, układ pieśni i to, co jest na ekranie — jak w oknie aplikacji.</span>
-          <span className="card-go">Otwórz panel →</span>
-        </a>
-      </section>
+      <main className="hero">
+        <div className="intro">
+          <h1>Pieśni na rzutniku, prowadzone z jednego miejsca</h1>
+          <p className="lead">
+            Śpiewnik z akordami, plan nabożeństwa, prezentacje i filmy w programie na komputerze przy rzutniku.
+            Telefon muzyka i drugi komputer łączą się z nim przez tę stronę.
+          </p>
+        </div>
+        <Projection />
+      </main>
 
-      <p className="how">
-        Parowanie: w aplikacji otwórz „Telefon”, wybierz „Telefon” albo „Panel” i zeskanuj kod aparatem.
-        Sparowane urządzenie łączy się później samo.
-      </p>
+      <nav className="routes" aria-label="Połącz się z programem">
+        <a className="route" href="telefon/">
+          <svg className="glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5" /><path d="M10.5 18.5h3" /></svg>
+          <span className="route-name">Pilot w telefonie</span>
+          <span className="route-text">Bieżący i następny slajd z akordami, Dalej i Wstecz pod kciukiem.</span>
+        </a>
+        <a className="route" href="panel/">
+          <svg className="glyph" viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4" width="19" height="13" rx="2" /><path d="M8 20.5h8M12 17v3.5" /></svg>
+          <span className="route-name">Panel na komputerze lub tablecie</span>
+          <span className="route-text">Plany, kolejność pieśni, układ zwrotek i to, co widzi sala.</span>
+        </a>
+      </nav>
 
-      <footer className="download">
-        <a className="button primary" href={`${RELEASES}/download/Uwielbienia-win-Setup.exe`}>Pobierz aplikację dla Windows</a>
-        <a className="button" href={RELEASES}>Linux i wszystkie wersje</a>
+      <footer className="foot">
+        <p>
+          Pierwsze połączenie: w programie otwórz „Telefon” i zeskanuj kod aparatem tego urządzenia.
+          Potem łączy się samo.
+        </p>
+        <a href={RELEASES}>Wersja dla Linuksa i poprzednie wydania</a>
       </footer>
-    </main>
+    </div>
   );
 }

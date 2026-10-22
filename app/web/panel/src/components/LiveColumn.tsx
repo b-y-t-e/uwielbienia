@@ -22,55 +22,60 @@ export function LiveColumn({ snapshot, chords }: { snapshot: Snapshot; chords: b
     <section className="column live-column">
       <header className="column-head">
         <h2>Na ekranie</h2>
-        {state?.isBlank ? <span className="badge candle">Czarny ekran</span> : null}
-      </header>
-      <div className="scroll">
-        {!hasItem ? <p className="muted empty">Ekran jest pusty. Dwuklik w planie pokazuje pozycję.</p> : (
-          <>
-            <div className="item-title live-title">
-              {state!.number ? <span className="item-number">{state!.number}</span> : null}
-              <h3>{state!.title}</h3>
-            </div>
-            {state!.slideLabels.length > 1 ? (
-              <div className="slide-chips">
-                {state!.slideLabels.map((label, i) => (
-                  <button key={i} className={i === state!.slideIndex ? "active" : ""}
-                          onClick={() => void command("goto", { slide: i })}>{label}</button>
-                ))}
-              </div>
-            ) : null}
-            <div className={`current-slide${state!.isBlank ? " blank" : ""}`}>
-              {state!.label && !state!.isVideo && !state!.isKiosk ? <div className="slide-label">{state!.label}</div> : null}
-              {state!.isVideo ? <VideoControls video={video} /> : null}
-              {kioskShown ? (
-                <div className="kiosk">
-                  {kiosk!.image ? <img src={kiosk!.image} alt="" /> : null}
-                  {kiosk!.title ? <div className="kiosk-title">{kiosk!.title}</div> : null}
-                  {kiosk!.text ? <p>{kiosk!.text}</p> : null}
-                  <div className="muted small">Element {kiosk!.index + 1} z {kiosk!.count}{kiosk!.isRunning || kiosk!.count < 2 ? "" : " · zatrzymany"}</div>
-                </div>
-              ) : null}
-              {!state!.isVideo && !state!.isKiosk ? <Lines lines={state!.lines} chords={chords} className="live-lines" /> : null}
-            </div>
-            {state!.nextLines?.length || state!.next ? (
-              <div className="upcoming">
-                <div className="slide-label">Następny{state!.next ? `: ${state!.next}` : ""}</div>
-                {state!.nextLines ? <Lines lines={state!.nextLines.slice(0, 3)} chords={false} /> : null}
-              </div>
-            ) : null}
-          </>
-        )}
-      </div>
-      {hasItem ? (
-        <footer className="live-controls">
-          <button onClick={() => void command("prev")}>Wstecz</button>
-          <button className={state?.isBlank ? "candle-outline" : ""} onClick={() => void command("blank")}
-                  title="Czarny ekran (tekst zostaje, sala go nie widzi)">
-            {state?.isBlank ? "Pokaż tekst" : "Czarny ekran"}
+        {hasItem ? (
+          <button className={`toggle${state?.isBlank ? " on-candle" : ""}`} aria-pressed={!!state?.isBlank}
+                  title="Sala nie widzi tekstu; tekst zostaje (klawisz kropka)" onClick={() => void command("blank")}>
+            Czarny ekran
           </button>
-          <button className="primary" onClick={() => void command("next")}>Dalej</button>
-        </footer>
-      ) : null}
+        ) : null}
+      </header>
+      {!hasItem ? <p className="muted empty">Ekran jest pusty. Dwuklik w planie pokazuje pozycję.</p> : (
+        <div className="scroll">
+          <div className="live-head">
+            {state!.number ? <span className="live-number">{state!.number}</span> : null}
+            <span className="live-name">{state!.title}</span>
+            {state!.slideCount > 1 ? <span className="live-count">{state!.slideIndex + 1} z {state!.slideCount}</span> : null}
+          </div>
+          <div className="live-progress" aria-hidden="true">
+            <div style={{ width: `${(100 * (state!.slideIndex + 1)) / Math.max(1, state!.slideCount)}%` }} />
+          </div>
+          <div className="live-controls">
+            <button onClick={() => void command("prev")}>Wstecz</button>
+            <button className="primary" onClick={() => void command("next")}>Dalej</button>
+          </div>
+
+          <div className={`current-slide${state!.isBlank ? " blank" : ""}`}>
+            {state!.label && !state!.isVideo && !state!.isKiosk ? <div className="slide-label">{state!.label}</div> : null}
+            {state!.isBlank ? <div className="blank-note">Sala widzi czarny ekran</div> : null}
+            {state!.isVideo ? <VideoControls video={video} /> : null}
+            {kioskShown ? (
+              <div className="kiosk">
+                {kiosk!.image ? <img src={kiosk!.image} alt="" /> : null}
+                {kiosk!.title ? <div className="kiosk-title">{kiosk!.title}</div> : null}
+                {kiosk!.text ? <p>{kiosk!.text}</p> : null}
+                <div className="muted small">Element {kiosk!.index + 1} z {kiosk!.count}{kiosk!.isRunning || kiosk!.count < 2 ? "" : ", zatrzymany"}</div>
+              </div>
+            ) : null}
+            {!state!.isVideo && !state!.isKiosk ? <Lines lines={state!.lines} chords={chords} className="live-lines" /> : null}
+          </div>
+
+          {state!.nextLines?.length || state!.next ? (
+            <div className="upcoming">
+              <div className="upcoming-head"><span>Następna</span>{state!.next ? <span className="muted">{state!.next}</span> : null}</div>
+              {state!.nextLines ? <Lines lines={state!.nextLines} chords={chords} /> : null}
+            </div>
+          ) : null}
+
+          {state!.slideLabels.length > 1 ? (
+            <div className="slide-chips" aria-label="Slajdy">
+              {state!.slideLabels.map((label, i) => (
+                <button key={i} className={i === state!.slideIndex ? "active" : ""} aria-current={i === state!.slideIndex}
+                        onClick={() => void command("goto", { slide: i })}>{label}</button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      )}
     </section>
   );
 }
