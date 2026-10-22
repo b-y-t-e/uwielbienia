@@ -240,7 +240,10 @@ public sealed class ShaderPageTransition(IReadOnlyList<SlideTransition> effects)
         var scale = 1.0;
         if (TopLevel.GetTopLevel(visual) is { } top && visual.TransformToVisual(top) is { } matrix)
             scale = Math.Sqrt(matrix.M11 * matrix.M11 + matrix.M12 * matrix.M12) * top.RenderScaling;
-        scale = Math.Clamp(scale, 0.1, MaxCaptureWidth / size.Width);
+        // Nigdy mniej niż jeden piksel na jednostkę układu: widok efektu leży w tym samym miejscu co strona i ma jej
+        // rozmiar w jednostkach układu (np. 1920×1080), więc mniejszy zrzut shader najpierw rozciąga, a dopiero potem
+        // zmniejsza go „Dopasuj obraz” albo mały ekran — podwójne skalowanie rozmywa i pogrubia tekst.
+        scale = Math.Clamp(scale, 1.0, Math.Max(1.0, MaxCaptureWidth / size.Width));
         var pixels = new PixelSize(Math.Max(1, (int)Math.Round(size.Width * scale)), Math.Max(1, (int)Math.Round(size.Height * scale)));
         using var bitmap = new RenderTargetBitmap(pixels, new Vector(96 * scale, 96 * scale));
         bitmap.Render(visual);
