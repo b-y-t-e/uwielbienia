@@ -384,8 +384,9 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   tylko własne dodanie z telefonu i tylko póki pieśni nie pokazano). W oknie operatora dodana pieśń ma przez 8 s obwódkę
   i „Dodane z telefonu” (`RemoteCommandHandler.ItemAdded` → `PlanItemViewModel.IsAddedRemotely`); zaznaczenie operatora
   się nie zmienia.
-- **Panel** (drugi komputer, tablet — `web/panel`, React): kolumny Plan · Pieśń · Na ekranie jak w oknie operatora (wąski
-  ekran: jedna naraz, przełączana na dole) i okno „Plany”. Plany (lista, nowy, nazwa / data, otwórz, kopia na dziś, szablon,
+- **Panel** (drugi komputer, tablet — `web/panel`, React): kolumny Plan · Pieśń · Na ekranie jak w oknie operatora (szerokość zmienia
+  uchwyt między nimi — `useColumnWidths`, dwuklik = domyślne, zapamiętane w przeglądarce; wąski ekran: jedna naraz,
+  przełączana na dole) i okno „Plany”. W nagłówku przełącznik pełnego ekranu przeglądarki (`useFullscreen`). Plany (lista, nowy, nazwa / data, otwórz, kopia na dziś, szablon,
   usuń), plan (dodaj z wyszukiwarki w miejsce, przeciąganie za ⠿ — zdarzenia wskaźnika, działa dotykiem, duplikuj, usuń,
   pokaż), układ części pieśni (pominięcie, kolejność, „Powtórz”, usuń, przywróć) i ekran (slajdy, Wstecz / Dalej, czarny
   ekran, film, kiosk). Edycja treści pieśni, nowe teksty, prezentacje, filmy i kioski — tylko w aplikacji (pliki są tam).

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { command, connect, leave, useConnection, type Snapshot } from "./connection";
-import { useStored, useTheme } from "./settings";
+import { useFullscreen, useStored, useTheme } from "./settings";
+import { useColumnWidths } from "./columns";
 import { ItemColumn } from "./components/ItemColumn";
 import { LiveColumn } from "./components/LiveColumn";
-import { LeaveIcon, MoonIcon, SunIcon } from "./components/Icons";
+import { FullscreenExitIcon, FullscreenIcon, LeaveIcon, MoonIcon, SunIcon } from "./components/Icons";
 import { Confirm } from "./components/Dialog";
 import { PlanColumn } from "./components/PlanColumn";
 import { PlansDialog } from "./components/PlansDialog";
@@ -33,6 +34,8 @@ function Panel({ snapshot }: { snapshot: Snapshot }) {
   const [column, setColumn] = useState<Column>("plan");
   const [chords, setChords] = useStored<boolean>("panel-akordy", true);
   const [theme, toggleTheme] = useTheme();
+  const fullscreen = useFullscreen();
+  const { style: columnWidths, splitter } = useColumnWidths();
 
   // zaznaczenie znikło z planu (usunięte, inny plan) — pierwsza pozycja
   const items = plan?.items ?? [];
@@ -73,15 +76,27 @@ function Panel({ snapshot }: { snapshot: Snapshot }) {
         <button className="icon-button" aria-label={theme === "dark" ? "Jasny wygląd" : "Ciemny wygląd"} onClick={toggleTheme}>
           {theme === "dark" ? <SunIcon /> : <MoonIcon />}
         </button>
+        {fullscreen === null ? null : (
+          <button className="icon-button" onClick={fullscreen.toggle} disabled={!fullscreen.canToggle}
+                  aria-pressed={fullscreen.active}
+                  aria-label={fullscreen.active ? "Pełny ekran włączony" : "Pełny ekran"}
+                  title={fullscreen.canToggle
+                    ? (fullscreen.active ? "Zwykłe okno" : "Pełny ekran")
+                    : "Pełny ekran — wyjście klawiszem F11"}>
+            {fullscreen.active ? <FullscreenExitIcon /> : <FullscreenIcon />}
+          </button>
+        )}
         <button className="icon-button" aria-label="Odłącz od aplikacji" title="Odłącz od aplikacji" onClick={() => setLeaving(true)}>
           <LeaveIcon />
         </button>
       </header>
 
-      <main className={`columns show-${column}`}>
+      <main className={`columns show-${column}`} style={columnWidths}>
         <PlanColumn plan={plan} liveItemId={state?.itemId ?? null} selectedId={selectedId}
                     onSelect={(id) => setSelectedId(id)} />
+        <div {...splitter(0, "Szerokość kolumny Plan")} />
         <ItemColumn itemId={selectedId} planVersion={snapshot.planVersion} chords={chords} />
+        <div {...splitter(1, "Szerokość kolumny Pieśń")} />
         <LiveColumn snapshot={snapshot} chords={chords} />
       </main>
 
