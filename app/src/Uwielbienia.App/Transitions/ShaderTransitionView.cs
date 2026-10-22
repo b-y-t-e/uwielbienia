@@ -90,17 +90,34 @@ public sealed class ShaderTransitionView : Control
                 SKMatrix.CreateScale(width / from.Width, height / from.Height));
             using var toShader = to.ToShader(SKShaderTileMode.Clamp, SKShaderTileMode.Clamp, sampling,
                 SKMatrix.CreateScale(width / to.Width, height / to.Height));
-            // bez Dispose: zwolnienie buildera zwalnia też skompilowany efekt, wspólny dla wszystkich klatek
-            var builder = new SKRuntimeShaderBuilder(effect);
-            builder.Children["from"] = fromShader;
-            builder.Children["to"] = toShader;
-            builder.Uniforms["progress"] = progress;
-            builder.Uniforms["resolution"] = new[] { width, height };
-            builder.Uniforms["seed"] = seed;
-            builder.Uniforms["direction"] = new[] { (float)direction.X, (float)direction.Y };
-            using var shader = builder.Build();
-            using var paint = new SKPaint { Shader = shader };
-            canvas.DrawRect(SKRect.Create(width, height), paint);
+            lock (Builders)
+            {
+                var builder = Builder(effect);
+                builder.Children["from"] = fromShader;
+                builder.Children["to"] = toShader;
+                builder.Uniforms["progress"] = progress;
+                builder.Uniforms["resolution"] = new[] { width, height };
+                builder.Uniforms["seed"] = seed;
+                builder.Uniforms["direction"] = new[] { (float)direction.X, (float)direction.Y };
+                using var shader = builder.Build();
+                using var paint = new SKPaint { Shader = shader };
+                canvas.DrawRect(SKRect.Create(width, height), paint);
+            }
+        }
+
+        /// <summary>
+        /// Budowniczy na efekt, nie na klatkę: jego zwolnienie zwalnia też skompilowany efekt (wspólny dla wszystkich
+        /// klatek i przejść), więc nigdy go nie zwalniamy — nowy w każdej klatce zostawiałby ich tysiące.
+        /// Wszystkie ustawienia i <c>Build</c> są w jednym zamku, więc dwa przejścia naraz (rzutnik i „Na ekranie”)
+        /// nie mieszają sobie uniformów.
+        /// </summary>
+        private static readonly Dictionary<SKRuntimeEffect, SKRuntimeShaderBuilder> Builders = [];
+
+        private static SKRuntimeShaderBuilder Builder(SKRuntimeEffect effect)
+        {
+            if (!Builders.TryGetValue(effect, out var builder))
+                Builders[effect] = builder = new SKRuntimeShaderBuilder(effect);
+            return builder;
         }
     }
 }
