@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Uwielbienia.Core.AppWindows;
 using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Presentation;
 using Uwielbienia.Core.Slideshows;
@@ -18,6 +19,7 @@ public sealed partial class PreviewViewModel : ObservableObject
 {
     private readonly ISlideBuilder _slides;
     private readonly IVideoPlayer _video;
+    private readonly IAppWindowCapture _appWindows;
     private readonly ActivePlan _plan;
     private readonly PlanActions _planActions;
     private readonly ISongLibrary _library;
@@ -33,8 +35,10 @@ public sealed partial class PreviewViewModel : ObservableObject
         ISongLibrary library,
         ISongEditor editor,
         ISlideshowLibrary slideshows,
-        IVideoPlayer video)
+        IVideoPlayer video,
+        IAppWindowCapture appWindows)
     {
+        _appWindows = appWindows;
         _slideshows = slideshows;
         _video = video;
         Parts.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasRemovedSections));
@@ -82,11 +86,18 @@ public sealed partial class PreviewViewModel : ObservableObject
 
     public bool HasKiosk => Kiosk is not null;
 
+    /// <summary>Wybrana w planie aplikacja (obraz okna programu).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasAppWindow), nameof(ColumnTitle), nameof(IsEmpty), nameof(HasChordsToggle))]
+    public partial AppWindowDetailsViewModel? AppWindow { get; private set; }
+
+    public bool HasAppWindow => AppWindow is not null;
+
     /// <summary>Nic nie jest wybrane w planie.</summary>
-    public bool IsEmpty => Song is null && Presentation is null && Video is null && Kiosk is null;
+    public bool IsEmpty => Song is null && Presentation is null && Video is null && Kiosk is null && AppWindow is null;
 
     /// <summary>Przełącznik akordów ma sens tylko przy pieśni.</summary>
-    public bool HasChordsToggle => Presentation is null && Video is null && Kiosk is null && !IsText;
+    public bool HasChordsToggle => Presentation is null && Video is null && Kiosk is null && AppWindow is null && !IsText;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsEditing), nameof(IsViewing), nameof(ColumnTitle))]
@@ -95,7 +106,7 @@ public sealed partial class PreviewViewModel : ObservableObject
     public bool IsEditing => Editor is not null;
 
     /// <summary>Nagłówek kolumny: rodzaj wybranej pozycji, a w trakcie edycji — co jest edytowane.</summary>
-    public string ColumnTitle => Editor?.Heading ?? (Presentation is not null ? "Prezentacja" : Video is not null ? "Film" : Kiosk is not null ? "Kiosk" : IsText ? "Tekst" : "Pieśń");
+    public string ColumnTitle => Editor?.Heading ?? (Presentation is not null ? "Prezentacja" : Video is not null ? "Film" : Kiosk is not null ? "Kiosk" : AppWindow is not null ? "Aplikacja" : IsText ? "Tekst" : "Pieśń");
 
     public bool IsViewing => Editor is null;
 
@@ -154,6 +165,7 @@ public sealed partial class PreviewViewModel : ObservableObject
         Presentation = null;
         Video = null;
         Kiosk = null;
+        AppWindow = null;
         Load(song, planItem);
     }
 
@@ -192,11 +204,21 @@ public sealed partial class PreviewViewModel : ObservableObject
         Kiosk = new KioskViewModel(item, _plan, _slideshows);
     }
 
+    public void ShowAppWindow(AppWindowPlanItem item)
+    {
+        if (AppWindow?.Item == item)
+            return;
+        Clear();
+        IsFromPlan = true;
+        AppWindow = new AppWindowDetailsViewModel(item, _appWindows);
+    }
+
     public void ShowSong(Song song)
     {
         Presentation = null;
         Video = null;
         Kiosk = null;
+        AppWindow = null;
         _planItem = null;
         IsFromPlan = false;
         Load(song, null);
@@ -291,6 +313,7 @@ public sealed partial class PreviewViewModel : ObservableObject
         Presentation = null;
         Video = null;
         Kiosk = null;
+        AppWindow = null;
         Parts.Clear();
     }
 

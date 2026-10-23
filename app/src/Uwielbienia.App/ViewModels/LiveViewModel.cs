@@ -16,12 +16,14 @@ public sealed partial class LiveViewModel : ObservableObject
     private readonly ILiveControl _control;
 
     public LiveViewModel(
-        ILiveStateSource source, ILiveControl control, ProjectionAppearance appearance, VideoControlsViewModel video, KioskPlayback kiosk)
+        ILiveStateSource source, ILiveControl control, ProjectionAppearance appearance, VideoControlsViewModel video, KioskPlayback kiosk,
+        AppWindowLiveViewModel appWindow)
     {
         _control = control;
         Appearance = appearance;
         Video = video;
         Kiosk = kiosk;
+        AppWindow = appWindow;
         kiosk.PropertyChanged += (_, _) => OnPropertyChanged(nameof(CurrentLabel));
         source.StateChanged += (_, state) => Apply(state);
         Apply(source.State);
@@ -35,6 +37,9 @@ public sealed partial class LiveViewModel : ObservableObject
     /// <summary>Kiosk na ekranie: bieżący element (zmienia się sam).</summary>
     public KioskPlayback Kiosk { get; }
 
+    /// <summary>Aplikacja na ekranie: obraz okna programu.</summary>
+    public AppWindowLiveViewModel AppWindow { get; }
+
     [ObservableProperty]
     public partial LiveState State { get; private set; } = LiveState.Empty;
 
@@ -45,6 +50,7 @@ public sealed partial class LiveViewModel : ObservableObject
     {
         ImageSlide image => new ProjectedImage(image),
         VideoSlide video => new ProjectedVideo(video, Video.Frames),
+        AppWindowSlide app => new ProjectedAppWindow(app, AppWindow.Frames),
         KioskSlide kiosk => new ProjectedKiosk(kiosk, Kiosk),
         { } slide when State.Item is { } item => new ProjectedPage(slide, State.SlideIndex == 0 && item.ShowTitle ? item.Title : null),
         _ => null,
@@ -97,6 +103,8 @@ public sealed partial class LiveViewModel : ObservableObject
     public bool HasNextImage => NextTab?.Slide is ImageSlide;
 
     public bool HasCurrentVideo => CurrentTab?.Slide is VideoSlide;
+
+    public bool HasCurrentAppWindow => CurrentTab?.Slide is AppWindowSlide;
 
     /// <summary>Kiosk w kolumnie „Na ekranie” — tak jak na rzutniku, także pod czarnym ekranem (zmiana wtedy stoi).</summary>
     public ProjectedKiosk? CurrentKiosk => CurrentTab?.Slide is KioskSlide kiosk ? new ProjectedKiosk(kiosk, Kiosk) : null;
@@ -160,6 +168,7 @@ public sealed partial class LiveViewModel : ObservableObject
         OnPropertyChanged(nameof(HasCurrentImage));
         OnPropertyChanged(nameof(HasNextImage));
         OnPropertyChanged(nameof(HasCurrentVideo));
+        OnPropertyChanged(nameof(HasCurrentAppWindow));
         OnPropertyChanged(nameof(CurrentKiosk));
         OnPropertyChanged(nameof(HasCurrentKiosk));
         OnPropertyChanged(nameof(CurrentLabel));
@@ -218,6 +227,9 @@ public sealed record ProjectedImage(ImageSlide Image) : ProjectedPage(Image, nul
 
 /// <summary>Film na rzutniku: klatki na cały ekran na czarnym tle.</summary>
 public sealed record ProjectedVideo(VideoSlide Video, VideoFrames Frames) : ProjectedPage(Video, null);
+
+/// <summary>Aplikacja na rzutniku: obraz okna programu na cały ekran na czarnym tle (bez programu — sama czerń).</summary>
+public sealed record ProjectedAppWindow(AppWindowSlide Window, VideoFrames Frames) : ProjectedPage(Window, null);
 
 public sealed partial class SlideTabViewModel(int index, Slide slide) : ObservableObject
 {

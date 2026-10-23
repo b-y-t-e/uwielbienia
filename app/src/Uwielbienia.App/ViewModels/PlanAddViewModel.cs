@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Uwielbienia.Core.AppWindows;
 using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Slideshows;
 using Uwielbienia.Core.Songs;
@@ -16,7 +17,8 @@ public sealed partial class PlanAddViewModel(
     ISongSearch search,
     ISongLibrary library,
     PlanActions actions,
-    ISlideshowLibrary slideshows) : ObservableObject
+    ISlideshowLibrary slideshows,
+    IAppWindowCapture appWindows) : ObservableObject
 {
     private int _index;
 
@@ -45,6 +47,7 @@ public sealed partial class PlanAddViewModel(
         _index = index;
         Query = query;
         Error = null;
+        IsChoosingWindow = false;
         Fill();
         IsOpen = true;
     }
@@ -161,6 +164,42 @@ public sealed partial class PlanAddViewModel(
         actions.Insert(KioskPlanItem.Create(), _index);
         IsOpen = false;
     }
+
+    /// <summary>„Aplikacja”: zamiast wyszukiwarki lista otwartych okien — kliknięcie dodaje pozycję.</summary>
+    [ObservableProperty]
+    public partial bool IsChoosingWindow { get; private set; }
+
+    public ObservableCollection<AppWindowChoiceViewModel> Windows { get; } = [];
+
+    public bool HasWindows => Windows.Count > 0;
+
+    [RelayCommand]
+    private async Task ChooseWindow()
+    {
+        if (appWindows.Unavailable is { } reason)
+        {
+            Error = reason;
+            return;
+        }
+        var windows = await Task.Run(appWindows.Windows);
+        Windows.Clear();
+        foreach (var window in windows)
+            Windows.Add(new AppWindowChoiceViewModel(window));
+        Error = null;
+        OnPropertyChanged(nameof(HasWindows));
+        IsChoosingWindow = true;
+    }
+
+    [RelayCommand]
+    private void AddWindow(AppWindowChoiceViewModel choice)
+    {
+        actions.Insert(AppWindowPlanItem.For(choice.Window), _index);
+        IsChoosingWindow = false;
+        IsOpen = false;
+    }
+
+    [RelayCommand]
+    private void CancelWindow() => IsChoosingWindow = false;
 
     [RelayCommand]
     private void Close() => IsOpen = false;

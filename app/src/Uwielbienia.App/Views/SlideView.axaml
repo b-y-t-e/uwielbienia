@@ -32,6 +32,10 @@
           <DataTemplate DataType="vm:ProjectedVideo">
             <v:VideoSurface Frames="{Binding Frames}" />
           </DataTemplate>
+          <!-- Aplikacja: obraz okna programu; bez programu czarny ekran. -->
+          <DataTemplate DataType="vm:ProjectedAppWindow">
+            <v:VideoSurface Frames="{Binding Frames}" />
+          </DataTemplate>
           <!-- Obraz na tle ekranu (czarnym albo jasnym — „Ekran: …”), jak tekst. -->
           <DataTemplate DataType="vm:ProjectedImage">
             <Panel Background="{Binding #Root.SlideBackground}">

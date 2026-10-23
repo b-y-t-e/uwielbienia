@@ -158,7 +158,7 @@ public sealed record PlanMessage(
 
     /// <summary>
     /// Znacznik na liście jak w aplikacji — z opisu pozycji (<see cref="PlanItemKind"/>): <c>song</c>, <c>text</c>,
-    /// <c>presentation</c>, <c>video</c>, <c>kiosk</c>; nowy rodzaj pozycji działa bez zmian tutaj.
+    /// <c>presentation</c>, <c>video</c>, <c>kiosk</c>, <c>app</c>; nowy rodzaj pozycji działa bez zmian tutaj.
     /// </summary>
     public static string KindName(PlanItemKind kind) => JsonNamingPolicy.CamelCase.ConvertName(kind.ToString());
 

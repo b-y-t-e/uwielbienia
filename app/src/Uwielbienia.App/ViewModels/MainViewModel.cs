@@ -101,6 +101,9 @@ public sealed partial class MainViewModel : ObservableObject
             case KioskPlanItem kiosk:
                 preview.ShowKiosk(kiosk);
                 break;
+            case AppWindowPlanItem app:
+                preview.ShowAppWindow(app);
+                break;
             default:
                 preview.Clear();
                 break;

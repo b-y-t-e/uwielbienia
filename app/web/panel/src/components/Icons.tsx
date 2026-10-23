@@ -15,8 +15,9 @@ export const PlayIcon = () => <svg viewBox="0 0 16 16" aria-hidden="true" fill="
 export const PauseIcon = () => <svg viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M3,2 L5.6,2 L5.6,14 L3,14 Z M10.4,2 L13,2 L13,14 L10.4,14 Z" /></svg>;
 export const SlideIcon = () => svg(<><rect x="3.5" y="5" width="17" height="12" rx="1.5" /><path d="M9 21h6M12 17v4" /></>);
 export const KioskIcon = () => svg(<><rect x="3" y="7" width="14" height="11" rx="1.5" /><path d="M7 4h12.5A1.5 1.5 0 0 1 21 5.5V15" /></>);
+export const AppIcon = () => svg(<><rect x="3" y="4.5" width="18" height="15" rx="1.5" /><path d="M3 9h18" /></>);
 
-/** Znacznik pozycji jak w planie aplikacji: numer pieśni, kropka tekstu, znak slajdu / filmu / kiosku. */
+/** Znacznik pozycji jak w planie aplikacji: numer pieśni, kropka tekstu, znak slajdu / filmu / kiosku / okna programu. */
 export function KindMark({ kind, number }: { kind: string; number?: number | null }) {
   switch (kind) {
     case "song": return <span className="mark number">{number ?? ""}</span>;
@@ -24,6 +25,7 @@ export function KindMark({ kind, number }: { kind: string; number?: number | nul
     case "presentation": return <span className="mark media"><SlideIcon /></span>;
     case "video": return <span className="mark media"><PlayIcon /></span>;
     case "kiosk": return <span className="mark media"><KioskIcon /></span>;
+    case "app": return <span className="mark media"><AppIcon /></span>;
     default: return <span className="mark" />;
   }
 }

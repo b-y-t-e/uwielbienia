@@ -15,6 +15,8 @@ public enum PlanItemKind
     Video,
     /// <summary>Kiosk: obrazy i napisy zmieniające się same (znak kiosku zamiast numeru).</summary>
     Kiosk,
+    /// <summary>Aplikacja: obraz okna innego programu (znak okna zamiast numeru).</summary>
+    App,
 }
 
 /// <summary>Jak pozycja wygląda na liście planu.</summary>

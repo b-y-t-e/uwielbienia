@@ -36,6 +36,7 @@ public partial class App : Application
             _services = AppComposition.Build(paths);
             // Film gra, gdy jego slajd jest na ekranie — nasłuchuje od początku.
             _services.GetRequiredService<VideoDirector>();
+            _services.GetRequiredService<Uwielbienia.Core.AppWindows.AppWindowDirector>();
             _services.GetRequiredService<PlansViewModel>().OpenInitial();
 
             var window = _services.GetRequiredService<MainWindow>();

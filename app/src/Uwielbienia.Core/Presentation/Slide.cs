@@ -25,6 +25,12 @@ public sealed record ImageSlide(string ImageFile, int Number) : Slide($"S{Number
 /// <param name="File">Pełna ścieżka pliku filmu.</param>
 public sealed record VideoSlide(string File) : Slide("F", "Film", []);
 
+/// <summary>Okno innego programu na cały ekran; pokazuje je <see cref="AppWindows.IAppWindowCapture"/>, gdy slajd jest na ekranie.</summary>
+public sealed record AppWindowSlide(string Process, string? WindowTitle) : Slide("A", "Aplikacja", [])
+{
+    public AppWindows.AppWindowTarget Target => new(Process, WindowTitle);
+}
+
 /// <summary>Wers slajdu.</summary>
 /// <param name="Text">Tekst do wyświetlenia (bez znaczników).</param>
 /// <param name="Chords">Akordy (tylko dla operatora; nigdy na ekranie projekcji).</param>

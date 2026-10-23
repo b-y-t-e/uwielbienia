@@ -123,9 +123,14 @@ public partial class MainWindow : Window
             case Key.PageDown or Key.PageUp or Key.F5:
                 // piloty do prezentacji działają także przy otwartym oknie
                 return e.Handled = LiveKeyboard.Handle(e, ViewModel.Control, ViewModel.Projection, ViewModel.Film);
+            case Key.Escape when add.IsChoosingWindow:
+                add.CancelWindowCommand.Execute(null);
+                break;
             case Key.Escape:
                 add.CloseCommand.Execute(null);
                 break;
+            case Key.Enter or Key.Down or Key.Up when add.IsChoosingWindow:
+                return false; // lista okien — klawisze jak zwykle (Enter na przycisku okna)
             case Key.Enter:
                 add.AddCommand.Execute(null);
                 break;

@@ -205,6 +205,7 @@
                           <Border Classes="slideMark" IsVisible="{Binding IsPresentation}" />
                           <Path Classes="videoMark" IsVisible="{Binding IsVideo}" />
                           <Path Classes="kioskMark" IsVisible="{Binding IsKiosk}" />
+                          <Path Classes="appMark" IsVisible="{Binding IsApp}" />
                         </Panel>
                         <StackPanel Grid.Column="2" VerticalAlignment="Center">
                           <TextBlock Classes="bodyStrong" Classes.textItem="{Binding IsText}" Classes.presentationItem="{Binding IsMedia}"
@@ -323,6 +324,19 @@
                       <TextBlock Classes="caption" Text="{Binding File}" TextWrapping="Wrap" />
                       <TextBlock Classes="caption failed" Text="Nie ma tego pliku. Gdy wróci na swoje miejsce (np. podłączony pendrive), film będzie gotowy sam." TextWrapping="Wrap"
                                  Margin="0,8,0,0" IsVisible="{Binding IsMissing}" />
+                      <TextBlock Classes="caption failed" Text="{Binding Unavailable}" TextWrapping="Wrap" Margin="0,8,0,0"
+                                 IsVisible="{Binding Unavailable, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ContentControl.ContentTemplate>
+              </ContentControl>
+              <!-- Aplikacja: obraz okna wybranego programu (gdy nie jest uruchomiony — czarny ekran). -->
+              <ContentControl Content="{Binding Preview.AppWindow}" IsVisible="{Binding Preview.HasAppWindow}">
+                <ContentControl.ContentTemplate>
+                  <DataTemplate x:DataType="vm:AppWindowDetailsViewModel">
+                    <StackPanel>
+                      <TextBlock Classes="songTitle" Text="{Binding Title}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Title}" />
+                      <TextBlock Classes="caption" Text="{Binding Source}" TextWrapping="Wrap" />
                       <TextBlock Classes="caption failed" Text="{Binding Unavailable}" TextWrapping="Wrap" Margin="0,8,0,0"
                                  IsVisible="{Binding Unavailable, Converter={x:Static ObjectConverters.IsNotNull}}" />
                     </StackPanel>
@@ -564,6 +578,14 @@
                                      SlideAccent="{Binding Live.Appearance.Accent}"
                                      SlideTitle="{Binding Live.Appearance.Title}" />
                       </Border>
+                      <!-- Aplikacja: ten sam obraz co na rzutniku; bez programu — czarny i informacja dlaczego. -->
+                      <StackPanel IsVisible="{Binding Live.HasCurrentAppWindow}" Spacing="8" Margin="0,0,0,4">
+                        <Border Classes="slideThumb">
+                          <v:VideoSurface Frames="{Binding Live.AppWindow.Frames}" />
+                        </Border>
+                        <TextBlock Classes="caption" Text="{Binding Live.AppWindow.Status}" TextWrapping="Wrap"
+                                   IsVisible="{Binding Live.AppWindow.IsWaiting}" />
+                      </StackPanel>
                       <!-- Film: ten sam obraz co na rzutniku, pauza (spacja), przewijanie i czas. -->
                       <StackPanel IsVisible="{Binding Live.HasCurrentVideo}" Spacing="8" Margin="0,0,0,4">
                         <!-- Kliknięcie w film = pauza / wznowienie (jak w odtwarzaczu i na rzutniku). -->
@@ -677,6 +699,7 @@
             <Button Grid.Column="1" Classes="quiet closeButton" Content="✕" ToolTip.Tip="Zamknij" Command="{Binding PlanAdd.CloseCommand}" />
           </Grid>
           <TextBox x:Name="PlanAddBox" DockPanel.Dock="Top" Classes="search" Text="{Binding PlanAdd.Query}" Margin="0,0,0,10"
+                   IsVisible="{Binding !PlanAdd.IsChoosingWindow}"
                    PlaceholderText="Szukaj pieśni lub tekstu: numer albo słowa" />
           <!-- Nowa pozycja: każdy rodzaj z własną ikoną (cały rząd to dodawanie, więc bez „+”). -->
           <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,12,Auto" Margin="0,12,0,0">
@@ -717,14 +740,46 @@
                   <TextBlock Text="Kiosk" />
                 </StackPanel>
               </Button>
+              <Button Classes="addKind" Command="{Binding PlanAdd.ChooseWindowCommand}" ToolTip.Tip="Obraz okna innego programu, np. „Ekran bezprzewodowy”">
+                <StackPanel>
+                  <Path Data="M3,4 H21 V19 H3 Z M3,8 H21" />
+                  <TextBlock Text="Aplikacja" />
+                </StackPanel>
+              </Button>
             </WrapPanel>
             <Button Grid.Column="2" Classes="primary" Content="Wybierz" Command="{Binding PlanAdd.AddCommand}" VerticalAlignment="Bottom"
-                    CommandParameter="{x:Null}" IsEnabled="{Binding PlanAdd.HasSelection}" />
+                    CommandParameter="{x:Null}" IsEnabled="{Binding PlanAdd.HasSelection}" IsVisible="{Binding !PlanAdd.IsChoosingWindow}" />
           </Grid>
           <TextBlock DockPanel.Dock="Bottom" Classes="caption failed" Text="{Binding PlanAdd.Error}" TextWrapping="Wrap" Margin="0,10,0,0"
                      IsVisible="{Binding PlanAdd.Error, Converter={x:Static ObjectConverters.IsNotNull}}" />
+          <!-- „Aplikacja”: otwarte okna programów zamiast wyszukiwarki; kliknięcie dodaje pozycję. -->
+          <DockPanel DockPanel.Dock="Top" IsVisible="{Binding PlanAdd.IsChoosingWindow}" Height="420">
+            <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+              <TextBlock Classes="bodyStrong" Text="Który program pokazywać?" VerticalAlignment="Center" />
+              <Button Grid.Column="1" Content="Wróć" Command="{Binding PlanAdd.CancelWindowCommand}" />
+            </Grid>
+            <Panel>
+              <TextBlock Classes="bodyMuted" Text="Brak otwartych okien" HorizontalAlignment="Center" VerticalAlignment="Center"
+                         IsVisible="{Binding !PlanAdd.HasWindows}" />
+              <ScrollViewer>
+                <ItemsControl ItemsSource="{Binding PlanAdd.Windows}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:AppWindowChoiceViewModel">
+                      <Button Classes="quiet" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                              Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).PlanAdd.AddWindowCommand}" CommandParameter="{Binding}">
+                        <StackPanel>
+                          <TextBlock Classes="bodyStrong" Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                          <TextBlock Classes="caption" Text="{Binding Process}" TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                      </Button>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </Panel>
+          </DockPanel>
           <!-- Klik zaznacza; dodaje „Wybierz”, Enter albo dwuklik. -->
-          <ListBox ItemsSource="{Binding PlanAdd.Results}" SelectedItem="{Binding PlanAdd.Selected}">
+          <ListBox ItemsSource="{Binding PlanAdd.Results}" SelectedItem="{Binding PlanAdd.Selected}" IsVisible="{Binding !PlanAdd.IsChoosingWindow}">
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:SongResultViewModel">
                 <Grid ColumnDefinitions="40,*" Background="Transparent" DoubleTapped="OnPlanAddResultDoubleTapped">
@@ -798,6 +853,12 @@
     <!-- Kiosk: dwa nałożone slajdy (zmieniają się same), w kolorze prezentacji. -->
     <Style Selector="Path.kioskMark">
       <Setter Property="Data" Value="M 4,0 H 14 V 8 M 0,3 H 10 V 11 H 0 Z" />
+      <Setter Property="Stroke" Value="{DynamicResource PresentationItemBrush}" />
+      <Setter Property="StrokeThickness" Value="1.5" />
+    </Style>
+    <!-- Aplikacja: okno programu (ramka z paskiem tytułu), w kolorze prezentacji. -->
+    <Style Selector="Path.appMark">
+      <Setter Property="Data" Value="M 0,0 H 14 V 11 H 0 Z M 0,3 H 14" />
       <Setter Property="Stroke" Value="{DynamicResource PresentationItemBrush}" />
       <Setter Property="StrokeThickness" Value="1.5" />
     </Style>

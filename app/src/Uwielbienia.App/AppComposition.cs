@@ -3,6 +3,7 @@ using Uwielbienia.App.Services;
 using Uwielbienia.App.ViewModels;
 using Uwielbienia.App.Views;
 using Uwielbienia.Core;
+using Uwielbienia.Core.AppWindows;
 using Uwielbienia.Core.Kiosks;
 using Uwielbienia.Core.Plans;
 using Uwielbienia.Core.Presentation;
@@ -64,6 +65,7 @@ public static class AppComposition
         services.AddSingleton<IPlanItemType, PresentationPlanItemType>();
         services.AddSingleton<IPlanItemType, VideoPlanItemType>();
         services.AddSingleton<IPlanItemType, KioskPlanItemType>();
+        services.AddSingleton<IPlanItemType, AppWindowPlanItemType>();
         services.AddSingleton<IPlanItemTypes, PlanItemTypes>();
         services.AddSingleton<LiveSession>();
         services.AddSingleton<ILiveControl>(sp => sp.GetRequiredService<LiveSession>());
@@ -85,6 +87,12 @@ public static class AppComposition
         services.AddSingleton<VideoDirector>();
         services.AddSingleton<FilmRemote>(sp => new FilmRemote(
             sp.GetRequiredService<ILiveControl>(), sp.GetRequiredService<ILiveStateSource>(), sp.GetRequiredService<IVideoPlayer>()));
+
+        // aplikacja: obraz okna innego programu, gdy jego slajd jest na ekranie (AppWindowDirector)
+        services.AddSingleton<AppWindowCapture>();
+        services.AddSingleton<IAppWindowCapture>(sp => sp.GetRequiredService<AppWindowCapture>());
+        services.AddSingleton<AppWindowDirector>();
+        services.AddSingleton<AppWindowLiveViewModel>();
 
         // kiosk: jedna zmiana elementów dla rzutnika, okna operatora i telefonu
         services.AddSingleton(sp => new KioskRotation(sp.GetRequiredService<ILiveStateSource>(), sp.GetRequiredService<IUiDispatcher>()));

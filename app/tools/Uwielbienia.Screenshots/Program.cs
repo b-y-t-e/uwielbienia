@@ -16,11 +16,14 @@ using Uwielbienia.Core.Songs;
 
 // Renderuje okna aplikacji do PNG bez wyświetlania ich na ekranie — do przeglądu wyglądu.
 // Użycie: dotnet run --project tools/Uwielbienia.Screenshots -- <katalog_wyjściowy> [light] [--video <plik filmu>]
-// Z --video film gra naprawdę (VLC) — rzutnik i „Na ekranie” pokazują jego klatki.
+//        [--app-window <proces>[|<tytuł okna>]]
+// Z --video film gra naprawdę (VLC) — rzutnik i „Na ekranie” pokazują jego klatki. Z --app-window pozycja „Aplikacja”
+// pokazuje prawdziwe okno tego programu (np. ApplicationFrameHost|Ekran bezprzewodowy); bez — program nieuruchomiony.
 
 var output = args.Length > 0 ? args[0] : Path.Combine(Path.GetTempPath(), "uwielbienia-shots");
 var light = args.Contains("light");
 var videoArg = Array.IndexOf(args, "--video") is var at and >= 0 && at + 1 < args.Length ? args[at + 1] : null;
+var appArg = Array.IndexOf(args, "--app-window") is var appAt and >= 0 && appAt + 1 < args.Length ? args[appAt + 1].Split('|', 2) : null;
 Directory.CreateDirectory(output);
 
 AppBuilder.Configure<App>()
@@ -44,6 +47,9 @@ var slideFiles = Enumerable.Range(1, 3).Select(i => DrawSlide(i, Path.Combine(ro
 var imported = services.GetRequiredService<ISlideshowLibrary>().ImportAsync(slideFiles).GetAwaiter().GetResult();
 plan = plan.Insert(3, new PresentationPlanItem(Guid.NewGuid(), imported.Folder, "Ogłoszenia parafialne"));
 plan = plan.Insert(5, new VideoPlanItem(Guid.NewGuid(), videoArg ?? Path.Combine(root, "swiadectwo.mp4"), "Świadectwo Ani"));
+plan = plan.Insert(6, appArg is null
+    ? new AppWindowPlanItem(Guid.NewGuid(), "Ekran bezprzewodowy", "nieuruchomiony-program", null)
+    : new AppWindowPlanItem(Guid.NewGuid(), appArg.Length > 1 ? appArg[1] : appArg[0], appArg[0], appArg.Length > 1 ? appArg[1] : null));
 // Kiosk: obraz poziomy z napisem (pod spodem), pionowy z napisem (z prawej), sam napis i sam obraz.
 var kioskImages = services.GetRequiredService<ISlideshowLibrary>().ImportEachAsync(
     [DrawSlide(2, Path.Combine(root, "kiosk-poziomy.png")), DrawPortrait(Path.Combine(root, "kiosk-pionowy.png")), slideFiles[2]])
@@ -329,6 +335,27 @@ if (videoArg is not null)
 else
 {
     Save(window, "film-brak-pliku", settle: true);
+}
+
+// Aplikacja: kolumna „Pieśń”, „Na ekranie” i rzutnik — obraz okna programu albo czarny ekran, gdy go nie ma.
+services.GetRequiredService<Uwielbienia.Core.AppWindows.AppWindowDirector>();
+main.Plan.Selected = main.Plan.Items.First(i => i.IsApp);
+control.Show(active.Playlist.First(i => i.Slides.FirstOrDefault() is AppWindowSlide));
+for (var i = 0; i < 2000 / 20; i++)
+{
+    Dispatcher.UIThread.RunJobs();
+    Thread.Sleep(20);
+}
+Save(window, "aplikacja", settle: true);
+Save(projection, "projekcja-aplikacja", settle: true);
+Console.WriteLine("APLIKACJA " + (services.GetRequiredService<AppWindowCapture>().Shown?.ToString() ?? "brak okna"));
+control.Clear();
+if (appArg is not null)
+{
+    main.PlanAdd.Open(main.Plan.Items.Count);
+    main.PlanAdd.ChooseWindowCommand.Execute(null);
+    Save(window, "plan-dodaj-aplikacja");
+    main.PlanAdd.CloseCommand.Execute(null);
 }
 
 // Dopasowanie obrazu: przekrzywiony czworokąt z siatką i uchwytami.

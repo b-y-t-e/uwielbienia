@@ -32,7 +32,7 @@ export interface StateMessage {
   isKiosk?: boolean;
 }
 
-export type ItemKind = "song" | "text" | "presentation" | "video" | "kiosk";
+export type ItemKind = "song" | "text" | "presentation" | "video" | "kiosk" | "app";
 
 export interface PlanItemMessage {
   id: string;

@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Uwielbienia.Core.AppWindows;
 using Uwielbienia.Core.Presentation;
 using Uwielbienia.Core.Songs;
 
@@ -82,7 +83,7 @@ public sealed record Plan(
 
 /// <summary>
 /// Pozycja planu: pieśń lub tekst (<see cref="SongPlanItem"/>), prezentacja (<see cref="PresentationPlanItem"/>),
-/// film (<see cref="VideoPlanItem"/>), kiosk (<see cref="KioskPlanItem"/>).
+/// film (<see cref="VideoPlanItem"/>), kiosk (<see cref="KioskPlanItem"/>), aplikacja (<see cref="AppWindowPlanItem"/>).
 /// Nowy rodzaj = nowy rekord z <see cref="JsonDerivedTypeAttribute"/> (CLAUDE.md: „Nowy rodzaj elementu”).
 /// </summary>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
@@ -90,6 +91,7 @@ public sealed record Plan(
 [JsonDerivedType(typeof(PresentationPlanItem), "presentation")]
 [JsonDerivedType(typeof(VideoPlanItem), "video")]
 [JsonDerivedType(typeof(KioskPlanItem), "kiosk")]
+[JsonDerivedType(typeof(AppWindowPlanItem), "app")]
 public abstract record PlanItem(Guid Id)
 {
     public abstract PlanItem WithNewId();
@@ -212,6 +214,20 @@ public sealed record PresentationPlanItem(
 public sealed record VideoPlanItem(Guid Id, string File, string Title) : PlanItem(Id)
 {
     public static VideoPlanItem For(string file) => new(Guid.NewGuid(), file, Path.GetFileNameWithoutExtension(file));
+
+    public override PlanItem WithNewId() => this with { Id = Guid.NewGuid() };
+}
+
+/// <summary>Aplikacja: obraz okna innego programu (np. „Ekran bezprzewodowy”), dopóki pozycja jest na ekranie.</summary>
+/// <param name="Process">Nazwa procesu programu (bez <c>.exe</c>).</param>
+/// <param name="WindowTitle">Tytuł okna — tylko dla aplikacji ze Sklepu (<see cref="AppWindowTarget"/>); <c>null</c> = dowolne okno.</param>
+public sealed record AppWindowPlanItem(Guid Id, string Title, string Process, string? WindowTitle) : PlanItem(Id)
+{
+    public static AppWindowPlanItem For(AppWindowInfo window)
+    {
+        var target = AppWindowTarget.For(window);
+        return new(Guid.NewGuid(), window.Title.Length > 0 ? window.Title : window.Process, target.Process, target.Title);
+    }
 
     public override PlanItem WithNewId() => this with { Id = Guid.NewGuid() };
 }

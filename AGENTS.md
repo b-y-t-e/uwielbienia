@@ -162,7 +162,7 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
 
 | Projekt | Rola |
 |---|---|
-| `src/Uwielbienia.Core` | logika bez UI: pieśni (`Songs/`), plany (`Plans/`), ekran (`Presentation/`), prezentacje (`Slideshows/`), filmy (`Videos/`), kioski (`Kiosks/`), aktualizacje (`Updates/`) |
+| `src/Uwielbienia.Core` | logika bez UI: pieśni (`Songs/`), plany (`Plans/`), ekran (`Presentation/`), prezentacje (`Slideshows/`), filmy (`Videos/`), kioski (`Kiosks/`), okna programów (`AppWindows/`), aktualizacje (`Updates/`) |
 | `src/Uwielbienia.Link` | tailcat-link: protokół JSON (`RemoteProtocol`, panel — `PanelProtocol`), polecenia z telefonu i panelu (`RemoteCommandHandler`, `PanelCommands`), serwer (`LinkRemoteServer`) |
 | `src/Uwielbienia.App` | Avalonia: widoki (`Views/`), modele widoków (`ViewModels/`), usługi okienkowe (`Services/`), motywy (`Themes/`), czcionki, korzeń DI `AppComposition` |
 | `src/Uwielbienia.Desktop` | program Windows/Linux (`Program.cs`, Velopack) |
@@ -229,7 +229,8 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   (`PlanItemTypes` — rejestr wszystkich `IPlanItemType`) daje opis na liście (`PlanItemInfo`:
   tytuł, numer, `PlanItemKind`, uwaga) i slajdy (`LiveItem`), a jego `Changed` (zmieniona treść)
   przebudowuje plan. Rodzaje: `SongPlanItemType` (pieśń i tekst; też `ISongPresenter` — pieśń
-  spoza planu na ekran), `PresentationPlanItemType` (prezentacja), `VideoPlanItemType` (film) i `KioskPlanItemType` (kiosk).
+  spoza planu na ekran), `PresentationPlanItemType` (prezentacja), `VideoPlanItemType` (film), `KioskPlanItemType` (kiosk)
+  i `AppWindowPlanItemType` (aplikacja).
 - **Prezentacje** (`PresentationPlanItem`: folder + tytuł). `SlideshowLibrary` kopiuje plik
   PowerPoint (`.pptx .ppt .pps .ppsx .pptm .ppsm .odp`) albo obrazy (`.png .jpg .jpeg .bmp .webp`,
   kilka = jedna prezentacja; „Obraz” — `ImportEachAsync`: każdy obraz osobno, wszystko albo nic) do
@@ -304,6 +305,22 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   `null` = domyślnie Akwarela; tylko własne — przejścia planu ich nie zmieniają) i **powolny zoom** zdjęć (`SlowZoom`, efekt Kena Burnsa — `Views/SlowZoom`: przejście
   `TransformOperationsTransition`, bo Avalonia nie animuje `RenderTransform` klatkami kluczowymi; rusza po przejściu; tylko
   w ramce na wymiar zdjęcia — przesuwany element na cały ekran zostawiał jasną linię na brzegu).
+- **Aplikacja** (`AppWindowPlanItem`: tytuł, proces i — tylko dla aplikacji ze Sklepu, które wszystkie działają w
+  `ApplicationFrameHost` — tytuł okna; `AppWindowTarget`): obraz okna innego programu (np. „Ekran bezprzewodowy” — obraz z
+  telefonu przez Miracast) na rzutniku. Jeden slajd `AppWindowSlide`; `AppWindowDirector` (Core) pokazuje okno, póki slajd
+  jest na ekranie (także pod czarnym ekranem), zejście = `Stop` (ostatnia klatka zostaje 5 s — przejście robi zrzut starej
+  strony dopiero, gdy nowa jest gotowa, co na słabszym komputerze trwa; inaczej szłoby przez czerń). `AppWindowCapture`
+  (App/Services) co sekundę szuka okna: nie ma programu — czarny ekran i „Program nie jest uruchomiony” w „Na ekranie”,
+  pojawi się — od razu jego obraz, kilka pasujących okien — pierwsze znalezione. Błąd przechwytywania (np. brak sprzętowego
+  Direct3D 11) nie zamyka aplikacji: raz do `bledy.log`, „Nie udało się pokazać okna: …” w „Na ekranie”, próba co sekundę.
+  Każde `Show` / `Stop` zmienia licznik pokazywań — stary wątek nie rusza już obrazu ani stanu. Przechwytywanie: Windows Graphics Capture (`WindowCaptureSession` — WinRT i
+  Direct3D 11 wprost przez tablice metod COM, bez zmiany `net10.0`; Windows 10 2004+, na Linuksie `Unavailable`): działa
+  dla okna zasłoniętego, nie zminimalizowanego — zminimalizowane wraca na pulpit pod inne okna; bez kursora i (Windows 11)
+  bez żółtej ramki. Na ekran trafia sama treść okna (obszar klienta, u aplikacji ze Sklepu pod paskiem tytułu —
+  `NativeWindows.Content`). Klatki jak film: `VideoFrames` → `VideoSurface` (rzutnik `ProjectedAppWindow`, podgląd w
+  „Na ekranie”), więc działa „Dopasuj obraz” i przenikanie. Dodawanie: „Dodaj do planu” → „Aplikacja” → lista otwartych
+  okien (kliknięcie dodaje). Próba z prawdziwym oknem: `dotnet run --project app/tools/Uwielbienia.Screenshots -- <katalog>
+  --app-window "ApplicationFrameHost|Ekran bezprzewodowy"` (albo sama nazwa procesu).
 - **Przejścia slajdów** (`App/Transitions`, ogólne). Są dwa rodzaje: **między pozycjami planu** — tylko efekty planu
   (`Plan.Transitions`, pierwszy przycisk przejścia w pasku górnym — napis to sam efekt, np. „Akwarela”, `PlanTransitionsViewModel`;
   pozycja nie ma własnego wejścia), i **między slajdami jednej pozycji** — drugi przycisk w pasku (`Plan.InnerTransitions`,
@@ -426,7 +443,8 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
    (podmiana na żywo) działa dla pól rekordu; kolekcje porównuje tylko `Lines`.
 4. **Lista planu** (`MainWindow.axaml`, wiersz planu i „Dodaj do planu”): znacznik i kolor wg
    `PlanItemKind` (numer; kropka + `TextItemBrush` dla `Text`; znak slajdu + `PresentationItemBrush`
-   dla `Presentation`; trójkąt odtwarzania w tym samym kolorze dla `Video`; dwa nałożone slajdy dla `Kiosk`). `PlanItemInfo.Note` = uwaga pod tytułem.
+   dla `Presentation`; trójkąt odtwarzania w tym samym kolorze dla `Video`; dwa nałożone slajdy dla `Kiosk`; okno z paskiem
+   tytułu dla `App`). `PlanItemInfo.Note` = uwaga pod tytułem.
 5. **Kolumna „Pieśń”:** `MainViewModel.ShowDetails` wybiera widok dla zaznaczonej pozycji;
    nowy rodzaj dostaje własny model widoku i szablon (wzorzec: `PresentationViewModel`).
 6. **Dodawanie:** przycisk w oknie „Dodaj do planu” (`PlanAddViewModel`) tworzący pozycję i
@@ -448,7 +466,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 - Każda czynność ma jedno miejsce:
   - dodawanie do planu tylko z planu: „+”, prawy klik („Dodaj powyżej / poniżej”) albo pisanie
     gdziekolwiek w oknie → okno „Dodaj do planu” (`PlanAddViewModel`: zaznacz + „Wybierz”, Enter,
-    dwuklik; „Nowa pieśń / Nowy tekst / Prezentacja / Obraz / Film / Kiosk”, z ikonami; „Obraz” = każdy wybrany obraz
+    dwuklik; „Nowa pieśń / Nowy tekst / Prezentacja / Obraz / Film / Kiosk / Aplikacja”, z ikonami; „Obraz” = każdy wybrany obraz
     osobną pozycją, na cały ekran — jednoslajdowa prezentacja); plik prezentacji (lub obrazy,
     filmy) upuszczony na plan trafia za wiersz pod kursorem;
   - na ekran wyłącznie dwuklikiem albo prawym klikiem („Pokaż na ekranie”) w planie;
@@ -484,7 +502,7 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 
 - Paleta „nocny granat + świeca” (`Themes/Palette.axaml`, jasny i ciemny). Akcenty mają stałe
   znaczenie: świeca (`CandleBrush`) = to, co jest na ekranie; `ChordBrush` = akordy;
-  `TextItemBrush` = teksty w planie; `PresentationItemBrush` = prezentacje, filmy i kioski w planie;
+  `TextItemBrush` = teksty w planie; `PresentationItemBrush` = prezentacje, filmy, kioski i aplikacje w planie;
   `DangerBrush` = usuwanie i błędy. Typografia operatora: skala
   13/15/18/24 (`Themes/Controls.axaml`). Kroje: Atkinson Hyperlegible Next (interfejs), Literata
   (tytuły, tekst na rzutniku).

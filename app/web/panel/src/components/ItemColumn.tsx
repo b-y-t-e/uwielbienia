@@ -7,7 +7,7 @@ import { Lines } from "./Lines";
 import { Menu, type MenuAction } from "./Menu";
 
 const kindTitle: Record<string, string> = {
-  song: "Pieśń", text: "Tekst", presentation: "Prezentacja", video: "Film", kiosk: "Kiosk",
+  song: "Pieśń", text: "Tekst", presentation: "Prezentacja", video: "Film", kiosk: "Kiosk", app: "Aplikacja",
 };
 
 /**

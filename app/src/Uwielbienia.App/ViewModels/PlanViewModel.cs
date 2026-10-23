@@ -208,8 +208,10 @@ public sealed partial class PlanItemViewModel(PlanItem item, PlanItemInfo info, 
 
     public bool IsKiosk => Info.Kind == PlanItemKind.Kiosk;
 
+    public bool IsApp => Info.Kind == PlanItemKind.App;
+
     /// <summary>Prezentacja, film albo kiosk — ten sam kolor w planie.</summary>
-    public bool IsMedia => IsPresentation || IsVideo || IsKiosk;
+    public bool IsMedia => IsPresentation || IsVideo || IsKiosk || IsApp;
 
     public string Title => Info.Title;
 
