@@ -30,6 +30,9 @@ export interface StateMessage {
   nextLines?: LineMessage[] | null;
   isVideo?: boolean;
   isKiosk?: boolean;
+  /** Klucz obrazu slajdu (prezentacja) do polecenia „image”; następnego slajdu — `nextImage`. */
+  image?: string | null;
+  nextImage?: string | null;
 }
 
 export type ItemKind = "song" | "text" | "presentation" | "video" | "kiosk" | "app";
@@ -88,6 +91,8 @@ export interface ItemMessage {
   canReorder?: boolean;
   parts?: PartMessage[] | null;
   removed?: { code: string; name: string }[] | null;
+  /** Klucze obrazów slajdów (prezentacja, obraz) — miniatury; `null` = pozycja bez obrazów. */
+  images?: (string | null)[] | null;
 }
 
 export interface VideoMessage {
@@ -142,6 +147,8 @@ export interface CommandReply {
   kiosk?: Omit<KioskMessage, "type">;
   plans?: Omit<PlansMessage, "type">;
   item?: ItemMessage;
+  /** Odpowiedź na „image”: zmniejszony obraz (data URL). */
+  image?: string | null;
 }
 
 export type Notification = StateMessage | PlanMessage | PlansMessage | VideoMessage | KioskMessage | DeviceMessage;
@@ -161,4 +168,6 @@ export interface Command {
   kind?: "event" | "template";
   index?: number;
   layout?: LayoutEntry[];
+  key?: string;
+  width?: number;
 }

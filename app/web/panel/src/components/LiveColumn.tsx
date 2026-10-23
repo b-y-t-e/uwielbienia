@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { command, type Snapshot } from "../connection";
+import { preloadSlideImage, SLIDE_WIDTH, THUMBNAIL_WIDTH, useSlideImage } from "../images";
 import { Lines } from "./Lines";
 import { PauseIcon, PlayIcon } from "./Icons";
 
@@ -11,12 +12,16 @@ const formatTime = (seconds: number) => {
 
 /**
  * Kolumna „Na ekranie”: to, co widzi sala. Slajdy pozycji (klik = ten slajd), bieżący z akordami, następny,
- * Wstecz / Dalej, czarny ekran; przy filmie — czas, pauza, ±15 s; przy kiosku — bieżący element.
+ * Wstecz / Dalej, czarny ekran; przy filmie — czas, pauza, ±15 s; przy kiosku — bieżący element; slajd prezentacji — obraz.
  */
 export function LiveColumn({ snapshot, chords }: { snapshot: Snapshot; chords: boolean }) {
   const { state, video, kiosk } = snapshot;
   const hasItem = !!state?.itemId || !!state?.songId;
   const kioskShown = !!state?.isKiosk && !!kiosk && kiosk.itemId === state.itemId;
+  const image = useSlideImage(state?.image, SLIDE_WIDTH);
+  // następny slajd: miniatura od razu, a pełny podgląd pobrany zawczasu — po „Dalej” bez czekania
+  const nextImage = useSlideImage(state?.nextImage, THUMBNAIL_WIDTH);
+  useEffect(() => preloadSlideImage(state?.nextImage, SLIDE_WIDTH), [state?.nextImage]);
 
   return (
     <section className="column live-column">
@@ -56,6 +61,7 @@ export function LiveColumn({ snapshot, chords }: { snapshot: Snapshot; chords: b
                 <div className="muted small">Element {kiosk!.index + 1} z {kiosk!.count}{kiosk!.isRunning || kiosk!.count < 2 ? "" : ", zatrzymany"}</div>
               </div>
             ) : null}
+            {state!.image ? <img className="slide-image" src={image ?? undefined} alt="" /> : null}
             {!state!.isVideo && !state!.isKiosk ? <Lines lines={state!.lines} chords={chords} className="live-lines" /> : null}
           </div>
 
@@ -63,6 +69,7 @@ export function LiveColumn({ snapshot, chords }: { snapshot: Snapshot; chords: b
             <div className="upcoming">
               <div className="upcoming-head"><span>Następna</span>{state!.next ? <span className="muted">{state!.next}</span> : null}</div>
               {state!.nextLines ? <Lines lines={state!.nextLines} chords={chords} /> : null}
+              {state!.nextImage ? <img className="next-image" src={nextImage ?? undefined} alt="" /> : null}
             </div>
           ) : null}
 

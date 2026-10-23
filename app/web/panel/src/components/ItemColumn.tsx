@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { command } from "../connection";
 import type { ItemMessage, LayoutEntry, PartMessage } from "../protocol";
+import { THUMBNAIL_WIDTH, useSlideImage } from "../images";
 import { useReorder } from "../reorder";
 import { GripIcon } from "./Icons";
 import { Lines } from "./Lines";
@@ -88,6 +89,17 @@ export function ItemColumn({ itemId, planVersion, chords }: { itemId: string | n
         {!item.parts ? (
           <p className="muted">{item.slideCount === 1 ? "1 slajd" : `Slajdy: ${item.slideCount}`}</p>
         ) : null}
+        {item.images ? (
+          <div className="thumbnails">
+            {item.images.map((key, index) => (
+              <button key={`${index}-${key}`} className="thumbnail" title={`Pokaż slajd ${index + 1}`}
+                      onClick={() => void command("showItem", { itemId: item.itemId, slide: index })}>
+                <Thumbnail imageKey={key} />
+                <span>{index + 1}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
         <div className="parts" ref={listRef}>
           {parts.map((part, index) => (
             <article key={`${part.code}-${index}`} data-row
@@ -118,4 +130,10 @@ export function ItemColumn({ itemId, planVersion, chords }: { itemId: string | n
       </div>
     </section>
   );
+}
+
+/** Miniatura slajdu — pobierana, gdy kolumna ją pokazuje (raz; potem z pamięci strony). */
+function Thumbnail({ imageKey }: { imageKey: string | null }) {
+  const image = useSlideImage(imageKey, THUMBNAIL_WIDTH);
+  return image ? <img src={image} alt="" loading="lazy" /> : <div className="thumbnail-empty" />;
 }

@@ -33,8 +33,10 @@ public sealed class RemoteCommandHandler(
     KioskRotation? kiosk = null,
     IImagePreviews? previews = null,
     PanelCommands? panel = null,
-    IErrorLog? errorLog = null) : IRemoteAdditions
+    IErrorLog? errorLog = null,
+    IRemoteImageKeys? imageKeys = null) : IRemoteAdditions
 {
+    private readonly IRemoteImageKeys _imageKeys = imageKeys ?? new RemoteImageKeys();
     private readonly UndoableAdditions _undoable = undoable ?? new(live);
     private EventHandler<PlanItem>? _itemAdded;
 
@@ -99,6 +101,7 @@ public sealed class RemoteCommandHandler(
 
         caller ??= RemoteCaller.Pilot;
         var reply = command is null ? new CommandReply(false, "Nieczytelne polecenie.")
+            : command.Cmd == "image" ? await ImageAsync(command)
             : panel is not null && PanelCommands.Handles(command.Cmd)
                 ? caller.IsPanel
                     ? await ExecutePanelAsync(command)
@@ -108,6 +111,24 @@ public sealed class RemoteCommandHandler(
         if (command?.Cmd == "hello" && reply.Ok)
             reply = reply with { Kiosk = await CurrentKioskAsync() };
         return RemoteJson.Serialize(reply);
+    }
+
+    public StateMessage CurrentState() => StateOf(live.State);
+
+    /// <summary>Stan ekranu dla stron — z kluczami obrazów wydanymi przez ten host.</summary>
+    public StateMessage StateOf(LiveState state) => StateMessage.From(state, _imageKeys);
+
+    /// <summary>
+    /// Obraz slajdu dla strony — każdemu urządzeniu (telefon też pokazuje slajd). Zmniejszanie poza wątkiem interfejsu;
+    /// tylko pliki, dla których host wydał klucz (<see cref="RemoteImages"/>).
+    /// </summary>
+    private async Task<CommandReply> ImageAsync(RemoteCommand command)
+    {
+        if (previews is null || command.Key is null || _imageKeys.FileOf(command.Key) is not { } file)
+            return new CommandReply(false, "Nie ma takiego obrazu.");
+        return await previews.DataUrlAsync(file, RemoteImages.WidthFor(command.Width)) is { } image
+            ? new CommandReply(true, Image: image)
+            : new CommandReply(false, "Nie udało się odczytać obrazu.");
     }
 
     /// <summary>Błąd zapisu (plik zajęty, kopiowanie) wraca do panelu jako komunikat, nie przerywa połączenia.</summary>
@@ -128,7 +149,7 @@ public sealed class RemoteCommandHandler(
         switch (command.Cmd)
         {
             case "hello":
-                return new CommandReply(true, State: StateMessage.From(live.State), Plan: CurrentPlan(), Video: CurrentVideo(),
+                return new CommandReply(true, State: CurrentState(), Plan: CurrentPlan(), Video: CurrentVideo(),
                     Device: DeviceMessage.From(caller), Plans: caller.IsPanel ? CurrentPlans() : null);
             case "addNext" or "undoAdd" when !caller.CanAddSongs:
                 return new CommandReply(false, "To urządzenie nie może dodawać pieśni.");
@@ -175,7 +196,7 @@ public sealed class RemoteCommandHandler(
             default:
                 return new CommandReply(false, $"Nieznane polecenie: {command.Cmd}");
         }
-        return new CommandReply(true, State: StateMessage.From(live.State));
+        return new CommandReply(true, State: CurrentState());
     }
 
     /// <summary>Pieśń lub tekst zaraz za pozycją na ekranie (na koniec, gdy ekran pokazuje coś spoza planu).</summary>

@@ -106,6 +106,7 @@ public static class AppComposition
             PanelUrl: App.PanelPageUrl,
             ShortCodeUrl: App.ShortCodeUrl));
         services.AddSingleton<IDevicePermissions>(sp => new DevicePermissions(sp.GetRequiredService<AppPaths>().LinkState));
+        services.AddSingleton<IRemoteImageKeys, RemoteImageKeys>();
         services.AddSingleton<PanelCommands>();
         services.AddSingleton<IErrorLog, CrashGuardErrorLog>();
         services.AddSingleton<RemoteCommandHandler>();

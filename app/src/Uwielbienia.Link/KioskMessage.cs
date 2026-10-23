@@ -2,11 +2,12 @@ using Uwielbienia.Core.Kiosks;
 
 namespace Uwielbienia.Link;
 
-/// <summary>Mały podgląd obrazu dla telefonu (data URL), np. bieżącego elementu kiosku.</summary>
+/// <summary>Zmniejszony obraz dla telefonu i panelu (data URL): element kiosku, slajd prezentacji.</summary>
 public interface IImagePreviews
 {
+    /// <param name="width">Szerokość podglądu — jedna z <see cref="RemoteImages"/>.</param>
     /// <returns><c>null</c>, gdy obrazu nie da się odczytać.</returns>
-    Task<string?> DataUrlAsync(string file);
+    Task<string?> DataUrlAsync(string file, int width = RemoteImages.Phone);
 }
 
 /// <summary>
@@ -25,7 +26,7 @@ public sealed record KioskMessage(Guid? ItemId, int Index, int Count, bool IsRun
         if (rotation.Frame is not { } frame)
             return null;
         var (itemId, index, count, isRunning) = (rotation.ItemId, rotation.Index, rotation.Count, rotation.IsRunning);
-        var image = frame.Image is { } file && previews is not null ? await previews.DataUrlAsync(file) : null;
+        var image = frame.Image is { } file && previews is not null ? await previews.DataUrlAsync(file, RemoteImages.Kiosk) : null;
         return new KioskMessage(itemId, index, count, isRunning, frame.Title, frame.Text, image);
     }
 }

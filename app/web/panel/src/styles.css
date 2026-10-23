@@ -226,6 +226,13 @@ input[type="checkbox"] { width: 1.15rem; height: 1.15rem; accent-color: var(--ca
 .video-offset { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; font-size: var(--fs-small); color: var(--muted); }
 .video-offset button { padding: .2rem .55rem; }
 .video-offset.set b { color: var(--chord); }
+/* Slajd prezentacji (obraz z aplikacji) i miniatury slajdów w kolumnie „Pieśń” */
+.current-slide .slide-image { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: contain; border-radius: 8px; background: #000; }
+.current-slide.blank .slide-image { opacity: .4; }
+.upcoming .next-image { display: block; margin-top: .5rem; width: 8rem; aspect-ratio: 16 / 9; object-fit: contain; border-radius: 6px; background: #000; }
+.thumbnails { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: .6rem; margin-top: .75rem; }
+.thumbnail { display: grid; gap: .25rem; padding: .35rem; border-radius: 10px; background: var(--raised); text-align: center; font-size: var(--fs-small); color: var(--muted); }
+.thumbnail img, .thumbnail-empty { width: 100%; aspect-ratio: 16 / 9; object-fit: contain; border-radius: 6px; background: #000; }
 .kiosk { display: grid; gap: .5rem; }
 .kiosk img { max-width: 100%; border-radius: 8px; }
 .kiosk-title { font: 600 var(--fs-large) "Literata", Georgia, serif; }

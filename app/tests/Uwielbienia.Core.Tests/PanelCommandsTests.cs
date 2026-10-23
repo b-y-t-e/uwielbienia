@@ -32,9 +32,10 @@ public sealed class PanelCommandsTests : IDisposable
         _plans = new PlanLibrary(new JsonPlanStore(Path.Combine(_temp, "plany")), _plan);
         _plans.OpenInitial(null);
         var actions = TestPlanActions.Create(_plan, _session, _library, _temp);
-        var panel = new PanelCommands(_plans, actions, _plan, _library, slides, types);
+        var imageKeys = new RemoteImageKeys();
+        var panel = new PanelCommands(_plans, actions, _plan, _library, slides, types, imageKeys);
         _handler = new RemoteCommandHandler(_session, _session, _plan, actions, _library, new SongSearch(_library), songs,
-            new ImmediateDispatcher(), types, panel: panel);
+            new ImmediateDispatcher(), types, panel: panel, imageKeys: imageKeys);
     }
 
     public void Dispose() => Directory.Delete(_temp, recursive: true);

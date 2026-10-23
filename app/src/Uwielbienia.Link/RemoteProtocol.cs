@@ -16,7 +16,9 @@ namespace Uwielbienia.Link;
 //                                  |"videoToggle"|"videoSkip" (seconds: ±15)
 //                                  |"videoOffset" (milliseconds: ±100 — obraz później / wcześniej względem dźwięku)
 //                                  |"addNext" (songId — pieśń zaraz za tą na ekranie; tylko z uprawnieniem)
-//                                  |"undoAdd" (itemId — cofnięcie własnego dodania, póki pieśni nie ma na ekranie), ...}
+//                                  |"undoAdd" (itemId — cofnięcie własnego dodania, póki pieśni nie ma na ekranie)
+//                                  |"image" (key — z StateMessage.Image / NextImage albo ItemMessage.Images, width?: 320 | 640 | 1280)
+//                                  → image (data URL JPEG), ...}
 //                           odpowiedź: CommandReply
 //
 // Panel (drugi komputer / tablet, uprawnienie „Panel”) — dodatkowo polecenia i wiadomości z PanelProtocol.cs.
@@ -34,7 +36,9 @@ public sealed record RemoteCommand(
     DateOnly? Date = null,
     string? Kind = null,
     int? Index = null,
-    IReadOnlyList<LayoutEntryMessage>? Layout = null);
+    IReadOnlyList<LayoutEntryMessage>? Layout = null,
+    string? Key = null,
+    int? Width = null);
 
 public sealed record CommandReply(
     bool Ok,
@@ -47,7 +51,8 @@ public sealed record CommandReply(
     PlanItemMessage? Added = null,
     KioskMessage? Kiosk = null,
     PlansMessage? Plans = null,
-    ItemMessage? Item = null);
+    ItemMessage? Item = null,
+    string? Image = null);
 
 /// <summary>
 /// Co wolno temu urządzeniu: z uprawnieniem telefon pokazuje „+” (dodaj pieśń jako następną); panel bez
@@ -76,7 +81,9 @@ public sealed record StateMessage(
     bool ShowTitle = false,
     IReadOnlyList<LineMessage>? NextLines = null,
     bool IsVideo = false,
-    bool IsKiosk = false)
+    bool IsKiosk = false,
+    string? Image = null,
+    string? NextImage = null)
 {
     /// <summary>Uruchomienie aplikacji, z którego pochodzi stan — wersje porównuje się tylko w jednym uruchomieniu.</summary>
     public static readonly string CurrentSession = Guid.NewGuid().ToString("N");
@@ -85,7 +92,7 @@ public sealed record StateMessage(
 
     public string Session => CurrentSession;
 
-    public static StateMessage From(LiveState state) => new(
+    public static StateMessage From(LiveState state, IRemoteImageKeys images) => new(
         state.Version,
         state.Item?.ContentId,
         state.Item?.PlanItemId,
@@ -103,7 +110,10 @@ public sealed record StateMessage(
         // następny slajd tej samej pieśni — muzyk widzi, co nadchodzi (inna pieśń: tylko tytuł w Next)
         state.NextSlide is { } next ? LinesOf(next) : null,
         state.Slide is VideoSlide,
-        state.Slide is KioskSlide);
+        state.Slide is KioskSlide,
+        // obraz slajdu (prezentacja) i następnego — strona pobiera je poleceniem „image”, gdy je pokazuje
+        images.KeyOf(state.Slide),
+        images.KeyOf(state.NextSlide));
 
     private static List<LineMessage> LinesOf(Slide? slide) => LinesOf(slide?.Lines ?? []);
 

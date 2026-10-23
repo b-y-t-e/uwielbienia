@@ -201,6 +201,27 @@ main.Plan.Selected = main.Plan.Items.First(i => i.IsPresentation);
 control.Show(active.Playlist.First(i => i.Slides.FirstOrDefault() is ImageSlide), 1);
 Save(window, "prezentacja", settle: true);
 Save(projection, "projekcja-prezentacja", settle: true);
+// Obrazy slajdu dla telefonu i panelu (polecenie „image”, jak ze strony): zapisane jako JPEG obok zrzutów.
+{
+    var handler = services.GetRequiredService<Uwielbienia.Link.RemoteCommandHandler>();
+    T Wait<T>(Task<T> task)
+    {
+        while (!task.IsCompleted)
+            Dispatcher.UIThread.RunJobs();
+        return task.GetAwaiter().GetResult();
+    }
+    var hello = System.Text.Json.JsonDocument.Parse(Wait(handler.HandleAsync("""{"cmd":"hello"}"""u8.ToArray()))).RootElement;
+    var key = hello.GetProperty("state").GetProperty("image").GetString();
+    foreach (var width in new[] { 320, 640, 1280 })
+    {
+        var reply = System.Text.Json.JsonDocument.Parse(
+            Wait(handler.HandleAsync(System.Text.Encoding.UTF8.GetBytes($$"""{"cmd":"image","key":"{{key}}","width":{{width}}}""")))).RootElement;
+        var url = reply.GetProperty("image").GetString()!;
+        var bytes = Convert.FromBase64String(url[(url.IndexOf(',') + 1)..]);
+        File.WriteAllBytes(Path.Combine(output, $"telefon-slajd-{width}.jpg"), bytes);
+        Console.WriteLine($"obraz slajdu {width} px: {bytes.Length / 1024} kB ({url.Length / 1024} kB w wiadomości)");
+    }
+}
 
 // Kiosk: kolumna „Pieśń” (edycja), „Na ekranie” i każdy układ elementu na rzutniku.
 {

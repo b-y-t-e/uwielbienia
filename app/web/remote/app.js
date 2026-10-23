@@ -1,6 +1,6 @@
 // Pilot i ekran w przeglądarce dla aplikacji „Uwielbienia”.
 // Protokół: app/src/Uwielbienia.Link/RemoteProtocol.cs — host wysyła {type:"state"|"plan"|"video"|"device"|"kiosk"},
-// strona pyta poleceniami {cmd:"hello"|"next"|"prev"|…}. Telefon zmienia slajdy: bez planu i gaszenia
+// strona pyta poleceniami {cmd:"hello"|"next"|"prev"|"image"|…}. Telefon zmienia slajdy: bez planu i gaszenia
 // ekranu (to zostaje w aplikacji) — dziecko nic nie zepsuje, a muzyk widzi bieżący i następny slajd z
 // akordami bez dotykania telefonu. Dodawanie pieśni („+”) tylko z uprawnieniem nadanym w aplikacji.
 
@@ -14,6 +14,7 @@ const ui = {
   status: $("status"),
   nowNumber: $("nowNumber"), nowTitle: $("nowTitle"), nowLabel: $("nowLabel"), blankBadge: $("blankBadge"),
   currentLines: $("currentLines"), nextLabel: $("nextLabel"), nextLines: $("nextLines"),
+  slideImage: $("slideImage"), nextImage: $("nextImage"),
   displayScreen: $("displayScreen"),
 };
 
@@ -91,6 +92,42 @@ function receive(message) {
   }
 }
 
+// ---------- obrazy slajdów ----------
+
+// Slajd prezentacji: stan niesie tylko klucz obrazu (state.image, state.nextImage), obraz przychodzi na prośbę —
+// raz na klucz i wielkość (pamięć tej strony); następny slajd pobiera się zawczasu, więc „Dalej” pokazuje go od razu.
+const PHONE_WIDTH = 640, SCREEN_WIDTH = 1280;
+const images = new Map();
+function slideImage(key, width) {
+  const id = `${width}:${key}`;
+  if (!images.has(id)) {
+    const loading = command("image", { key, width }).then((reply) => {
+      if (!reply?.image) images.delete(id); // nie udało się — następnym razem jeszcze raz
+      return reply?.image ?? null;
+    });
+    images.set(id, loading);
+    if (images.size > 30) images.delete(images.keys().next().value);
+  }
+  return images.get(id);
+}
+
+// Obraz w <img>, gdy przyjdzie — tylko jeśli klucz jest dalej aktualny (slajd mógł się w tym czasie zmienić).
+function showImage(img, key, width, still) {
+  img.hidden = !key;
+  if (!key) { img.removeAttribute("src"); delete img.dataset.key; return; }
+  if (img.dataset.key === key) return;
+  img.dataset.key = key;
+  img.removeAttribute("src");
+  slideImage(key, width).then((url) => { if (url && img.dataset.key === key && still()) img.src = url; });
+}
+
+function renderImages() {
+  if (ui.remote.hidden) return; // tryb „Ekran” nie pokazuje obrazów telefonu — nie ma po co ich zmniejszać
+  const s = state;
+  showImage(ui.slideImage, s?.image, PHONE_WIDTH, () => state?.image === s?.image);
+  showImage(ui.nextImage, s?.nextImage, PHONE_WIDTH, () => state?.nextImage === s?.nextImage);
+}
+
 // ---------- kiosk ----------
 
 let kiosk = null;
@@ -105,7 +142,7 @@ function isKioskShown() {
 function renderKiosk() {
   const show = isKioskShown();
   $("kioskPanel").hidden = !show;
-  if (state) ui.currentLines.hidden = !!state.isVideo || show;
+  if (state) ui.currentLines.hidden = !!state.isVideo || show || !!state.image;
   if (!show) return;
   ui.nowLabel.textContent = `Kiosk · ${kiosk.index + 1} z ${kiosk.count}${kiosk.isRunning || kiosk.count < 2 ? "" : " · zatrzymany"}`;
   $("kioskImage").hidden = !kiosk.image;
@@ -129,7 +166,7 @@ const formatTime = (seconds) => {
 function renderVideo() {
   const show = !!state?.isVideo;
   $("videoPanel").hidden = !show;
-  ui.currentLines.hidden = show || !!state?.isKiosk;
+  ui.currentLines.hidden = show || !!state?.isKiosk || !!state?.image;
   if (!show) return;
   const v = video ?? { isPlaying: false, position: 0, duration: 0 };
   const elapsed = v.isPlaying ? (performance.now() - (v.receivedAt ?? 0)) / 1000 : 0;
@@ -173,6 +210,11 @@ function renderSlide(screen, s) {
     if (kiosk.image) content.push(Object.assign(document.createElement("img"), { className: "kiosk-image", src: kiosk.image, alt: "" }));
     if (kiosk.title) content.push(Object.assign(document.createElement("div"), { className: "slide-title", textContent: kiosk.title }));
     if (kiosk.text) content.push(Object.assign(document.createElement("p"), { className: "kiosk-text", textContent: kiosk.text }));
+  } else if (s && !s.isBlank && s.image) {
+    // slajd prezentacji na cały ekran (zmniejszony — przeglądarka to podgląd, nie rzutnik)
+    const img = Object.assign(document.createElement("img"), { className: "slide-image", alt: "" });
+    showImage(img, s.image, SCREEN_WIDTH, () => state?.image === s.image);
+    content.push(img);
   } else if (s && !s.isBlank) {
     if (s.showTitle) content.push(Object.assign(document.createElement("div"), { className: "slide-title", textContent: s.title }));
     for (const l of s.lines) {
@@ -226,6 +268,7 @@ function renderState() {
   const nextLines = (s.nextLines ?? []).slice(0, 2);
   ui.nextLabel.textContent = s.next ? `Dalej: ${s.next}` : "";
   ui.nextLines.replaceChildren(...nextLines.map(chordLine));
+  renderImages();
   renderVideo();
   renderKiosk();
   fitAll();
@@ -283,6 +326,8 @@ document.fonts.addEventListener("loadingdone", () => fitAll());
 function renderDisplay() {
   if (ui.display.hidden) return;
   renderSlide(ui.displayScreen, state);
+  // następny slajd w wielkości ekranu zawczasu — po „Dalej” obraz jest od razu
+  if (state?.nextImage) slideImage(state.nextImage, SCREEN_WIDTH);
 }
 
 // ---------- tryby i zdarzenia ----------
@@ -303,6 +348,7 @@ function showMain() {
   keepAwake();
   fitAll();
   renderDisplay();
+  renderImages();
 }
 
 // Telefon na pulpicie ani ekran w przeglądarce nie mogą się wygaszać (blokada wraca po powrocie do karty).

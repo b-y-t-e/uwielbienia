@@ -386,7 +386,14 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   — telefon można dać dziecku. Tryb „Ekran” (przeglądarka jako drugi ekran; przycisk tylko na
   komputerze z myszą) rysuje slajd jak rzutnik (`renderSlide`: płótno 16:9 w jednostkach `cqw`,
   wymiary i kolory jak `SlideView`). Stan niesie wersy z akordami (`LineMessage`: `Chords`, `TitleLength`,
-  `Chorus`, `PartStart`), `ShowTitle`, `NextLines` i `IsVideo`; przy filmie telefon pokazuje czas, pasek postępu,
+  `Chorus`, `PartStart`), `ShowTitle`, `NextLines`, `IsVideo` i klucze obrazów slajdu prezentacji (`Image`, `NextImage`);
+  **obrazy slajdów** strona pobiera sama poleceniem `image` (klucz + szerokość 320 / 640 / 1280 — `RemoteImages`; klucze wydaje
+  `IRemoteImageKeys` — jeden obiekt dla telefonu i panelu (`RemoteCommandHandler`, `PanelCommands`): host wydaje tylko pliki,
+  dla których wydał klucz, a klucz zmienia się z plikiem i unieważnia poprzedni), następny zawczasu; `ImagePreviews` zmniejsza
+  na żądanie, po jednym naraz (`PriorityGate`: większy obraz — bieżący slajd telefonu — przed miniaturami panelu), z obrazu już
+  wczytanego przez `SlideImages` (bez drugiego dekodowania PNG) i zapamiętuje JPEG (`TaskCache` — wspólna z `SlideImages`
+  pamięć wyników w tle: ostatnio używane zostają, nieudany wynik nie zostaje) — słaby komputer nie streamuje niczego bez
+  potrzeby. Kiosk: podgląd 480 px (`RemoteImages.Kiosk`). Film i aplikacja nie mają podglądu obrazu; przy filmie telefon pokazuje czas, pasek postępu,
   pauzę, ±15 s i obraz ±100 ms (wiadomość `video` — `VideoMessage` z `PictureOffsetMs`, czas najwyżej raz na sekundę;
   polecenia `videoToggle`, `videoSkip`, `videoOffset`). Polecenia `blank` / `goto` / `showItem` /
   `showSong` zostają w protokole, strona ich nie używa. Podgląd bez aplikacji: kopia strony
@@ -406,7 +413,7 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   uchwyt między nimi — `useColumnWidths`, dwuklik = domyślne, zapamiętane w przeglądarce; wąski ekran: jedna naraz,
   przełączana na dole) i okno „Plany”. W nagłówku przełącznik pełnego ekranu przeglądarki (`useFullscreen`). Plany (lista, nowy, nazwa / data, otwórz, kopia na dziś, szablon,
   usuń), plan (dodaj z wyszukiwarki w miejsce, przeciąganie za ⠿ — zdarzenia wskaźnika, działa dotykiem, duplikuj, usuń,
-  pokaż), układ części pieśni (pominięcie, kolejność, „Powtórz”, usuń, przywróć) i ekran (slajdy, Wstecz / Dalej, czarny
+  pokaż; miniatury slajdów prezentacji — `ItemMessage.Images`, klik = ten slajd na ekran), układ części pieśni (pominięcie, kolejność, „Powtórz”, usuń, przywróć) i ekran (slajdy, Wstecz / Dalej, czarny
   ekran, film, kiosk). Edycja treści pieśni, nowe teksty, prezentacje, filmy i kioski — tylko w aplikacji (pliki są tam).
   Parowanie: okno „Urządzenia” → zakładka „Panel” (kod QR na `RemoteServerOptions.PanelPageUrl`, domyślnie `panel/` obok pilota).
   Urządzenie sparowane kodem panelu dostaje uprawnienie `DevicePermission.Panel` samo (`LinkRemoteServer.Recognize`: zaproszenie
@@ -452,8 +459,8 @@ Plan, ekran, telefon i lista „Plany” obsługują nowy rodzaj bez zmian — w
 7. **Kolumna „Na ekranie” i telefon:** pokazują `Lines` — dla treści innej niż tekst dodać
    szablon w `MainWindow.axaml` (bieżący slajd / NASTĘPNA, wzorzec: obraz `ImageSlide`), a na rzutniku
    stronę (`ProjectedPage` → np. `ProjectedImage` z szablonem w `SlideView.axaml`, gdy treść ma
-   zająć cały ekran). Telefon i ekran w przeglądarce dostają tylko wersy i `Label` — obraz
-   wymagałby pola w `RemoteProtocol.cs` + `web/remote` (zmiana w obu miejscach).
+   zająć cały ekran). Telefon i panel dostają wersy, `Label` i — dla `ImageSlide` — klucz obrazu
+   (`IRemoteImageKeys.KeyOf`); inna treść obrazowa wymaga dopisania tam.
 8. Testy w Core (rodzaj, zapis planu z nową pozycją) i zrzuty (`tools/Uwielbienia.Screenshots`).
 
 ### Okno operatora

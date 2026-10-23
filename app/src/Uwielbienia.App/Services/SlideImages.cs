@@ -9,7 +9,7 @@ namespace Uwielbienia.App.Services;
 public static class SlideImages
 {
     private const int ScreenWidth = 1920;
-    private const int ThumbnailWidth = 640;
+    public const int ThumbnailWidth = 640;
 
     // Slajd ma najwyżej szerokość płótna rzutnika — zdjęcie z aparatu w pełnej rozdzielczości zajęłoby ~100 MB.
     private static readonly ImageCache Full = new(capacity: 8, file => Decode(file, ScreenWidth));
@@ -31,33 +31,11 @@ public static class SlideImages
 
     private sealed class ImageCache(int capacity, Func<string, Bitmap> decode)
     {
-        private readonly Dictionary<string, Task<Bitmap?>> _items = [];
-        private readonly LinkedList<string> _order = [];
+        private readonly TaskCache<Bitmap> _items = new(capacity);
 
-        public Task<Bitmap?> Get(string file)
-        {
-            // ponowny eksport zapisuje nowe slajdy pod tymi samymi ścieżkami — klucz z czasem zapisu
-            var key = $"{file}|{File.GetLastWriteTimeUtc(file).Ticks}";
-            lock (_items)
-            {
-                if (_items.TryGetValue(key, out var cached))
-                {
-                    _order.Remove(key);
-                    _order.AddFirst(key);
-                    return cached;
-                }
-                var task = Task.Run(() => Decode(file));
-                _items[key] = task;
-                _order.AddFirst(key);
-                // Usunięty z pamięci podręcznej obraz może być jeszcze wyświetlany — zwalnia go dopiero GC.
-                while (_order.Count > capacity)
-                {
-                    _items.Remove(_order.Last!.Value);
-                    _order.RemoveLast();
-                }
-                return task;
-            }
-        }
+        // ponowny eksport zapisuje nowe slajdy pod tymi samymi ścieżkami — klucz z czasem zapisu
+        public Task<Bitmap?> Get(string file) =>
+            _items.Get($"{file}|{File.GetLastWriteTimeUtc(file).Ticks}", () => Task.Run(() => Decode(file)));
 
         private Bitmap? Decode(string file)
         {

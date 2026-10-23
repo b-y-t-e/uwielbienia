@@ -14,7 +14,8 @@ public sealed class PanelCommands(
     ActivePlan plan,
     ISongLibrary library,
     ISlideBuilder slides,
-    IPlanItemTypes itemTypes)
+    IPlanItemTypes itemTypes,
+    IRemoteImageKeys images)
 {
     /// <summary>Panel dodał pozycję — plan w oknie operatora na chwilę ją wyróżnia (zaznaczenie się nie zmienia).</summary>
     public event EventHandler<PlanItem>? ItemAdded;
@@ -96,7 +97,7 @@ public sealed class PanelCommands(
 
     private CommandReply Item(Guid itemId) =>
         plan.Plan?.Items.FirstOrDefault(i => i.Id == itemId) is { } item && itemTypes.Describe(item) is { } info
-            ? new CommandReply(true, Item: ItemMessage.From(item, info, plan.FindLiveItem(itemId), library, slides))
+            ? new CommandReply(true, Item: ItemMessage.From(item, info, plan.FindLiveItem(itemId), library, slides, images))
             : new CommandReply(false, "Tej pozycji nie ma już w planie.");
 
     private CommandReply Ok() => new(true, Plan: CurrentPlan());

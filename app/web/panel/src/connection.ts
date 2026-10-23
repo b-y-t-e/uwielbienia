@@ -66,8 +66,11 @@ function receive(message: Notification) {
   }
 }
 
-/** Polecenie do aplikacji; stan z odpowiedzi trafia od razu do widoków. Błąd — komunikat na chwilę. */
-export async function command(cmd: string, extra: Omit<Command, "cmd"> = {}): Promise<CommandReply | null> {
+/**
+ * Polecenie do aplikacji; stan z odpowiedzi trafia od razu do widoków. Błąd — komunikat na chwilę (`quiet` — bez
+ * komunikatu, np. brakujący obraz slajdu: zostaje sama nazwa).
+ */
+export async function command(cmd: string, extra: Omit<Command, "cmd"> = {}, { quiet = false } = {}): Promise<CommandReply | null> {
   if (!link) return null;
   try {
     const reply = JSON.parse(await link.request(JSON.stringify({ cmd, ...extra }))) as CommandReply;
@@ -77,10 +80,10 @@ export async function command(cmd: string, extra: Omit<Command, "cmd"> = {}): Pr
     if (reply.video) receive({ ...reply.video, type: "video" });
     if (reply.device) receive({ ...reply.device, type: "device" });
     if (reply.kiosk) receive({ ...reply.kiosk, type: "kiosk" });
-    if (!reply.ok && reply.error) showError(reply.error);
+    if (!reply.ok && reply.error && !quiet) showError(reply.error);
     return reply;
   } catch {
-    showError("Polecenie nie dotarło do aplikacji.");
+    if (!quiet) showError("Polecenie nie dotarło do aplikacji.");
     return null;
   }
 }

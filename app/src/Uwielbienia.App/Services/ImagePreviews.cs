@@ -1,51 +1,58 @@
+using Avalonia;
 using Avalonia.Media.Imaging;
 using Uwielbienia.Link;
 
 namespace Uwielbienia.App.Services;
 
 /// <summary>
-/// Podglądy obrazów dla telefonu: zmniejszone (JPEG, 480 px — kilkadziesiąt kB) i zapamiętane — kiosk zmienia elementy w kółko, więc ten
-/// sam obraz idzie do telefonu wiele razy.
+/// Podglądy obrazów dla telefonu i panelu: zmniejszone (JPEG, kilka stałych szerokości — kilkadziesiąt kB) i zapamiętane —
+/// kiosk zmienia elementy w kółko, a slajdy prezentacji ogląda kilka urządzeń, więc ten sam obraz idzie wiele razy.
+/// Zmniejsza tylko na żądanie urządzenia, po jednym obrazie naraz, w tle i z obrazu już wczytanego przez aplikację
+/// (<see cref="SlideImages"/>) — starszy komputer nie zwalnia w trakcie nabożeństwa; każdy obraz w każdej wielkości raz.
+/// Zmieniony plik (eksport slajdów od nowa) to nowy podgląd; nieudany nie zostaje w pamięci (np. plik chwilowo zajęty).
 /// </summary>
 public sealed class ImagePreviews : IImagePreviews
 {
-    private const int Width = 480;
-    private const int Capacity = 40;
+    private const int Capacity = 120;
 
-    private readonly Dictionary<string, Task<string?>> _cache = [];
-    private readonly LinkedList<string> _order = [];
+    private readonly TaskCache<string> _cache = new(Capacity);
+    // większy podgląd (bieżący slajd telefonu, ekran) przed miniaturami panelu
+    private readonly PriorityGate _oneAtATime = new();
 
-    public Task<string?> DataUrlAsync(string file)
+    public Task<string?> DataUrlAsync(string file, int width = RemoteImages.Phone) =>
+        _cache.Get($"{width}|{File.GetLastWriteTimeUtc(file).Ticks}|{file}",
+            () => _oneAtATime.RunAsync(width, () => EncodeAsync(file, width)));
+
+    private static async Task<string?> EncodeAsync(string file, int width)
     {
-        lock (_cache)
-        {
-            if (_cache.TryGetValue(file, out var cached))
-                return cached;
-            var task = Task.Run(() => Encode(file));
-            _cache[file] = task;
-            _order.AddFirst(file);
-            while (_order.Count > Capacity)
-            {
-                _cache.Remove(_order.Last!.Value);
-                _order.RemoveLast();
-            }
-            return task;
-        }
+        // obraz, który aplikacja i tak trzyma w pamięci (miniatura operatora albo slajd rzutnika) — duży PNG
+        // nie jest dekodowany drugi raz, zostaje tylko zmniejszenie i JPEG
+        var source = width > SlideImages.ThumbnailWidth
+            ? await SlideImages.LoadAsync(file)
+            : await SlideImages.LoadThumbnailAsync(file);
+        return source is null ? null : await Task.Run(() => Encode(source, width));
     }
 
-    private static string? Encode(string file)
+    private static readonly JpegBitmapEncoderOptions Jpeg = new() { Quality = 75 };
+
+    private static string? Encode(Bitmap source, int width)
     {
         try
         {
-            using var input = File.OpenRead(file);
-            using var bitmap = Bitmap.DecodeToWidth(input, Width, BitmapInterpolationMode.HighQuality);
             using var output = new MemoryStream();
-            bitmap.Save(output, new JpegBitmapEncoderOptions { Quality = 75 });
+            if (source.PixelSize.Width > width)
+            {
+                var height = Math.Max(1, (int)Math.Round(source.PixelSize.Height * (double)width / source.PixelSize.Width));
+                using var scaled = source.CreateScaledBitmap(new PixelSize(width, height), BitmapInterpolationMode.HighQuality);
+                scaled.Save(output, Jpeg);
+            }
+            else
+                source.Save(output, Jpeg);
             return "data:image/jpeg;base64," + Convert.ToBase64String(output.ToArray());
         }
         catch (Exception)
         {
-            // uszkodzony albo usunięty plik — telefon pokaże sam napis
+            // obraz, którego nie da się zapisać — telefon pokaże sam napis / nazwę slajdu
             return null;
         }
     }

@@ -18,6 +18,7 @@ namespace Uwielbienia.Link;
 //   pozycja: "item" (itemId) → item | "itemLayout" (itemId, layout: [{code, sung}]) → item
 //   ekran:   "next" | "prev" | "goto" (slide) | "blank" | "nextItem" | "prevItem" | "video*" — jak telefon
 //   pieśni:  "search" (query) — jak telefon
+//   obrazy:  "image" (key, width?) — jak telefon (miniatury slajdów: ItemMessage.Images)
 
 /// <summary>Wszystkie plany: wydarzenia od najnowszych, szablony alfabetycznie.</summary>
 public sealed record PlansMessage(IReadOnlyList<PlanSummaryMessage> Events, IReadOnlyList<PlanSummaryMessage> Templates, Guid? OpenId)
@@ -53,6 +54,7 @@ public sealed record SectionMessage(string Code, string Name);
 /// </summary>
 /// <param name="Kind">Jak <see cref="PlanItemMessage.Kind"/>.</param>
 /// <param name="CanReorder">Kolejność i powtórzenia części ustala się tylko dla pieśni; tekst ma kolejność z edytora.</param>
+/// <param name="Images">Klucze obrazów slajdów (prezentacja, obraz) do polecenia <c>image</c>; <c>null</c> = pozycja bez obrazów.</param>
 /// <param name="Origin"><c>local</c> (własna), <c>modified</c> (zmieniona na tym komputerze) albo <c>null</c>.</param>
 public sealed record ItemMessage(
     Guid ItemId,
@@ -65,12 +67,15 @@ public sealed record ItemMessage(
     string? Origin = null,
     bool CanReorder = false,
     IReadOnlyList<PartMessage>? Parts = null,
-    IReadOnlyList<SectionMessage>? Removed = null)
+    IReadOnlyList<SectionMessage>? Removed = null,
+    IReadOnlyList<string?>? Images = null)
 {
-    public static ItemMessage? From(PlanItem item, PlanItemInfo info, LiveItem? live, ISongLibrary library, ISlideBuilder slides)
+    public static ItemMessage? From(PlanItem item, PlanItemInfo info, LiveItem? live, ISongLibrary library, ISlideBuilder slides,
+        IRemoteImageKeys images)
     {
         var message = new ItemMessage(item.Id, PlanMessage.KindName(info.Kind), info.Title, info.Number,
-            info.Note ?? (live is { Slides.Count: 0 } ? live.Note : null), live?.Slides.Count ?? 0);
+            info.Note ?? (live is { Slides.Count: 0 } ? live.Note : null), live?.Slides.Count ?? 0,
+            Images: live?.Slides.Any(s => s is ImageSlide) == true ? live.Slides.Select(images.KeyOf).ToList() : null);
         if (item is not SongPlanItem songItem || library.Find(songItem.SongId) is not { } song)
             return message;
         var layout = songItem.LayoutFor(song);

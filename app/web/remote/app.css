@@ -98,6 +98,10 @@ input {
 .now-label { color: var(--candle); font-size: var(--fs-small); font-weight: 700; }
 .badge { font-size: var(--fs-small); font-weight: 700; color: var(--danger); background: var(--raised); padding: .2rem .6rem; border-radius: 999px; }
 
+/* Slajd prezentacji: obraz wpisany w ramkę bieżącego slajdu; następny — mała miniatura */
+.current > .slide-image { width: 100%; height: 100%; min-height: 0; margin-top: .4rem; object-fit: contain; border-radius: 8px; background: #000; }
+.next-image { display: block; height: 4.5rem; max-width: 100%; object-fit: contain; border-radius: 6px; background: #000; opacity: .85; }
+
 /* Kiosk: podgląd bieżącego elementu (obraz wpisany w ramkę) i napis pod nim */
 .kiosk-panel { min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: .7rem; padding-top: .4rem; }
 .kiosk-panel img { width: 100%; height: 100%; min-height: 0; object-fit: contain; border-radius: 8px; background: #000; }
@@ -172,7 +176,7 @@ input {
   .upcoming { grid-row: 3; grid-column: 1; }
   .current .lines { columns: 2; column-gap: 2em; }
   .upcoming { padding-top: .4rem; }
-  .upcoming .lines { display: none; }
+  .upcoming .lines, .next-image { display: none; }
   .controls { grid-row: 2 / 4; grid-column: 2; grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; padding-top: 0; }
 }
 
@@ -195,6 +199,8 @@ input {
 .slide-text .is-title { color: #D8C4A0; }
 .slide-text .rep { color: #9C968C; font-size: .628em; }
 .slide-text .slide-title { color: #D8C4A0; width: fit-content; margin: 0 auto 2.08cqw; }
+/* slajd prezentacji: na cały ekran jak na rzutniku (bez marginesów tekstu) */
+.slide-text .slide-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
 .slide-text .kiosk-image { display: block; max-width: 100%; max-height: 62cqh; margin: 0 auto 2.08cqw; object-fit: contain; }
 .slide-text .kiosk-text { white-space: pre-line; font-size: .75em; }
 .slide-text .slide-title::after { content: ""; display: block; height: .21cqw; border-radius: .1cqw; background: #C9A15A; margin-top: .73cqw; }

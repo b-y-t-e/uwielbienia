@@ -205,7 +205,7 @@ public sealed class LinkRemoteServer(
         _host.SetRequestHandler((peer, request, _) => HandleAsync(peer, request));
         _host.PeerJoined += OnPeerJoined;
         _host.PeerLeft += (_, _) => Changed?.Invoke(this, EventArgs.Empty);
-        live.StateChanged += (_, state) => Broadcast(StateMessage.From(state));
+        live.StateChanged += (_, state) => Broadcast(handler.StateOf(state));
         plan.Changed += (_, _) => Broadcast(handler.CurrentPlan());
         plan.Opened += (_, _) => BroadcastPlans();
         if (plans is not null)
@@ -289,7 +289,7 @@ public sealed class LinkRemoteServer(
     {
         Changed?.Invoke(this, EventArgs.Empty);
         _ = SendAsync(e.Peer, handler.CurrentPlan());
-        _ = SendAsync(e.Peer, StateMessage.From(live.State));
+        _ = SendAsync(e.Peer, handler.CurrentState());
         SendWelcome(e.Peer);
         if (handler.CurrentVideo() is { } videoState)
             _ = SendAsync(e.Peer, videoState);
