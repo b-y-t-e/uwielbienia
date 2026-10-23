@@ -197,6 +197,10 @@ public sealed record PresentationPlanItem(
     string Title,
     IReadOnlyList<SlideTransition>? SlideEffects = null) : PlanItem(Id)
 {
+    /// <summary>Nowo dodana prezentacja: slajdy bez efektu przejścia (jak w PowerPoincie — kliknięcie = następny slajd od razu).</summary>
+    public static PresentationPlanItem Added(string folder, string title) =>
+        new(Guid.NewGuid(), folder, title, SlideTransitions.Cut);
+
     public override PlanItem WithNewId() => this with { Id = Guid.NewGuid() };
 
     [JsonIgnore]

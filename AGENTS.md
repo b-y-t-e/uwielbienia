@@ -309,7 +309,7 @@ uruchamianie, budowanie i wydanie: `app/README.md`.
   pozycja nie ma własnego wejścia), i **między slajdami jednej pozycji** — drugi przycisk w pasku (`Plan.InnerTransitions`,
   `null` = jak między pozycjami; `PlanSlideTransitionsViewModel`), domyślny dla zwrotek pieśni, części tekstu i slajdów prezentacji
   (też kilku obrazów); pieśń, tekst i prezentacja mogą mieć własny (`SongPlanItem.SlideEffects`, `PresentationPlanItem.SlideEffects`,
-  `null` = jak w planie; przycisk „Slajdy: …” w kolumnie „Pieśń” tylko przy kilku slajdach, `TransitionOverrideViewModel`;
+  `null` = jak w planie; nowo dodana prezentacja ma „Brak efektu” — `PresentationPlanItem.Added`; przycisk „Slajdy: …” w kolumnie „Pieśń” tylko przy kilku slajdach, `TransitionOverrideViewModel`;
   `PlanItem.InnerTransitions`). Kiosk ma tylko własne efekty między elementami; film i pojedynczy obraz — jeden slajd, bez
   przejść wewnętrznych. Wybór: „Przenikanie”, „Brak efektu” (`SlideTransition.None`, zapis `[None]` — sam, wyklucza efekty; nowy slajd od razu,
   gdy jest gotowy — `CutTransition`) albo efekty (kilka = losowo jeden; `TransitionChoiceViewModel`, jeden szablon

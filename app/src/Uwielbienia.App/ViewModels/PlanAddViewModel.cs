@@ -72,7 +72,7 @@ public sealed partial class PlanAddViewModel(
             foreach (var video in videos)
                 actions.Insert(VideoPlanItem.For(video), index++);
             if (imported is not null)
-                actions.Insert(new PresentationPlanItem(Guid.NewGuid(), imported.Folder, imported.Title), index);
+                actions.Insert(PresentationPlanItem.Added(imported.Folder, imported.Title), index);
             Error = null;
             return true;
         }
@@ -94,7 +94,7 @@ public sealed partial class PlanAddViewModel(
         {
             var index = _index;
             foreach (var image in await slideshows.ImportEachAsync(files))
-                actions.Insert(new PresentationPlanItem(Guid.NewGuid(), image.Folder, image.Title), index++);
+                actions.Insert(PresentationPlanItem.Added(image.Folder, image.Title), index++);
             Error = null;
             IsOpen = false;
         }

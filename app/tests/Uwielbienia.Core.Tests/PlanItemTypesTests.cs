@@ -169,6 +169,15 @@ public class PlanItemTypesTests
     }
 
     [Fact]
+    public void Added_presentation_changes_slides_without_effect()
+    {
+        var item = PresentationPlanItem.Added("folder", "Ogłoszenia");
+
+        Assert.True(SlideTransitions.IsCut(item.InnerTransitions!));
+        Assert.Equal(item.SlideEffects, ((PresentationPlanItem)item.WithNewId()).SlideEffects);
+    }
+
+    [Fact]
     public void Slide_transitions_follow_the_plan_until_chosen()
     {
         var plan = Plan.Create("Test", null).WithTransitions([SlideTransition.StainedGlass]);
